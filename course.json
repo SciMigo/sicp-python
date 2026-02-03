@@ -1,0 +1,72 @@
+{
+  "id": "sicp-python",
+  "version": "1.0.0",
+  "title": "Structure and Interpretation of Computer Programs",
+  "subtitle": "Classic CS curriculum adapted for Python",
+  "description": "Learn the fundamental ideas of computation: abstraction, recursion, interpreters, and the nature of programming languages themselves.",
+
+  "overview": "This course is not about learning Python syntax. It is about learning how programs work.\n\nThrough classic SICP ideas adapted to Python, you will learn to reason about computation, abstraction, state, and interpreters—the foundations behind all modern software systems.\n\nOriginally developed at MIT by Harold Abelson and Gerald Jay Sussman, SICP teaches the fundamental ideas of computation. This course adapts the core SICP curriculum into Python, following the approach pioneered by UC Berkeley's CS 61A.\n\nThe course progresses from simple abstractions (functions) through compound data, state and mutation, object-oriented design, and finally to building your own interpreter. Each module includes video lectures with interactive checkpoints, the original SICP reading material, and hands-on lab exercises in Python.",
+
+  "branding": {
+    "tagline": "The course that shaped generations of programmers",
+    "coverImage": "branding/cover.png",
+    "thumbnailImage": "branding/thumbnail.png",
+    "accentColor": "#4A90D9"
+  },
+
+  "prerequisites": [
+    "Basic Python fluency (variables, if/else, loops, defining functions)",
+    "Comfort with simple math (algebra-level)",
+    "No prior CS theory or functional programming experience required"
+  ],
+
+  "learningOutcomes": [
+    "Use higher-order functions, closures, and lambda expressions to write expressive, reusable code",
+    "Trace program execution using the environment model (frames, scoping, name lookup)",
+    "Think recursively and analyze recursive vs iterative processes",
+    "Design programs using data abstraction and abstraction barriers",
+    "Process sequences and trees with map, filter, reduce, and recursive traversal",
+    "Reason about mutation, aliasing, and identity in Python",
+    "Use classes, inheritance, and polymorphism effectively",
+    "Build a working interpreter for a small programming language"
+  ],
+
+  "sourceAttribution": "Based on Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman (MIT Press, 1996), adapted to Python following UC Berkeley CS 61A.",
+
+  "terminologyMapping": [
+    { "classic": "Procedure / Higher-order procedure", "python": "Function / Higher-order function" },
+    { "classic": "Lambda expression", "python": "Lambda expression (same concept)" },
+    { "classic": "Environment model of evaluation", "python": "Environment diagrams (frames & scope)" },
+    { "classic": "Recursive / iterative process", "python": "Recursive / iterative process (no tail-call optimization in Python)" },
+    { "classic": "Pairs (cons, car, cdr)", "python": "Tuples, lists, or closure-based pairs" },
+    { "classic": "Data abstraction (constructors + selectors)", "python": "Data abstraction (same pattern, using functions or classes)" },
+    { "classic": "Sequences (lists)", "python": "Python lists, generators, comprehensions" },
+    { "classic": "Message passing", "python": "Dispatch functions / methods" },
+    { "classic": "Generic operations / data-directed programming", "python": "Polymorphism / duck typing" },
+    { "classic": "Metacircular evaluator", "python": "Interpreter written in Python" }
+  ],
+
+  "modules": [
+    "01-higher-order-functions",
+    "02-environment-diagrams",
+    "03-recursive-functions",
+    "04-data-abstraction",
+    "05-sequences",
+    "06-trees",
+    "07-mutable-data",
+    "08-object-oriented-programming",
+    "09-interpreters"
+  ],
+
+  "estimatedTotalHours": 7,
+
+  "pricing": {
+    "tier": "free",
+    "previewModules": ["01-higher-order-functions", "02-environment-diagrams"]
+  },
+
+  "hosting": {
+    "cdn": "cloudflare",
+    "basePath": "/courses/sicp-python"
+  }
+}

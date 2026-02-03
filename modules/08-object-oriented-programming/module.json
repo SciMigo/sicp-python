@@ -1,0 +1,27 @@
+{
+  "id": "08-object-oriented-programming",
+  "title": "Object-Oriented Programming",
+  "subtitle": "Objects as an alternative abstraction boundary",
+  "chapter": "2.7",
+  "description": "Organize state and behavior into classes. Connect OOP back to closures and message passing, then explore inheritance, method resolution, and how polymorphism enables multiple data representations.",
+  "estimatedMinutes": 60,
+  "prerequisites": ["07-mutable-data"],
+
+  "generation": {
+    "minSlides": 10,
+    "maxSlides": 12,
+    "targetSeconds": 540,
+    "preset": "sicp_interactive",
+    "referenceFiles": ["2.4-multiple-representations.md", "2.5-generic-operations.md"],
+    "diagramTemplates": ["class_hierarchy", "object_diagram"],
+    "interactionCheckpoints": 2,
+    "enableFragments": true,
+    "enableImages": true,
+    "imageStyle": "clean technical diagram, minimalist, white background",
+    "pyodideEnabled": true
+  },
+
+  "lab": {
+    "exercises": ["2.73", "2.74", "2.75"]
+  }
+}

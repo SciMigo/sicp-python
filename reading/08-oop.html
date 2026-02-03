@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Object-Oriented Programming — SICP in Python</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [
+    {left: '$$', right: '$$', display: true},
+    {left: '$', right: '$', display: false}
+  ]});">
+</script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a2e;
+    --code-bg: #f4f4f8;
+    --border: #e0e0e8;
+    --accent: #4a6fa5;
+    --heading: #16213e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a2e;
+      --fg: #e0e0e8;
+      --code-bg: #16213e;
+      --border: #2a2a4e;
+      --accent: #7ba4d9;
+      --heading: #a8c8f0;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--fg);
+    background: var(--bg);
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  h1 {
+    font-size: 1.8rem;
+    color: var(--heading);
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent);
+  }
+  h2 {
+    font-size: 1.4rem;
+    color: var(--heading);
+    margin: 2rem 0 0.8rem;
+  }
+  h3 {
+    font-size: 1.15rem;
+    color: var(--heading);
+    margin: 1.5rem 0 0.6rem;
+  }
+  p {
+    margin: 0.8rem 0;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 1rem 0;
+  }
+  code {
+    font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    padding: 0.15em 0.35em;
+    border-radius: 3px;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  blockquote {
+    border-left: 4px solid var(--accent);
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
+    color: var(--fg);
+    opacity: 0.85;
+  }
+  ul, ol {
+    margin: 0.8rem 0;
+    padding-left: 1.5rem;
+  }
+  li {
+    margin: 0.3rem 0;
+  }
+  em { font-style: italic; }
+  strong { font-weight: 700; }
+  .source-note {
+    font-size: 0.85rem;
+    color: var(--fg);
+    opacity: 0.6;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<h1>Object-Oriented Programming</h1>
+<p>⇡</p>
+<h4>2.4Multiple Representations for Abstract Data</h4>
+<p>We have introduced data abstraction, a methodology for structuring systems in
+such a way that much of a program can be specified independent of the choices
+involved in implementing the data objects that the program manipulates. For
+example, we saw in2.1.1how to separate the task of designing a
+program that uses rational numbers from the task of implementing rational
+numbers in terms of the computer language’s primitive mechanisms for
+constructing compound data. The key idea was to erect an abstraction barrier
+– in this case, the selectors and constructors for rational numbers
+(make-rat,numer,denom)—that isolates the way rational
+numbers are used from their underlying representation in terms of list
+structure. A similar abstraction barrier isolates the details of the
+procedures that perform rational arithmetic (add-rat,sub-rat,mul-rat, anddiv-rat) from the “higher-level” procedures that
+use rational numbers. The resulting program has the structure shown inFigure 2.1.</p>
+<p>These data-abstraction barriers are powerful tools for controlling complexity.
+By isolating the underlying representations of data objects, we can divide the
+task of designing a large program into smaller tasks that can be performed
+separately. But this kind of data abstraction is not yet powerful enough,
+because it may not always make sense to speak of “the underlying
+representation” for a data object.</p>
+<p>For one thing, there might be more than one useful representation for a data
+object, and we might like to design systems that can deal with multiple
+representations. To take a simple example, complex numbers may be represented
+in two almost equivalent ways: in rectangular form (real and imaginary parts)
+and in polar form (magnitude and angle). Sometimes rectangular form is more
+appropriate and sometimes polar form is more appropriate. Indeed, it is
+perfectly plausible to imagine a system in which complex numbers are
+represented in both ways, and in which the procedures for manipulating complex
+numbers work with either representation.</p>
+<p>More importantly, programming systems are often designed by many people working
+over extended periods of time, subject to requirements that change over time.
+In such an environment, it is simply not possible for everyone to agree in
+advance on choices of data representation. So in addition to the
+data-abstraction barriers that isolate representation from use, we need
+abstraction barriers that isolate different design choices from each other and
+permit different choices to coexist in a single program. Furthermore, since
+large programs are often created by combining pre-existing modules that were
+designed in isolation, we need conventions that permit programmers to
+incorporate modules into larger systemsadditively, that is, without
+having to redesign or reimplement these modules.</p>
+<p>In this section, we will learn how to cope with data that may be represented in
+different ways by different parts of a program. This requires constructinggeneric procedures—procedures that can operate on data that may be
+represented in more than one way. Our main technique for building generic
+procedures will be to work in terms of data objects that havetype tags, 
+that is, data objects that include explicit information about how they
+are to be processed. We will also discussdata-directedprogramming,
+a powerful and convenient implementation strategy for additively assembling
+systems with generic operations.</p>
+<p>We begin with the simple complex-number example. We will see how type tags and
+data-directed style enable us to design separate rectangular and polar
+representations for complex numbers while maintaining the notion of an abstract
+“complex-number” data object. We will accomplish this by defining arithmetic
+procedures for complex numbers (add-complex,sub-complex,mul-complex, anddiv-complex) in terms of generic selectors that
+access parts of a complex number independent of how the number is represented.
+The resulting complex-number system, as shown inFigure 2.19, contains
+two different kinds of abstraction barriers. The “horizontal” abstraction
+barriers play the same role as the ones inFigure 2.1. They isolate
+“higher-level” operations from “lower-level” representations. In addition,
+there is a “vertical” barrier that gives us the ability to separately design
+and install alternative representations.</p>
+<p><em>[Figure: Figure 2.19:Data-abstraction barriers in the complex-number system.]</em></p>
+<p>In2.5we will show how to use type tags and data-directed style
+to develop a generic arithmetic package. This provides procedures (add,mul, and so on) that can be used to manipulate all sorts of “numbers”
+and can be easily extended when a new kind of number is needed. In2.5.3, we’ll show how to use generic arithmetic in a system that performs
+symbolic algebra.</p>
+<h5>2.4.1Representations for Complex Numbers</h5>
+<p>We will develop a system that performs arithmetic operations on complex numbers
+as a simple but unrealistic example of a program that uses generic operations.
+We begin by discussing two plausible representations for complex numbers as
+ordered pairs: rectangular form (real part and imaginary part) and polar form
+(magnitude and angle).109Section2.4.2will show how both representations can be made to coexist in a
+single system through the use of type tags and generic operations.</p>
+<p>Like rational numbers, complex numbers are naturally represented as ordered
+pairs. The set of complex numbers can be thought of as a two-dimensional space
+with two orthogonal axes, the “real” axis and the “imaginary” axis. (SeeFigure 2.20.) From this point of view, the complex numberz=x+iy(wherei2=−1) can be thought of as the point in the plane
+whose real coordinate isxand whose imaginary coordinate isy.
+Addition of complex numbers reduces in this representation to addition of
+coordinates:Real-part(z1+z2)=Real-part(z1)+Real-part(z2),Imaginary-part(z1+z2)=Imaginary-part(z1)+Imaginary-part(z2).</p>
+<p><em>[Figure: Figure 2.20:Complex numbers as points in the plane.]</em></p>
+<p>When multiplying complex numbers, it is more natural to think in terms of
+representing a complex number in polar form, as a magnitude and an angle (randAinFigure 2.20). The product of two complex numbers is the
+vector obtained by stretching one complex number by the length of the other and
+then rotating it through the angle of the other:Magnitude(z1⋅z2)=Magnitude(z1)⋅Magnitude(z2),Angle(z1⋅z2)=Angle(z1)+Angle(z2).</p>
+<p>Thus, there are two different representations for complex numbers, which are
+appropriate for different operations. Yet, from the viewpoint of someone
+writing a program that uses complex numbers, the principle of data abstraction
+suggests that all the operations for manipulating complex numbers should be
+available regardless of which representation is used by the computer. For
+example, it is often useful to be able to find the magnitude of a complex
+number that is specified by rectangular coordinates. Similarly, it is often
+useful to be able to determine the real part of a complex number that is
+specified by polar coordinates.</p>
+<p>To design such a system, we can follow the same data-abstraction strategy we
+followed in designing the rational-number package in2.1.1.
+Assume that the operations on complex numbers are implemented in terms of four
+selectors:real-part,imag-part,magnitude, andangle. Also assume that we have two procedures for constructing complex
+numbers:make-from-real-imagreturns a complex number with specified
+real and imaginary parts, andmake-from-mag-angreturns a complex number
+with specified magnitude and angle. These procedures have the property that,
+for any complex numberz, both</p>
+<pre><code class="language-scheme">(make-from-real-imag (real-part z) 
+ (imag-part z))
+</code></pre>
+<p>and</p>
+<pre><code class="language-scheme">(make-from-mag-ang (magnitude z) 
+ (angle z))
+</code></pre>
+<p>produce complex numbers that are equal toz.</p>
+<p>Using these constructors and selectors, we can implement arithmetic on complex
+numbers using the “abstract data” specified by the constructors and
+selectors, just as we did for rational numbers in2.1.1. As
+shown in the formulas above, we can add and subtract complex numbers in terms
+of real and imaginary parts while multiplying and dividing complex numbers in
+terms of magnitudes and angles:</p>
+<pre><code class="language-scheme">(define (add-complex z1 z2)
+ (make-from-real-imag 
+ (+ (real-part z1) (real-part z2))
+ (+ (imag-part z1) (imag-part z2))))
+
+(define (sub-complex z1 z2)
+ (make-from-real-imag 
+ (- (real-part z1) (real-part z2))
+ (- (imag-part z1) (imag-part z2))))
+
+(define (mul-complex z1 z2)
+ (make-from-mag-ang 
+ (* (magnitude z1) (magnitude z2))
+ (+ (angle z1) (angle z2))))
+
+(define (div-complex z1 z2)
+ (make-from-mag-ang 
+ (/ (magnitude z1) (magnitude z2))
+ (- (angle z1) (angle z2))))
+</code></pre>
+<p>To complete the complex-number package, we must choose a representation and we
+must implement the constructors and selectors in terms of primitive numbers and
+primitive list structure. There are two obvious ways to do this: We can
+represent a complex number in “rectangular form” as a pair (real part,
+imaginary part) or in “polar form” as a pair (magnitude, angle). Which shall
+we choose?</p>
+<p>In order to make the different choices concrete, imagine that there are two
+programmers, Ben Bitdiddle and Alyssa P. Hacker, who are independently
+designing representations for the complex-number system. Ben chooses to
+represent complex numbers in rectangular form. With this choice, selecting the
+real and imaginary parts of a complex number is straightforward, as is
+constructing a complex number with given real and imaginary parts. To find the
+magnitude and the angle, or to construct a complex number with a given
+magnitude and angle, he uses the trigonometric relations
+x=rcos⁡ ⁡ A,y=rsin⁡ ⁡ A,r=x2+y2,A=arctan⁡ ⁡ (y,x),
+which relate the real and imaginary parts(x,y)to the magnitude and
+the angle(r,A).110Ben’s
+representation is therefore given by the following selectors and constructors:</p>
+<pre><code class="language-scheme">(define (real-part z) (car z))
+(define (imag-part z) (cdr z))
+
+(define (magnitude z)
+ (sqrt (+ (square (real-part z)) 
+ (square (imag-part z)))))
+
+(define (angle z)
+ (atan (imag-part z) (real-part z)))
+
+(define (make-from-real-imag x y) 
+ (cons x y))
+
+(define (make-from-mag-ang r a)
+ (cons (* r (cos a)) (* r (sin a))))
+</code></pre>
+<p>Alyssa, in contrast, chooses to represent complex numbers in polar form. For
+her, selecting the magnitude and angle is straightforward, but she has to use
+the trigonometric relations to obtain the real and imaginary parts. Alyssa’s
+representation is:</p>
+<pre><code class="language-scheme">(define (real-part z)
+ (* (magnitude z) (cos (angle z))))
+
+(define (imag-part z)
+ (* (magnitude z) (sin (angle z))))
+
+(define (magnitude z) (car z))
+(define (angle z) (cdr z))
+
+(define (make-from-real-imag x y)
+ (cons (sqrt (+ (square x) (square y)))
+ (atan y x)))
+
+(define (make-from-mag-ang r a) 
+ (cons r a))
+</code></pre>
+<p>The discipline of data abstraction ensures that the same implementation ofadd-complex,sub-complex,mul-complex, anddiv-complexwill work with either Ben’s representation or Alyssa’s
+representation.</p>
+<h5>2.4.2Tagged data</h5>
+<p>One way to view data abstraction is as an application of the “principle of
+least commitment.” In implementing the complex-number system in2.4.1, we can use either Ben’s rectangular representation or Alyssa’s
+polar representation. The abstraction barrier formed by the selectors and
+constructors permits us to defer to the last possible moment the choice of a
+concrete representation for our data objects and thus retain maximum
+flexibility in our system design.</p>
+<p>The principle of least commitment can be carried to even further extremes. If
+we desire, we can maintain the ambiguity of representation evenafterwe
+have designed the selectors and constructors, and elect to use both Ben’s
+representationandAlyssa’s representation. If both representations are
+included in a single system, however, we will need some way to distinguish data
+in polar form from data in rectangular form. Otherwise, if we were asked, for
+instance, to find themagnitudeof the pair (3, 4), we wouldn’t know
+whether to answer 5 (interpreting the number in rectangular form) or 3
+(interpreting the number in polar form). A straightforward way to accomplish
+this distinction is to include atype tag—the symbolrectangularorpolar—as part of each complex number. Then
+when we need to manipulate a complex number we can use the tag to decide which
+selector to apply.</p>
+<p>In order to manipulate tagged data, we will assume that we have procedurestype-tagandcontentsthat extract from a data object the tag and
+the actual contents (the polar or rectangular coordinates, in the case of a
+complex number). We will also postulate a procedureattach-tagthat
+takes a tag and contents and produces a tagged data object. A straightforward
+way to implement this is to use ordinary list structure:</p>
+<pre><code class="language-scheme">(define (attach-tag type-tag contents)
+ (cons type-tag contents))
+
+(define (type-tag datum)
+ (if (pair? datum)
+ (car datum)
+ (error &quot;Bad tagged datum: 
+ TYPE-TAG&quot; datum)))
+
+(define (contents datum)
+ (if (pair? datum)
+ (cdr datum)
+ (error &quot;Bad tagged datum: 
+ CONTENTS&quot; datum)))
+</code></pre>
+<p>Using these procedures, we can define predicatesrectangular?andpolar?, which recognize rectangular and polar numbers, respectively:</p>
+<pre><code class="language-scheme">(define (rectangular? z)
+ (eq? (type-tag z) 'rectangular))
+
+(define (polar? z)
+ (eq? (type-tag z) 'polar))
+</code></pre>
+<p>With type tags, Ben and Alyssa can now modify their code so that their two
+different representations can coexist in the same system. Whenever Ben
+constructs a complex number, he tags it as rectangular. Whenever Alyssa
+constructs a complex number, she tags it as polar. In addition, Ben and Alyssa
+must make sure that the names of their procedures do not conflict. One way to
+do this is for Ben to append the suffixrectangularto the name of each
+of his representation procedures and for Alyssa to appendpolarto the
+names of hers. Here is Ben’s revised rectangular representation from2.4.1:</p>
+<pre><code class="language-scheme">(define (real-part-rectangular z) (car z))
+(define (imag-part-rectangular z) (cdr z))
+
+(define (magnitude-rectangular z)
+ (sqrt (+ (square (real-part-rectangular z))
+ (square (imag-part-rectangular z)))))
+
+(define (angle-rectangular z)
+ (atan (imag-part-rectangular z)
+ (real-part-rectangular z)))
+
+(define (make-from-real-imag-rectangular x y)
+ (attach-tag 'rectangular (cons x y)))
+
+(define (make-from-mag-ang-rectangular r a)
+ (attach-tag 
+ 'rectangular
+ (cons (* r (cos a)) (* r (sin a)))))
+</code></pre>
+<p>and here is Alyssa’s revised polar representation:</p>
+<pre><code class="language-scheme">(define (real-part-polar z)
+ (* (magnitude-polar z) 
+ (cos (angle-polar z))))
+
+(define (imag-part-polar z)
+ (* (magnitude-polar z) 
+ (sin (angle-polar z))))
+
+(define (magnitude-polar z) (car z))
+(define (angle-polar z) (cdr z))
+
+(define (make-from-real-imag-polar x y)
+ (attach-tag 
+ 'polar
+ (cons (sqrt (+ (square x) (square y)))
+ (atan y x))))
+
+(define (make-from-mag-ang-polar r a)
+ (attach-tag 'polar (cons r a)))
+</code></pre>
+<p>Each generic selector is implemented as a procedure that checks the tag of its
+argument and calls the appropriate procedure for handling data of that type.
+For example, to obtain the real part of a complex number,real-partexamines the tag to determine whether to use Ben’sreal-part-rectangularor Alyssa’sreal-part-polar. In either case, we usecontentsto
+extract the bare, untagged datum and send this to the rectangular or polar
+procedure as required:</p>
+<pre><code class="language-scheme">(define (real-part z)
+ (cond ((rectangular? z)
+ (real-part-rectangular (contents z)))
+ ((polar? z)
+ (real-part-polar (contents z)))
+ (else (error &quot;Unknown type: 
+ REAL-PART&quot; z))))
+
+(define (imag-part z)
+ (cond ((rectangular? z)
+ (imag-part-rectangular (contents z)))
+ ((polar? z)
+ (imag-part-polar (contents z)))
+ (else (error &quot;Unknown type: 
+ IMAG-PART&quot; z))))
+
+(define (magnitude z)
+ (cond ((rectangular? z)
+ (magnitude-rectangular (contents z)))
+ ((polar? z)
+ (magnitude-polar (contents z)))
+ (else (error &quot;Unknown type: 
+ MAGNITUDE&quot; z))))
+
+(define (angle z)
+ (cond ((rectangular? z)
+ (angle-rectangular (contents z)))
+ ((polar? z)
+ (angle-polar (contents z)))
+ (else (error &quot;Unknown type: 
+ ANGLE&quot; z))))
+</code></pre>
+<p>To implement the complex-number arithmetic operations, we can use the same
+proceduresadd-complex,sub-complex,mul-complex, anddiv-complexfrom2.4.1, because the selectors they call
+are generic, and so will work with either representation. For example, the
+procedureadd-complexis still</p>
+<pre><code class="language-scheme">(define (add-complex z1 z2)
+ (make-from-real-imag 
+ (+ (real-part z1) (real-part z2))
+ (+ (imag-part z1) (imag-part z2))))
+</code></pre>
+<p>Finally, we must choose whether to construct complex numbers using Ben’s
+representation or Alyssa’s representation. One reasonable choice is to
+construct rectangular numbers whenever we have real and imaginary parts and to
+construct polar numbers whenever we have magnitudes and angles:</p>
+<pre><code class="language-scheme">(define (make-from-real-imag x y)
+ (make-from-real-imag-rectangular x y))
+
+(define (make-from-mag-ang r a)
+ (make-from-mag-ang-polar r a))
+</code></pre>
+<p>The resulting complex-number system has the structure shown inFigure 2.21. 
+The system has been decomposed into three relatively independent parts:
+the complex-number-arithmetic operations, Alyssa’s polar implementation, and
+Ben’s rectangular implementation. The polar and rectangular implementations
+could have been written by Ben and Alyssa working separately, and both of these
+can be used as underlying representations by a third programmer implementing
+the complex-arithmetic procedures in terms of the abstract constructor/selector
+interface.</p>
+<p><em>[Figure: Figure 2.21:Structure of the generic complex-arithmetic system.]</em></p>
+<p>Since each data object is tagged with its type, the selectors operate on the
+data in a generic manner. That is, each selector is defined to have a behavior
+that depends upon the particular type of data it is applied to. Notice the
+general mechanism for interfacing the separate representations: Within a given
+representation implementation (say, Alyssa’s polar package) a complex number is
+an untyped pair (magnitude, angle). When a generic selector operates on a
+number ofpolartype, it strips off the tag and passes the contents on
+to Alyssa’s code. Conversely, when Alyssa constructs a number for general use,
+she tags it with a type so that it can be appropriately recognized by the
+higher-level procedures. This discipline of stripping off and attaching tags
+as data objects are passed from level to level can be an important
+organizational strategy, as we shall see in2.5.</p>
+<h5>2.4.3Data-Directed Programming and Additivity</h5>
+<p>The general strategy of checking the type of a datum and calling an appropriate
+procedure is calleddispatching on type. This is a powerful strategy
+for obtaining modularity in system design. On the other hand, implementing the
+dispatch as in2.4.2has two significant weaknesses. One
+weakness is that the generic interface procedures (real-part,imag-part,magnitude, andangle) must know about all the
+different representations. For instance, suppose we wanted to incorporate a
+new representation for complex numbers into our complex-number system. We
+would need to identify this new representation with a type, and then add a
+clause to each of the generic interface procedures to check for the new type
+and apply the appropriate selector for that representation.</p>
+<p>Another weakness of the technique is that even though the individual
+representations can be designed separately, we must guarantee that no two
+procedures in the entire system have the same name. This is why Ben and Alyssa
+had to change the names of their original procedures from2.4.1.</p>
+<p>The issue underlying both of these weaknesses is that the technique for
+implementing generic interfaces is notadditive. The person
+implementing the generic selector procedures must modify those procedures each
+time a new representation is installed, and the people interfacing the
+individual representations must modify their code to avoid name conflicts. In
+each of these cases, the changes that must be made to the code are
+straightforward, but they must be made nonetheless, and this is a source of
+inconvenience and error. This is not much of a problem for the complex-number
+system as it stands, but suppose there were not two but hundreds of different
+representations for complex numbers. And suppose that there were many generic
+selectors to be maintained in the abstract-data interface. Suppose, in fact,
+that no one programmer knew all the interface procedures or all the
+representations. The problem is real and must be addressed in such programs as
+large-scale data-base-management systems.</p>
+<p>What we need is a means for modularizing the system design even further. This
+is provided by the programming technique known asdata-directed programming. 
+To understand how data-directed programming works, begin with
+the observation that whenever we deal with a set of generic operations that are
+common to a set of different types we are, in effect, dealing with a
+two-dimensional table that contains the possible operations on one axis and the
+possible types on the other axis. The entries in the table are the procedures
+that implement each operation for each type of argument presented. In the
+complex-number system developed in the previous section, the correspondence
+between operation name, data type, and actual procedure was spread out among
+the various conditional clauses in the generic interface procedures. But the
+same information could have been organized in a table, as shown inFigure 2.22.</p>
+<p><em>[Figure: Figure 2.22:Table of operations for the complex-number system.]</em></p>
+<p>Data-directed programming is the technique of designing programs to work with
+such a table directly. Previously, we implemented the mechanism that
+interfaces the complex-arithmetic code with the two representation packages as
+a set of procedures that each perform an explicit dispatch on type. Here we
+will implement the interface as a single procedure that looks up the
+combination of the operation name and argument type in the table to find the
+correct procedure to apply, and then applies it to the contents of the
+argument. If we do this, then to add a new representation package to the
+system we need not change any existing procedures; we need only add new entries
+to the table.</p>
+<p>To implement this plan, assume that we have two procedures,putandget, for manipulating the operation-and-type table:
+- (put ⟨op⟩ ⟨type⟩ ⟨item⟩)installs the⟨item⟩in the table, indexed by the⟨op⟩and the⟨type⟩.- (get ⟨op⟩ ⟨type⟩)looks up the⟨op⟩,⟨type⟩entry in the table and returns the item found there. 
+If no item is found,getreturns false.
+For now, we can assume thatputandgetare included in our
+language. InChapter 3(3.3.3) we
+will see how to implement these and other operations for manipulating tables.</p>
+<p>Here is how data-directed programming can be used in the complex-number system.
+Ben, who developed the rectangular representation, implements his code just as
+he did originally. He defines a collection of procedures, or apackage, and interfaces these to the rest of the system by adding
+entries to the table that tell the system how to operate on rectangular
+numbers. This is accomplished by calling the following procedure:</p>
+<pre><code class="language-scheme">(define (install-rectangular-package)
+ ;; internal procedures
+ (define (real-part z) (car z))
+ (define (imag-part z) (cdr z))
+ (define (make-from-real-imag x y) 
+ (cons x y))
+ (define (magnitude z)
+ (sqrt (+ (square (real-part z))
+ (square (imag-part z)))))
+ (define (angle z)
+ (atan (imag-part z) (real-part z)))
+ (define (make-from-mag-ang r a)
+ (cons (* r (cos a)) (* r (sin a))))
+ ;; interface to the rest of the system
+ (define (tag x) 
+ (attach-tag 'rectangular x))
+ (put 'real-part '(rectangular) real-part)
+ (put 'imag-part '(rectangular) imag-part)
+ (put 'magnitude '(rectangular) magnitude)
+ (put 'angle '(rectangular) angle)
+ (put 'make-from-real-imag 'rectangular
+ (lambda (x y) 
+ (tag (make-from-real-imag x y))))
+ (put 'make-from-mag-ang 'rectangular
+ (lambda (r a) 
+ (tag (make-from-mag-ang r a))))
+ 'done)
+</code></pre>
+<p>Notice that the internal procedures here are the same procedures from2.4.1that Ben wrote when he was working in isolation. No changes are
+necessary in order to interface them to the rest of the system. Moreover,
+since these procedure definitions are internal to the installation procedure,
+Ben needn’t worry about name conflicts with other procedures outside the
+rectangular package. To interface these to the rest of the system, Ben
+installs hisreal-partprocedure under the operation namereal-partand the type(rectangular), and similarly for the other
+selectors.111The interface also defines the
+constructors to be used by the external system.112These are identical to
+Ben’s internally defined constructors, except that they attach the tag.</p>
+<p>Alyssa’s polar package is analogous:</p>
+<pre><code class="language-scheme">(define (install-polar-package)
+ ;; internal procedures
+ (define (magnitude z) (car z))
+ (define (angle z) (cdr z))
+ (define (make-from-mag-ang r a) (cons r a))
+ (define (real-part z)
+ (* (magnitude z) (cos (angle z))))
+ (define (imag-part z)
+ (* (magnitude z) (sin (angle z))))
+ (define (make-from-real-imag x y)
+ (cons (sqrt (+ (square x) (square y)))
+ (atan y x)))
+ ;; interface to the rest of the system
+ (define (tag x) (attach-tag 'polar x))
+ (put 'real-part '(polar) real-part)
+ (put 'imag-part '(polar) imag-part)
+ (put 'magnitude '(polar) magnitude)
+ (put 'angle '(polar) angle)
+ (put 'make-from-real-imag 'polar
+ (lambda (x y) 
+ (tag (make-from-real-imag x y))))
+ (put 'make-from-mag-ang 'polar
+ (lambda (r a) 
+ (tag (make-from-mag-ang r a))))
+ 'done)
+</code></pre>
+<p>Even though Ben and Alyssa both still use their original procedures defined
+with the same names as each other’s (e.g.,real-part), these definitions
+are now internal to different procedures (see1.1.8), so there is
+no name conflict.</p>
+<p>The complex-arithmetic selectors access the table by means of a general
+“operation” procedure calledapply-generic, which applies a generic
+operation to some arguments.Apply-genericlooks in the table under the
+name of the operation and the types of the arguments and applies the resulting
+procedure if one is present:113</p>
+<pre><code class="language-scheme">(define (apply-generic op . args)
+ (let ((type-tags (map type-tag args)))
+ (let ((proc (get op type-tags)))
+ (if proc
+ (apply proc (map contents args))
+ (error
+ &quot;No method for these types: 
+ APPLY-GENERIC&quot;
+ (list op type-tags))))))
+</code></pre>
+<p>Usingapply-generic, we can define our generic selectors as follows:</p>
+<pre><code class="language-scheme">(define (real-part z) 
+ (apply-generic 'real-part z))
+(define (imag-part z) 
+ (apply-generic 'imag-part z))
+(define (magnitude z) 
+ (apply-generic 'magnitude z))
+(define (angle z) 
+ (apply-generic 'angle z))
+</code></pre>
+<p>Observe that these do not change at all if a new representation is added to the
+system.</p>
+<p>We can also extract from the table the constructors to be used by the programs
+external to the packages in making complex numbers from real and imaginary
+parts and from magnitudes and angles. As in2.4.2, we construct
+rectangular numbers whenever we have real and imaginary parts, and polar
+numbers whenever we have magnitudes and angles:</p>
+<pre><code class="language-scheme">(define (make-from-real-imag x y)
+ ((get 'make-from-real-imag 
+ 'rectangular) 
+ x y))
+
+(define (make-from-mag-ang r a)
+ ((get 'make-from-mag-ang 
+ 'polar) 
+ r a))
+</code></pre>
+<blockquote>
+<p>Exercise 2.73:2.3.2described a
+program that performs symbolic differentiation:(define(deriv exp var)(cond((number? exp)0)((variable? exp)(if(same-variable? exp var)10))((sum? exp)(make-sum(deriv(addend exp)var)(deriv(augend exp)var)))((product? exp)(make-sum(make-product(multiplier exp)(deriv(multiplicand exp)var))(make-product(deriv(multiplier exp)var)(multiplicand exp))))⟨more rules can be added here⟩(else(error&rdquo;unknown expression type:
+DERIV&rdquo;exp))))We can regard this program as performing a dispatch on the type of the
+expression to be differentiated. In this situation the “type tag” of the
+datum is the algebraic operator symbol (such as+) and the operation
+being performed isderiv. We can transform this program into
+data-directed style by rewriting the basic derivative procedure as(define(deriv exp var)(cond((number? exp)0)((variable? exp)(if(same-variable? exp var)10))(else((get&rsquo;deriv(operator exp))(operands exp)var))))(define(operator exp)(carexp))(define(operands exp)(cdrexp))Explain what was done above. Why can’t we assimilate the predicatesnumber?andvariable?into the data-directed dispatch?Write the procedures for derivatives of sums and products, and the auxiliary
+code required to install them in the table used by the program above.Choose any additional differentiation rule that you like, such as the one for
+exponents (Exercise 2.56), and install it in this data-directed
+system.In this simple algebraic manipulator the type of an expression is the algebraic
+operator that binds it together. Suppose, however, we indexed the procedures
+in the opposite way, so that the dispatch line inderivlooked like((get(operator exp)&rsquo;deriv)(operands exp)var)What corresponding changes to the derivative system are required?</p>
+<p>Exercise 2.74:Insatiable Enterprises, Inc., is
+a highly decentralized conglomerate company consisting of a large number of
+independent divisions located all over the world. The company’s computer
+facilities have just been interconnected by means of a clever
+network-interfacing scheme that makes the entire network appear to any user to
+be a single computer. Insatiable’s president, in her first attempt to exploit
+the ability of the network to extract administrative information from division
+files, is dismayed to discover that, although all the division files have been
+implemented as data structures in Scheme, the particular data structure used
+varies from division to division. A meeting of division managers is hastily
+called to search for a strategy to integrate the files that will satisfy
+headquarters’ needs while preserving the existing autonomy of the divisions.Show how such a strategy can be implemented with data-directed programming. As
+an example, suppose that each division’s personnel records consist of a single
+file, which contains a set of records keyed on employees’ names. The structure
+of the set varies from division to division. Furthermore, each employee’s
+record is itself a set (structured differently from division to division) that
+contains information keyed under identifiers such asaddressandsalary. In particular:Implement for headquarters aget-recordprocedure that retrieves a
+specified employee’s record from a specified personnel file. The procedure
+should be applicable to any division’s file. Explain how the individual
+divisions’ files should be structured. In particular, what type information
+must be supplied?Implement for headquarters aget-salaryprocedure that returns the
+salary information from a given employee’s record from any division’s personnel
+file. How should the record be structured in order to make this operation
+work?Implement for headquarters afind-employee-recordprocedure. This
+should search all the divisions’ files for the record of a given employee and
+return the record. Assume that this procedure takes as arguments an employee’s
+name and a list of all the divisions’ files.When Insatiable takes over a new company, what changes must be made in order to
+incorporate the new personnel information into the central system?</p>
+</blockquote>
+<h6>Message passing</h6>
+<p>The key idea of data-directed programming is to handle generic operations in
+programs by dealing explicitly with operation-and-type tables, such as the
+table inFigure 2.22. The style of programming we used in2.4.2organized the required dispatching on type by having each operation
+take care of its own dispatching. In effect, this decomposes the
+operation-and-type table into rows, with each generic operation procedure
+representing a row of the table.</p>
+<p>An alternative implementation strategy is to decompose the table into columns
+and, instead of using “intelligent operations” that dispatch on data types,
+to work with “intelligent data objects” that dispatch on operation names. We
+can do this by arranging things so that a data object, such as a rectangular
+number, is represented as a procedure that takes as input the required
+operation name and performs the operation indicated. In such a discipline,make-from-real-imagcould be written as</p>
+<pre><code class="language-scheme">(define (make-from-real-imag x y)
+ (define (dispatch op)
+ (cond ((eq? op 'real-part) x)
+ ((eq? op 'imag-part) y)
+ ((eq? op 'magnitude)
+ (sqrt (+ (square x) (square y))))
+ ((eq? op 'angle) (atan y x))
+ (else
+ (error &quot;Unknown op: 
+ MAKE-FROM-REAL-IMAG&quot; op))))
+ dispatch)
+</code></pre>
+<p>The correspondingapply-genericprocedure, which applies a generic
+operation to an argument, now simply feeds the operation’s name to the data
+object and lets the object do the work:114</p>
+<pre><code class="language-scheme">(define (apply-generic op arg) (arg op))
+</code></pre>
+<p>Note that the value returned bymake-from-real-imagis a procedure—the
+internaldispatchprocedure. This is the procedure that is invoked whenapply-genericrequests an operation to be performed.</p>
+<p>This style of programming is calledmessage passing. The name comes
+from the image that a data object is an entity that receives the requested
+operation name as a “message.” We have already seen an example of message
+passing in2.1.3, where we saw howcons,car, andcdrcould be defined with no data objects but only procedures. Here we
+see that message passing is not a mathematical trick but a useful technique for
+organizing systems with generic operations. In the remainder of this chapter
+we will continue to use data-directed programming, rather than message passing,
+to discuss generic arithmetic operations. InChapter 3we will return to
+message passing, and we will see that it can be a powerful tool for structuring
+simulation programs.</p>
+<blockquote>
+<p>Exercise 2.75:Implement the constructormake-from-mag-angin message-passing style. This procedure should be
+analogous to themake-from-real-imagprocedure given above.</p>
+<p>Exercise 2.76:As a large system with generic
+operations evolves, new types of data objects or new operations may be needed.
+For each of the three strategies—generic operations with explicit dispatch,
+data-directed style, and message-passing-style—describe the changes that
+must be made to a system in order to add new types or new operations. Which
+organization would be most appropriate for a system in which new types must
+often be added? Which would be most appropriate for a system in which new
+operations must often be added?</p>
+</blockquote>
+<h5>Footnotes</h5>
+<p>109In actual computational systems, rectangular
+form is preferable to polar form most of the time because of roundoff errors in
+conversion between rectangular and polar form. This is why the complex-number
+example is unrealistic. Nevertheless, it provides a clear illustration of the
+design of a system using generic operations and a good introduction to the more
+substantial systems to be developed later in this chapter.</p>
+<p>110The arctangent function referred to here,
+computed by Scheme’satanprocedure, is defined so as to take two
+argumentsyandxand to return the angle whose tangent isy/x.
+The signs of the arguments determine the quadrant of the angle.</p>
+<p>111We use the list(rectangular)rather than the symbolrectangularto allow for the possibility of operations with multiple
+arguments, not all of the same type.</p>
+<p>112The type the
+constructors are installed under needn’t be a list because a constructor is
+always used to make an object of one particular type.</p>
+<p>113Apply-genericuses the dotted-tail
+notation described inExercise 2.20, because different generic operations
+may take different numbers of arguments. Inapply-generic,ophas as its value the first argument toapply-genericandargshas
+as its value a list of the remaining arguments.</p>
+<p>Apply-genericalso uses the primitive procedureapply, which
+takes two arguments, a procedure and a list.Applyapplies the
+procedure, using the elements in the list as arguments. For example,</p>
+<pre><code class="language-scheme">(apply + (list 1 2 3 4))
+</code></pre>
+<p>returns 10.</p>
+<p>114One limitation of this
+organization is it permits only generic procedures of one argument.</p>
+<hr />
+<p>⇡</p>
+<h4>2.5Systems with Generic Operations</h4>
+<p>In the previous section, we saw how to design systems in which data objects can
+be represented in more than one way. The key idea is to link the code that
+specifies the data operations to the several representations by means of
+generic interface procedures. Now we will see how to use this same idea not
+only to define operations that are generic over different representations but
+also to define operations that are generic over different kinds of arguments.
+We have already seen several different packages of arithmetic operations: the
+primitive arithmetic (+,-,*,/) built into our
+language, the rational-number arithmetic (add-rat,sub-rat,mul-rat,div-rat) of2.1.1, and the complex-number
+arithmetic that we implemented in2.4.3. We will now use
+data-directed techniques to construct a package of arithmetic operations that
+incorporates all the arithmetic packages we have already constructed.</p>
+<p>Figure 2.23shows the structure of the system we shall build. Notice the
+abstraction barriers. From the perspective of someone using “numbers,” there
+is a single procedureaddthat operates on whatever numbers are
+supplied.Addis part of a generic interface that allows the separate
+ordinary-arithmetic, rational-arithmetic, and complex-arithmetic packages to be
+accessed uniformly by programs that use numbers. Any individual arithmetic
+package (such as the complex package) may itself be accessed through generic
+procedures (such asadd-complex) that combine packages designed for
+different representations (such as rectangular and polar). Moreover, the
+structure of the system is additive, so that one can design the individual
+arithmetic packages separately and combine them to produce a generic arithmetic
+system.</p>
+<p><em>[Figure: Figure 2.23:Generic arithmetic system.]</em></p>
+<h5>2.5.1Generic Arithmetic Operations</h5>
+<p>The task of designing generic arithmetic operations is analogous to that of
+designing the generic complex-number operations. We would like, for instance,
+to have a generic addition procedureaddthat acts like ordinary
+primitive addition+on ordinary numbers, likeadd-raton
+rational numbers, and likeadd-complexon complex numbers. We can
+implementadd, and the other generic arithmetic operations, by following
+the same strategy we used in2.4.3to implement the generic
+selectors for complex numbers. We will attach a type tag to each kind of
+number and cause the generic procedure to dispatch to an appropriate package
+according to the data type of its arguments.</p>
+<p>The generic arithmetic procedures are defined as follows:</p>
+<pre><code class="language-scheme">(define (add x y) (apply-generic 'add x y))
+(define (sub x y) (apply-generic 'sub x y))
+(define (mul x y) (apply-generic 'mul x y))
+(define (div x y) (apply-generic 'div x y))
+</code></pre>
+<p>We begin by installing a package for handlingordinarynumbers, that
+is, the primitive numbers of our language. We will tag these with the symbolscheme-number. The arithmetic operations in this package are the
+primitive arithmetic procedures (so there is no need to define extra procedures
+to handle the untagged numbers). Since these operations each take two
+arguments, they are installed in the table keyed by the list(scheme-number scheme-number):</p>
+<pre><code class="language-scheme">(define (install-scheme-number-package)
+ (define (tag x)
+ (attach-tag 'scheme-number x))
+ (put 'add '(scheme-number scheme-number)
+ (lambda (x y) (tag (+ x y))))
+ (put 'sub '(scheme-number scheme-number)
+ (lambda (x y) (tag (- x y))))
+ (put 'mul '(scheme-number scheme-number)
+ (lambda (x y) (tag (* x y))))
+ (put 'div '(scheme-number scheme-number)
+ (lambda (x y) (tag (/ x y))))
+ (put 'make 'scheme-number
+ (lambda (x) (tag x)))
+ 'done)
+</code></pre>
+<p>Users of the Scheme-number package will create (tagged) ordinary numbers by
+means of the procedure:</p>
+<pre><code class="language-scheme">(define (make-scheme-number n)
+ ((get 'make 'scheme-number) n))
+</code></pre>
+<p>Now that the framework of the generic arithmetic system is in place, we can
+readily include new kinds of numbers. Here is a package that performs rational
+arithmetic. Notice that, as a benefit of additivity, we can use without
+modification the rational-number code from2.1.1as the internal
+procedures in the package:</p>
+<pre><code class="language-scheme">(define (install-rational-package)
+ ;; internal procedures
+ (define (numer x) (car x))
+ (define (denom x) (cdr x))
+ (define (make-rat n d)
+ (let ((g (gcd n d)))
+ (cons (/ n g) (/ d g))))
+ (define (add-rat x y)
+ (make-rat (+ (* (numer x) (denom y))
+ (* (numer y) (denom x)))
+ (* (denom x) (denom y))))
+ (define (sub-rat x y)
+ (make-rat (- (* (numer x) (denom y))
+ (* (numer y) (denom x)))
+ (* (denom x) (denom y))))
+ (define (mul-rat x y)
+ (make-rat (* (numer x) (numer y))
+ (* (denom x) (denom y))))
+ (define (div-rat x y)
+ (make-rat (* (numer x) (denom y))
+ (* (denom x) (numer y))))
+ ;; interface to rest of the system
+ (define (tag x) (attach-tag 'rational x))
+ (put 'add '(rational rational)
+ (lambda (x y) (tag (add-rat x y))))
+ (put 'sub '(rational rational)
+ (lambda (x y) (tag (sub-rat x y))))
+ (put 'mul '(rational rational)
+ (lambda (x y) (tag (mul-rat x y))))
+ (put 'div '(rational rational)
+ (lambda (x y) (tag (div-rat x y))))
+ (put 'make 'rational
+ (lambda (n d) (tag (make-rat n d))))
+ 'done)
+
+(define (make-rational n d)
+ ((get 'make 'rational) n d))
+</code></pre>
+<p>We can install a similar package to handle complex numbers, using the tagcomplex. In creating the package, we extract from the table the
+operationsmake-from-real-imagandmake-from-mag-angthat were
+defined by the rectangular and polar packages. Additivity permits us to use,
+as the internal operations, the sameadd-complex,sub-complex,mul-complex, anddiv-complexprocedures from2.4.1.</p>
+<pre><code class="language-scheme">(define (install-complex-package)
+ ;; imported procedures from rectangular 
+ ;; and polar packages
+ (define (make-from-real-imag x y)
+ ((get 'make-from-real-imag 
+ 'rectangular) 
+ x y))
+ (define (make-from-mag-ang r a)
+ ((get 'make-from-mag-ang 'polar) 
+ r a))
+ ;; internal procedures
+ (define (add-complex z1 z2)
+ (make-from-real-imag 
+ (+ (real-part z1) (real-part z2))
+ (+ (imag-part z1) (imag-part z2))))
+ (define (sub-complex z1 z2)
+ (make-from-real-imag 
+ (- (real-part z1) (real-part z2))
+ (- (imag-part z1) (imag-part z2))))
+ (define (mul-complex z1 z2)
+ (make-from-mag-ang 
+ (* (magnitude z1) (magnitude z2))
+ (+ (angle z1) (angle z2))))
+ (define (div-complex z1 z2)
+ (make-from-mag-ang 
+ (/ (magnitude z1) (magnitude z2))
+ (- (angle z1) (angle z2))))
+ ;; interface to rest of the system
+ (define (tag z) (attach-tag 'complex z))
+ (put 'add '(complex complex)
+ (lambda (z1 z2) 
+ (tag (add-complex z1 z2))))
+ (put 'sub '(complex complex)
+ (lambda (z1 z2) 
+ (tag (sub-complex z1 z2))))
+ (put 'mul '(complex complex)
+ (lambda (z1 z2) 
+ (tag (mul-complex z1 z2))))
+ (put 'div '(complex complex)
+ (lambda (z1 z2) 
+ (tag (div-complex z1 z2))))
+ (put 'make-from-real-imag 'complex
+ (lambda (x y) 
+ (tag (make-from-real-imag x y))))
+ (put 'make-from-mag-ang 'complex
+ (lambda (r a) 
+ (tag (make-from-mag-ang r a))))
+ 'done)
+</code></pre>
+<p>Programs outside the complex-number package can construct complex numbers
+either from real and imaginary parts or from magnitudes and angles. Notice how
+the underlying procedures, originally defined in the rectangular and polar
+packages, are exported to the complex package, and exported from there to the
+outside world.</p>
+<pre><code class="language-scheme">(define (make-complex-from-real-imag x y)
+ ((get 'make-from-real-imag 'complex) x y))
+(define (make-complex-from-mag-ang r a)
+ ((get 'make-from-mag-ang 'complex) r a))
+</code></pre>
+<p>What we have here is a two-level tag system. A typical complex number, such as3+4iin rectangular form, would be represented as shown inFigure 2.24. 
+The outer tag (complex) is used to direct the number to the
+complex package. Once within the complex package, the next tag
+(rectangular) is used to direct the number to the rectangular package.
+In a large and complicated system there might be many levels, each interfaced
+with the next by means of generic operations. As a data object is passed
+“downward,” the outer tag that is used to direct it to the appropriate
+package is stripped off (by applyingcontents) and the next level of tag
+(if any) becomes visible to be used for further dispatching.</p>
+<p><em>[Figure: Figure 2.24:Representation of3+4iin rectangular form.]</em></p>
+<p>In the above packages, we usedadd-rat,add-complex, and the
+other arithmetic procedures exactly as originally written. Once these
+definitions are internal to different installation procedures, however, they no
+longer need names that are distinct from each other: we could simply name themadd,sub,mul, anddivin both packages.</p>
+<blockquote>
+<p>Exercise 2.77:Louis Reasoner tries to evaluate
+the expression(magnitude z)wherezis the object shown inFigure 2.24. To his surprise, instead of the answer 5 he gets an error
+message fromapply-generic, saying there is no method for the operationmagnitudeon the types(complex). He shows this interaction to
+Alyssa P. Hacker, who says “The problem is that the complex-number selectors
+were never defined forcomplexnumbers, just forpolarandrectangularnumbers. All you have to do to make this work is add the
+following to thecomplexpackage:”(put&rsquo;real-part&rsquo;(complex)real-part)(put&rsquo;imag-part&rsquo;(complex)imag-part)(put&rsquo;magnitude&rsquo;(complex)magnitude)(put&rsquo;angle&rsquo;(complex)angle)Describe in detail why this works. As an example, trace through all the
+procedures called in evaluating the expression(magnitude z)wherezis the object shown inFigure 2.24. In particular, how many
+times isapply-genericinvoked? What procedure is dispatched to in each
+case?</p>
+<p>Exercise 2.78:The internal procedures in thescheme-numberpackage are essentially nothing more than calls to the
+primitive procedures+,-, etc. It was not possible to use the
+primitives of the language directly because our type-tag system requires that
+each data object have a type attached to it. In fact, however, all Lisp
+implementations do have a type system, which they use internally. Primitive
+predicates such assymbol?andnumber?determine whether data
+objects have particular types. Modify the definitions oftype-tag,contents, andattach-tagfrom2.4.2so that our
+generic system takes advantage of Scheme’s internal type system. That is to
+say, the system should work as before except that ordinary numbers should be
+represented simply as Scheme numbers rather than as pairs whosecaris
+the symbolscheme-number.</p>
+<p>Exercise 2.79:Define a generic equality
+predicateequ?that tests the equality of two numbers, and install it in
+the generic arithmetic package. This operation should work for ordinary
+numbers, rational numbers, and complex numbers.</p>
+<p>Exercise 2.80:Define a generic predicate=zero?that tests if its argument is zero, and install it in the generic
+arithmetic package. This operation should work for ordinary numbers, rational
+numbers, and complex numbers.</p>
+</blockquote>
+<h5>2.5.2Combining Data of Different Types</h5>
+<p>We have seen how to define a unified arithmetic system that encompasses
+ordinary numbers, complex numbers, rational numbers, and any other type of
+number we might decide to invent, but we have ignored an important issue. The
+operations we have defined so far treat the different data types as being
+completely independent. Thus, there are separate packages for adding, say, two
+ordinary numbers, or two complex numbers. What we have not yet considered is
+the fact that it is meaningful to define operations that cross the type
+boundaries, such as the addition of a complex number to an ordinary number. We
+have gone to great pains to introduce barriers between parts of our programs so
+that they can be developed and understood separately. We would like to
+introduce the cross-type operations in some carefully controlled way, so that
+we can support them without seriously violating our module boundaries.</p>
+<p>One way to handle cross-type operations is to design a different procedure for
+each possible combination of types for which the operation is valid. For
+example, we could extend the complex-number package so that it provides a
+procedure for adding complex numbers to ordinary numbers and installs this in
+the table using the tag(complex scheme-number):115</p>
+<pre><code class="language-scheme">(define (add-complex-to-schemenum z x)
+ (make-from-real-imag (+ (real-part z) x)
+ (imag-part z)))
+
+(put 'add 
+ '(complex scheme-number)
+ (lambda (z x) 
+ (tag (add-complex-to-schemenum z x))))
+</code></pre>
+<p>This technique works, but it is cumbersome. With such a system, the cost of
+introducing a new type is not just the construction of the package of
+procedures for that type but also the construction and installation of the
+procedures that implement the cross-type operations. This can easily be much
+more code than is needed to define the operations on the type itself. The
+method also undermines our ability to combine separate packages additively, or
+at least to limit the extent to which the implementors of the individual packages
+need to take account of other packages. For instance, in the example above, it
+seems reasonable that handling mixed operations on complex numbers and ordinary
+numbers should be the responsibility of the complex-number package. Combining
+rational numbers and complex numbers, however, might be done by the complex
+package, by the rational package, or by some third package that uses operations
+extracted from these two packages. Formulating coherent policies on the
+division of responsibility among packages can be an overwhelming task in
+designing systems with many packages and many cross-type operations.</p>
+<h6>Coercion</h6>
+<p>In the general situation of completely unrelated operations acting on
+completely unrelated types, implementing explicit cross-type operations,
+cumbersome though it may be, is the best that one can hope for. Fortunately,
+we can usually do better by taking advantage of additional structure that may
+be latent in our type system. Often the different data types are not
+completely independent, and there may be ways by which objects of one type may
+be viewed as being of another type. This process is calledcoercion.
+For example, if we are asked to arithmetically combine an ordinary number with
+a complex number, we can view the ordinary number as a complex number whose
+imaginary part is zero. This transforms the problem to that of combining two
+complex numbers, which can be handled in the ordinary way by the
+complex-arithmetic package.</p>
+<p>In general, we can implement this idea by designing coercion procedures that
+transform an object of one type into an equivalent object of another type.
+Here is a typical coercion procedure, which transforms a given ordinary number
+to a complex number with that real part and zero imaginary part:</p>
+<pre><code class="language-scheme">(define (scheme-number-&gt;complex n)
+ (make-complex-from-real-imag 
+ (contents n) 0))
+</code></pre>
+<p>We install these coercion procedures in a special coercion table, indexed under
+the names of the two types:</p>
+<pre><code class="language-scheme">(put-coercion 'scheme-number 'complex 
+ scheme-number-&gt;complex)
+</code></pre>
+<p>(We assume that there areput-coercionandget-coercionprocedures available for manipulating this table.) Generally some of the slots
+in the table will be empty, because it is not generally possible to coerce an
+arbitrary data object of each type into all other types. For example, there is
+no way to coerce an arbitrary complex number to an ordinary number, so there
+will be no generalcomplex-&gt;scheme-numberprocedure included in the
+table.</p>
+<p>Once the coercion table has been set up, we can handle coercion in a uniform
+manner by modifying theapply-genericprocedure of2.4.3.
+When asked to apply an operation, we first check whether the operation is
+defined for the arguments’ types, just as before. If so, we dispatch to the
+procedure found in the operation-and-type table. Otherwise, we try coercion.
+For simplicity, we consider only the case where there are two
+arguments.116We check the
+coercion table to see if objects of the first type can be coerced to the second
+type. If so, we coerce the first argument and try the operation again. If
+objects of the first type cannot in general be coerced to the second type, we
+try the coercion the other way around to see if there is a way to coerce the
+second argument to the type of the first argument. Finally, if there is no
+known way to coerce either type to the other type, we give up. Here is the
+procedure:</p>
+<pre><code class="language-scheme">(define (apply-generic op . args)
+ (let ((type-tags (map type-tag args)))
+ (let ((proc (get op type-tags)))
+ (if proc
+ (apply proc (map contents args))
+ (if (= (length args) 2)
+ (let ((type1 (car type-tags))
+ (type2 (cadr type-tags))
+ (a1 (car args))
+ (a2 (cadr args)))
+ (let ((t1-&gt;t2 
+ (get-coercion type1
+ type2))
+ (t2-&gt;t1 
+ (get-coercion type2 
+ type1)))
+ (cond (t1-&gt;t2
+ (apply-generic 
+ op (t1-&gt;t2 a1) a2))
+ (t2-&gt;t1
+ (apply-generic 
+ op a1 (t2-&gt;t1 a2)))
+ (else
+ (error 
+ &quot;No method for 
+ these types&quot;
+ (list 
+ op 
+ type-tags))))))
+ (error 
+ &quot;No method for these types&quot;
+ (list op type-tags)))))))
+</code></pre>
+<p>This coercion scheme has many advantages over the method of defining explicit
+cross-type operations, as outlined above. Although we still need to write
+coercion procedures to relate the types (possiblyn2procedures for a
+system withntypes), we need to write only one procedure for each pair of
+types rather than a different procedure for each collection of types and each
+generic operation.117What we are counting on here is the fact
+that the appropriate transformation between types depends only on the types
+themselves, not on the operation to be applied.</p>
+<p>On the other hand, there may be applications for which our coercion scheme is
+not general enough. Even when neither of the objects to be combined can be
+converted to the type of the other it may still be possible to perform the
+operation by converting both objects to a third type. In order to deal with
+such complexity and still preserve modularity in our programs, it is usually
+necessary to build systems that take advantage of still further structure in
+the relations among types, as we discuss next.</p>
+<h6>Hierarchies of types</h6>
+<p>The coercion scheme presented above relied on the existence of natural
+relations between pairs of types. Often there is more “global” structure in
+how the different types relate to each other. For instance, suppose we are
+building a generic arithmetic system to handle integers, rational numbers, real
+numbers, and complex numbers. In such a system, it is quite natural to regard
+an integer as a special kind of rational number, which is in turn a special
+kind of real number, which is in turn a special kind of complex number. What
+we actually have is a so-calledhierarchy of types, in which, for
+example, integers are asubtypeof rational numbers (i.e., any
+operation that can be applied to a rational number can automatically be applied
+to an integer). Conversely, we say that rational numbers form asupertypeof integers. The particular hierarchy we have here is of a
+very simple kind, in which each type has at most one supertype and at most one
+subtype. Such a structure, called atower, is illustrated inFigure 2.25.</p>
+<p><em>[Figure: Figure 2.25:A tower of types.]</em></p>
+<p>If we have a tower structure, then we can greatly simplify the problem of
+adding a new type to the hierarchy, for we need only specify how the new type
+is embedded in the next supertype above it and how it is the supertype of the
+type below it. For example, if we want to add an integer to a complex number,
+we need not explicitly define a special coercion procedureinteger-&gt;complex. Instead, we define how an integer can be transformed
+into a rational number, how a rational number is transformed into a real
+number, and how a real number is transformed into a complex number. We then
+allow the system to transform the integer into a complex number through these
+steps and then add the two complex numbers.</p>
+<p>We can redesign ourapply-genericprocedure in the following way: For
+each type, we need to supply araiseprocedure, which “raises” objects
+of that type one level in the tower. Then when the system is required to
+operate on objects of different types it can successively raise the lower types
+until all the objects are at the same level in the tower. (Exercise 2.83andExercise 2.84concern the details of implementing such a strategy.)</p>
+<p>Another advantage of a tower is that we can easily implement the notion that
+every type “inherits” all operations defined on a supertype. For instance,
+if we do not supply a special procedure for finding the real part of an
+integer, we should nevertheless expect thatreal-partwill be defined
+for integers by virtue of the fact that integers are a subtype of complex
+numbers. In a tower, we can arrange for this to happen in a uniform way by
+modifyingapply-generic. If the required operation is not directly
+defined for the type of the object given, we raise the object to its supertype
+and try again. We thus crawl up the tower, transforming our argument as we go,
+until we either find a level at which the desired operation can be performed or
+hit the top (in which case we give up).</p>
+<p>Yet another advantage of a tower over a more general hierarchy is that it gives
+us a simple way to “lower” a data object to the simplest representation. For
+example, if we add2+3ito4−3i, it would be nice to obtain the
+answer as the integer 6 rather than as the complex number6+0i.Exercise 2.85discusses a way to implement such a lowering operation.
+(The trick is that we need a general way to distinguish those objects that can
+be lowered, such as6+0i, from those that cannot, such as6+2i.)</p>
+<h6>Inadequacies of hierarchies</h6>
+<p>If the data types in our system can be naturally arranged in a tower, this
+greatly simplifies the problems of dealing with generic operations on different
+types, as we have seen. Unfortunately, this is usually not the case.Figure 2.26illustrates a more complex arrangement of mixed types, this
+one showing relations among different types of geometric figures. We see that,
+in general, a type may have more than one subtype. Triangles and
+quadrilaterals, for instance, are both subtypes of polygons. In addition, a
+type may have more than one supertype. For example, an isosceles right
+triangle may be regarded either as an isosceles triangle or as a right
+triangle. This multiple-supertypes issue is particularly thorny, since it
+means that there is no unique way to “raise” a type in the hierarchy.
+Finding the “correct” supertype in which to apply an operation to an object
+may involve considerable searching through the entire type network on the part
+of a procedure such asapply-generic. Since there generally are
+multiple subtypes for a type, there is a similar problem in coercing a value
+“down” the type hierarchy. Dealing with large numbers of interrelated types
+while still preserving modularity in the design of large systems is very
+difficult, and is an area of much current research.118</p>
+<p><em>[Figure: Figure 2.26:Relations among types of geometric figures.]</em></p>
+<blockquote>
+<p>Exercise 2.81:Louis Reasoner has noticed thatapply-genericmay try to coerce the arguments to each other’s type even
+if they already have the same type. Therefore, he reasons, we need to put
+procedures in the coercion table tocoercearguments of each type to
+their own type. For example, in addition to thescheme-number-&gt;complexcoercion shown above, he would do:(define(scheme-number-&gt;scheme-number n)n)(define(complex-&gt;complex z)z)(put-coercion&rsquo;scheme-number&rsquo;scheme-numberscheme-number-&gt;scheme-number)(put-coercion&rsquo;complex&rsquo;complexcomplex-&gt;complex)With Louis’s coercion procedures installed, what happens ifapply-genericis called with two arguments of typescheme-numberor two arguments of typecomplexfor an operation that is not found in
+the table for those types? For example, assume that we’ve defined a generic
+exponentiation operation:(define(exp x y)(apply-generic&rsquo;expx y))and have put a procedure for exponentiation in the Scheme-number
+package but not in any other package:;; following added to Scheme-number package(put&rsquo;exp&rsquo;(scheme-number scheme-number)(lambda(x y)(tag(expt x y)))); using primitiveexptWhat happens if we callexpwith two complex numbers as arguments?Is Louis correct that something had to be done about coercion with arguments of
+the same type, or doesapply-genericwork correctly as is?Modifyapply-genericso that it doesn’t try coercion if the two
+arguments have the same type.</p>
+<p>Exercise 2.82:Show how to generalizeapply-genericto handle coercion in the general case of multiple
+arguments. One strategy is to attempt to coerce all the arguments to the type
+of the first argument, then to the type of the second argument, and so on.
+Give an example of a situation where this strategy (and likewise the
+two-argument version given above) is not sufficiently general. (Hint: Consider
+the case where there are some suitable mixed-type operations present in the
+table that will not be tried.)</p>
+<p>Exercise 2.83:Suppose you are designing a
+generic arithmetic system for dealing with the tower of types shown inFigure 2.25: integer, rational, real, complex. For each type (except
+complex), design a procedure that raises objects of that type one level in the
+tower. Show how to install a genericraiseoperation that will work for
+each type (except complex).</p>
+<p>Exercise 2.84:Using theraiseoperation
+ofExercise 2.83, modify theapply-genericprocedure so that it
+coerces its arguments to have the same type by the method of successive
+raising, as discussed in this section. You will need to devise a way to test
+which of two types is higher in the tower. Do this in a manner that is
+“compatible” with the rest of the system and will not lead to problems in
+adding new levels to the tower.</p>
+<p>Exercise 2.85:This section mentioned a method
+for “simplifying” a data object by lowering it in the tower of types as far
+as possible. Design a proceduredropthat accomplishes this for the
+tower described inExercise 2.83. The key is to decide, in some general
+way, whether an object can be lowered. For example, the complex number1.5+0ican be lowered as far asreal, the complex number1+0ican
+be lowered as far asinteger, and the complex number2+3icannot
+be lowered at all. Here is a plan for determining whether an object can be
+lowered: Begin by defining a generic operationprojectthat “pushes”
+an object down in the tower. For example, projecting a complex number would
+involve throwing away the imaginary part. Then a number can be dropped if,
+when weprojectit andraisethe result back to the type we
+started with, we end up with something equal to what we started with. Show how
+to implement this idea in detail, by writing adropprocedure that drops
+an object as far as possible. You will need to design the various projection
+operations119and
+installprojectas a generic operation in the system. You will also
+need to make use of a generic equality predicate, such as described inExercise 2.79. Finally, usedropto rewriteapply-genericfromExercise 2.84so that it “simplifies” its answers.</p>
+<p>Exercise 2.86:Suppose we want to handle complex
+numbers whose real parts, imaginary parts, magnitudes, and angles can be either
+ordinary numbers, rational numbers, or other numbers we might wish to add to
+the system. Describe and implement the changes to the system needed to
+accommodate this. You will have to define operations such assineandcosinethat are generic over ordinary numbers and rational numbers.</p>
+</blockquote>
+<h5>2.5.3Example: Symbolic Algebra</h5>
+<p>The manipulation of symbolic algebraic expressions is a complex process that
+illustrates many of the hardest problems that occur in the design of
+large-scale systems. An algebraic expression, in general, can be viewed as a
+hierarchical structure, a tree of operators applied to operands. We can
+construct algebraic expressions by starting with a set of primitive objects,
+such as constants and variables, and combining these by means of algebraic
+operators, such as addition and multiplication. As in other languages, we form
+abstractions that enable us to refer to compound objects in simple terms.
+Typical abstractions in symbolic algebra are ideas such as linear combination,
+polynomial, rational function, or trigonometric function. We can regard these
+as compound “types,” which are often useful for directing the processing of
+expressions. For example, we could describe the expressionx2sin⁡(y2+1)+xcos⁡2y+cos⁡(y3−2y2)as a polynomial inxwith coefficients that are trigonometric functions of
+polynomials inywhose coefficients are integers.</p>
+<p>We will not attempt to develop a complete algebraic-manipulation system here.
+Such systems are exceedingly complex programs, embodying deep algebraic
+knowledge and elegant algorithms. What we will do is look at a simple but
+important part of algebraic manipulation: the arithmetic of polynomials. We
+will illustrate the kinds of decisions the designer of such a system faces, and
+how to apply the ideas of abstract data and generic operations to help organize
+this effort.</p>
+<h6>Arithmetic on polynomials</h6>
+<p>Our first task in designing a system for performing arithmetic on polynomials
+is to decide just what a polynomial is. Polynomials are normally defined
+relative to certain variables (theindeterminatesof the polynomial).
+For simplicity, we will restrict ourselves to polynomials having just one
+indeterminate (univariate polynomials).120We will define a polynomial to be a sum of terms, each of
+which is either a coefficient, a power of the indeterminate, or a product of a
+coefficient and a power of the indeterminate. A coefficient is defined as an
+algebraic expression that is not dependent upon the indeterminate of the
+polynomial. For example,5x2+3x+7is a simple polynomial inx, and(y2+1)x3+(2y)x+1is a polynomial inxwhose coefficients are polynomials iny.</p>
+<p>Already we are skirting some thorny issues. Is the first of these polynomials
+the same as the polynomial5y2+3y+7, or not? A reasonable answer
+might be “yes, if we are considering a polynomial purely as a mathematical
+function, but no, if we are considering a polynomial to be a syntactic form.”
+The second polynomial is algebraically equivalent to a polynomial inywhose coefficients are polynomials inx. Should our system recognize this,
+or not? Furthermore, there are other ways to represent a polynomial—for
+example, as a product of factors, or (for a univariate polynomial) as the set
+of roots, or as a listing of the values of the polynomial at a specified set of
+points.121We can finesse these questions by
+deciding that in our algebraic-manipulation system a “polynomial” will be a
+particular syntactic form, not its underlying mathematical meaning.</p>
+<p>Now we must consider how to go about doing arithmetic on polynomials. In this
+simple system, we will consider only addition and multiplication. Moreover, we
+will insist that two polynomials to be combined must have the same
+indeterminate.</p>
+<p>We will approach the design of our system by following the familiar discipline
+of data abstraction. We will represent polynomials using a data structure
+called apoly, which consists of a variable and a collection of
+terms. We assume that we have selectorsvariableandterm-listthat extract those parts from a poly and a constructormake-polythat
+assembles a poly from a given variable and a term list. A variable will be
+just a symbol, so we can use thesame-variable?procedure of2.3.2to compare variables. The following procedures define addition and
+multiplication of polys:</p>
+<pre><code class="language-scheme">(define (add-poly p1 p2)
+ (if (same-variable? (variable p1) 
+ (variable p2))
+ (make-poly 
+ (variable p1)
+ (add-terms (term-list p1)
+ (term-list p2)))
+ (error &quot;Polys not in same var: 
+ ADD-POLY&quot;
+ (list p1 p2))))
+
+(define (mul-poly p1 p2)
+ (if (same-variable? (variable p1) 
+ (variable p2))
+ (make-poly 
+ (variable p1)
+ (mul-terms (term-list p1)
+ (term-list p2)))
+ (error &quot;Polys not in same var: 
+ MUL-POLY&quot;
+ (list p1 p2))))
+</code></pre>
+<p>To incorporate polynomials into our generic arithmetic system, we need to
+supply them with type tags. We’ll use the tagpolynomial, and install
+appropriate operations on tagged polynomials in the operation table. We’ll
+embed all our code in an installation procedure for the polynomial package,
+similar to the ones in2.5.1:</p>
+<pre><code class="language-scheme">(define (install-polynomial-package)
+ ;; internal procedures
+ ;; representation of poly
+ (define (make-poly variable term-list)
+ (cons variable term-list))
+ (define (variable p) (car p))
+ (define (term-list p) (cdr p))
+ ⟨procedures same-variable? 
+ and variable? from section 2.3.2⟩
+
+ ;; representation of terms and term lists
+ ⟨procedures adjoin-term … coeff 
+ from text below⟩
+
+ (define (add-poly p1 p2) …)
+ ⟨procedures used by add-poly⟩
+ (define (mul-poly p1 p2) …)
+ ⟨procedures used by mul-poly⟩
+
+ ;; interface to rest of the system
+ (define (tag p) (attach-tag 'polynomial p))
+ (put 'add '(polynomial polynomial)
+ (lambda (p1 p2) 
+ (tag (add-poly p1 p2))))
+ (put 'mul '(polynomial polynomial)
+ (lambda (p1 p2) 
+ (tag (mul-poly p1 p2))))
+ (put 'make 'polynomial
+ (lambda (var terms) 
+ (tag (make-poly var terms))))
+ 'done)
+</code></pre>
+<p>Polynomial addition is performed termwise. Terms of the same order (i.e., with
+the same power of the indeterminate) must be combined. This is done by forming
+a new term of the same order whose coefficient is the sum of the coefficients
+of the addends. Terms in one addend for which there are no terms of the same
+order in the other addend are simply accumulated into the sum polynomial being
+constructed.</p>
+<p>In order to manipulate term lists, we will assume that we have a constructorthe-empty-termlistthat returns an empty term list and a constructoradjoin-termthat adjoins a new term to a term list. We will also assume
+that we have a predicateempty-termlist?that tells if a given term list
+is empty, a selectorfirst-termthat extracts the highest-order term
+from a term list, and a selectorrest-termsthat returns all but the
+highest-order term. To manipulate terms, we will suppose that we have a
+constructormake-termthat constructs a term with given order and
+coefficient, and selectorsorderandcoeffthat return,
+respectively, the order and the coefficient of the term. These operations
+allow us to consider both terms and term lists as data abstractions, whose
+concrete representations we can worry about separately.</p>
+<p>Here is the procedure that constructs the term list for the sum of two
+polynomials:122</p>
+<pre><code class="language-scheme">(define (add-terms L1 L2)
+ (cond ((empty-termlist? L1) L2)
+ ((empty-termlist? L2) L1)
+ (else
+ (let ((t1 (first-term L1)) 
+ (t2 (first-term L2)))
+ (cond ((&gt; (order t1) (order t2))
+ (adjoin-term
+ t1 
+ (add-terms (rest-terms L1) 
+ L2)))
+ ((&lt; (order t1) (order t2))
+ (adjoin-term
+ t2 
+ (add-terms 
+ L1 
+ (rest-terms L2))))
+ (else
+ (adjoin-term
+ (make-term 
+ (order t1)
+ (add (coeff t1) 
+ (coeff t2)))
+ (add-terms 
+ (rest-terms L1)
+ (rest-terms L2)))))))))
+</code></pre>
+<p>The most important point to note here is that we used the generic addition
+procedureaddto add together the coefficients of the terms being
+combined. This has powerful consequences, as we will see below.</p>
+<p>In order to multiply two term lists, we multiply each term of the first list by
+all the terms of the other list, repeatedly usingmul-term-by-all-terms,
+which multiplies a given term by all terms in a given term list. The resulting
+term lists (one for each term of the first list) are accumulated into a sum.
+Multiplying two terms forms a term whose order is the sum of the orders of the
+factors and whose coefficient is the product of the coefficients of the
+factors:</p>
+<pre><code class="language-scheme">(define (mul-terms L1 L2)
+ (if (empty-termlist? L1)
+ (the-empty-termlist)
+ (add-terms 
+ (mul-term-by-all-terms 
+ (first-term L1) L2)
+ (mul-terms (rest-terms L1) L2))))
+
+(define (mul-term-by-all-terms t1 L)
+ (if (empty-termlist? L)
+ (the-empty-termlist)
+ (let ((t2 (first-term L)))
+ (adjoin-term
+ (make-term 
+ (+ (order t1) (order t2))
+ (mul (coeff t1) (coeff t2)))
+ (mul-term-by-all-terms 
+ t1 
+ (rest-terms L))))))
+</code></pre>
+<p>This is really all there is to polynomial addition and multiplication. Notice
+that, since we operate on terms using the generic proceduresaddandmul, our polynomial package is automatically able to handle any type of
+coefficient that is known about by the generic arithmetic package. If we
+include a coercion mechanism such as one of those discussed in2.5.2, then we also are automatically able to handle operations on
+polynomials of different coefficient types, such as[3x2+(2+3i)x+7]⋅[x4+23x2+(5+3i)].Because we installed the polynomial addition and multiplication proceduresadd-polyandmul-polyin the generic arithmetic system as theaddandmuloperations for typepolynomial, our system is
+also automatically able to handle polynomial operations such as[(y+1)x2+(y2+1)x+(y−1)]⋅[(y−2)x+(y3+7)].The reason is that when the system tries to combine coefficients, it will
+dispatch throughaddandmul. Since the coefficients are
+themselves polynomials (iny), these will be combined usingadd-polyandmul-poly. The result is a kind of “data-directed recursion” in
+which, for example, a call tomul-polywill result in recursive calls tomul-polyin order to multiply the coefficients. If the coefficients of
+the coefficients were themselves polynomials (as might be used to represent
+polynomials in three variables), the data direction would ensure that the
+system would follow through another level of recursive calls, and so on through
+as many levels as the structure of the data dictates.123</p>
+<h6>Representing term lists</h6>
+<p>Finally, we must confront the job of implementing a good representation for
+term lists. A term list is, in effect, a set of coefficients keyed by the
+order of the term. Hence, any of the methods for representing sets, as
+discussed in2.3.3, can be applied to this task. On the other
+hand, our proceduresadd-termsandmul-termsalways access term
+lists sequentially from highest to lowest order. Thus, we will use some kind
+of ordered list representation.</p>
+<p>How should we structure the list that represents a term list? One
+consideration is the “density” of the polynomials we intend to manipulate. A
+polynomial is said to bedenseif it has nonzero coefficients in
+terms of most orders. If it has many zero terms it is said to besparse. For example,A:x5+2x4+3x2−2x−5is a dense polynomial, whereasB:x100+2x2+1is sparse.</p>
+<p>The term lists of dense polynomials are most efficiently represented as lists
+of the coefficients. For example,Aabove would be nicely represented as(1 2 0 3 -2 -5). The order of a term in this representation is the
+length of the sublist beginning with that term’s coefficient, decremented by
+1.124This would be a terrible representation for
+a sparse polynomial such asB: There would be a giant list of zeros
+punctuated by a few lonely nonzero terms. A more reasonable representation of
+the term list of a sparse polynomial is as a list of the nonzero terms, where
+each term is a list containing the order of the term and the coefficient for
+that order. In such a scheme, polynomialBis efficiently represented as((100 1) (2 2) (0 1)). As most polynomial manipulations are performed
+on sparse polynomials, we will use this method. We will assume that term lists
+are represented as lists of terms, arranged from highest-order to lowest-order
+term. Once we have made this decision, implementing the selectors and
+constructors for terms and term lists is straightforward:125</p>
+<pre><code class="language-scheme">(define (adjoin-term term term-list)
+ (if (=zero? (coeff term))
+ term-list
+ (cons term term-list)))
+(define (the-empty-termlist) '())
+(define (first-term term-list) (car term-list))
+(define (rest-terms term-list) (cdr term-list))
+(define (empty-termlist? term-list) 
+ (null? term-list))
+(define (make-term order coeff) 
+ (list order coeff))
+(define (order term) (car term))
+(define (coeff term) (cadr term))
+</code></pre>
+<p>where=zero?is as defined inExercise 2.80. (See alsoExercise 2.87below.)</p>
+<p>Users of the polynomial package will create (tagged) polynomials by means of
+the procedure:</p>
+<pre><code class="language-scheme">(define (make-polynomial var terms)
+ ((get 'make 'polynomial) var terms))
+</code></pre>
+<blockquote>
+<p>Exercise 2.87:Install=zero?for
+polynomials in the generic arithmetic package. This will allowadjoin-termto work for polynomials with coefficients that are
+themselves polynomials.</p>
+<p>Exercise 2.88:Extend the polynomial system to
+include subtraction of polynomials. (Hint: You may find it helpful to define a
+generic negation operation.)</p>
+<p>Exercise 2.89:Define procedures that implement
+the term-list representation described above as appropriate for dense
+polynomials.</p>
+<p>Exercise 2.90:Suppose we want to have a
+polynomial system that is efficient for both sparse and dense polynomials. One
+way to do this is to allow both kinds of term-list representations in our
+system. The situation is analogous to the complex-number example of2.4, where we allowed both rectangular and polar representations. To do
+this we must distinguish different types of term lists and make the operations
+on term lists generic. Redesign the polynomial system to implement this
+generalization. This is a major effort, not a local change.</p>
+<p>Exercise 2.91:A univariate polynomial can be
+divided by another one to produce a polynomial quotient and a polynomial
+remainder. For example,x5−1x2−1=x3+x,remainderx−1.Division can be performed via long division. That is, divide the highest-order
+term of the dividend by the highest-order term of the divisor. The result is
+the first term of the quotient. Next, multiply the result by the divisor,
+subtract that from the dividend, and produce the rest of the answer by
+recursively dividing the difference by the divisor. Stop when the order of the
+divisor exceeds the order of the dividend and declare the dividend to be the
+remainder. Also, if the dividend ever becomes zero, return zero as both
+quotient and remainder.We can design adiv-polyprocedure on the model ofadd-polyandmul-poly. The procedure checks to see if the two polys have the same
+variable. If so,div-polystrips off the variable and passes the
+problem todiv-terms, which performs the division operation on term
+lists.Div-polyfinally reattaches the variable to the result supplied
+bydiv-terms. It is convenient to designdiv-termsto compute
+both the quotient and the remainder of a division.Div-termscan take
+two term lists as arguments and return a list of the quotient term list and the
+remainder term list.Complete the following definition ofdiv-termsby filling in the missing
+expressions. Use this to implementdiv-poly, which takes two polys as
+arguments and returns a list of the quotient and remainder polys.(define(div-terms L1 L2)(if(empty-termlist? L1)(list(the-empty-termlist)(the-empty-termlist))(let((t1(first-term L1))(t2(first-term L2)))(if(&gt;(order t2)(order t1))(list(the-empty-termlist)L1)(let((new-c(div(coeff t1)(coeff t2)))(new-o(-(order t1)(order t2))))(let((rest-of-result
+⟨compute rest of result 
+recursively⟩))⟨form complete result⟩))))))</p>
+</blockquote>
+<h6>Hierarchies of types in symbolic algebra</h6>
+<p>Our polynomial system illustrates how objects of one type (polynomials) may in
+fact be complex objects that have objects of many different types as parts.
+This poses no real difficulty in defining generic operations. We need only
+install appropriate generic operations for performing the necessary
+manipulations of the parts of the compound types. In fact, we saw that
+polynomials form a kind of “recursive data abstraction,” in that parts of a
+polynomial may themselves be polynomials. Our generic operations and our
+data-directed programming style can handle this complication without much
+trouble.</p>
+<p>On the other hand, polynomial algebra is a system for which the data types
+cannot be naturally arranged in a tower. For instance, it is possible to have
+polynomials inxwhose coefficients are polynomials iny. It is also
+possible to have polynomials inywhose coefficients are polynomials inx. Neither of these types is “above” the other in any natural way, yet
+it is often necessary to add together elements from each set. There are
+several ways to do this. One possibility is to convert one polynomial to the
+type of the other by expanding and rearranging terms so that both polynomials
+have the same principal variable. One can impose a towerlike structure on this
+by ordering the variables and thus always converting any polynomial to a
+“canonical form” with the highest-priority variable dominant and the
+lower-priority variables buried in the coefficients. This strategy works
+fairly well, except that the conversion may expand a polynomial unnecessarily,
+making it hard to read and perhaps less efficient to work with. The tower
+strategy is certainly not natural for this domain or for any domain where the
+user can invent new types dynamically using old types in various combining
+forms, such as trigonometric functions, power series, and integrals.</p>
+<p>It should not be surprising that controlling coercion is a serious problem in
+the design of large-scale algebraic-manipulation systems. Much of the
+complexity of such systems is concerned with relationships among diverse types.
+Indeed, it is fair to say that we do not yet completely understand coercion.
+In fact, we do not yet completely understand the concept of a data type.
+Nevertheless, what we know provides us with powerful structuring and modularity
+principles to support the design of large systems.</p>
+<blockquote>
+<p>Exercise 2.92:By imposing an ordering on
+variables, extend the polynomial package so that addition and multiplication of
+polynomials works for polynomials in different variables. (This is not easy!)</p>
+</blockquote>
+<h6>Extended exercise: Rational functions</h6>
+<p>We can extend our generic arithmetic system to includerational functions. 
+These are “fractions” whose numerator and denominator are
+polynomials, such asx+1x3−1.The system should be able to add, subtract, multiply, and divide rational
+functions, and to perform such computations asx+1x3−1+xx2−1=x3+2x2+3x+1x4+x3−x−1.(Here the sum has been simplified by removing common factors. Ordinary “cross
+multiplication” would have produced a fourth-degree polynomial over a
+fifth-degree polynomial.)</p>
+<p>If we modify our rational-arithmetic package so that it uses generic
+operations, then it will do what we want, except for the problem of reducing
+fractions to lowest terms.</p>
+<blockquote>
+<p>Exercise 2.93:Modify the rational-arithmetic
+package to use generic operations, but changemake-ratso that it does
+not attempt to reduce fractions to lowest terms. Test your system by callingmake-rationalon two polynomials to produce a rational function:(definep1(make-polynomial&rsquo;x&rsquo;((21)(01))))(definep2(make-polynomial&rsquo;x&rsquo;((31)(01))))(definerf(make-rational p2 p1))Now addrfto itself, usingadd. You will observe that this
+addition procedure does not reduce fractions to lowest terms.</p>
+</blockquote>
+<p>We can reduce polynomial fractions to lowest terms using the same idea we used
+with integers: modifyingmake-ratto divide both the numerator and the
+denominator by their greatest common divisor. The notion of “greatest common
+divisor” makes sense for polynomials. In fact, we can compute theGCDof two polynomials using essentially the same Euclid’s Algorithm
+that works for integers.126The integer version is</p>
+<pre><code class="language-scheme">(define (gcd a b)
+ (if (= b 0)
+ a
+ (gcd b (remainder a b))))
+</code></pre>
+<p>Using this, we could make the obvious modification to define aGCDoperation that works on term lists:</p>
+<pre><code class="language-scheme">(define (gcd-terms a b)
+ (if (empty-termlist? b)
+ a
+ (gcd-terms b (remainder-terms a b))))
+</code></pre>
+<p>whereremainder-termspicks out the remainder component of the list
+returned by the term-list division operationdiv-termsthat was
+implemented inExercise 2.91.</p>
+<blockquote>
+<p>Exercise 2.94:Usingdiv-terms, implement
+the procedureremainder-termsand use this to definegcd-termsas
+above. Now write a proceduregcd-polythat computes the polynomialGCDof two polys. (The procedure should signal an error if the two
+polys are not in the same variable.) Install in the system a generic operationgreatest-common-divisorthat reduces togcd-polyfor polynomials
+and to ordinarygcdfor ordinary numbers. As a test, try(definep1(make-polynomial&rsquo;x&rsquo;((41)(3-1)(2-2)(12))))(definep2(make-polynomial&rsquo;x&rsquo;((31)(1-1))))(greatest-common-divisor p1 p2)and check your result by hand.</p>
+<p>Exercise 2.95:DefineP1,P2, andP3to be the polynomialsP1:x2−2x+1,P2:11x2+7,P3:13x+5.Now defineQ1to be the product ofP1andP2, andQ2to be
+the product ofP1andP3, and usegreatest-common-divisor(Exercise 2.94) to compute theGCDofQ1andQ2.
+Note that the answer is not the same asP1. This example introduces
+noninteger operations into the computation, causing difficulties with theGCDalgorithm.127To understand what is happening, try tracinggcd-termswhile computing theGCDor try performing the
+division by hand.</p>
+</blockquote>
+<p>We can solve the problem exhibited inExercise 2.95if we use the
+following modification of theGCDalgorithm (which really works only
+in the case of polynomials with integer coefficients). Before performing any
+polynomial division in theGCDcomputation, we multiply the dividend
+by an integer constant factor, chosen to guarantee that no fractions will arise
+during the division process. Our answer will thus differ from the actualGCDby an integer constant factor, but this does not matter in the
+case of reducing rational functions to lowest terms; theGCDwill be
+used to divide both the numerator and denominator, so the integer constant
+factor will cancel out.</p>
+<p>More precisely, ifPandQare polynomials, letO1be the order ofP(i.e., the order of the largest term ofP) and letO2be the
+order ofQ. Letcbe the leading coefficient ofQ. Then it can be
+shown that, if we multiplyPby theintegerizingfactorc1+O1−O2, the resulting polynomial can be divided byQby
+using thediv-termsalgorithm without introducing any fractions. The
+operation of multiplying the dividend by this constant and then dividing is
+sometimes called thepseudodivisionofPbyQ. The remainder
+of the division is called thepseudoremainder.</p>
+<blockquote>
+<p>Exercise 2.96:Implement the procedurepseudoremainder-terms, which is just likeremainder-termsexcept that it multiplies the dividend by the
+integerizing factor described above before callingdiv-terms. Modifygcd-termsto usepseudoremainder-terms, and verify thatgreatest-common-divisornow produces an answer with integer coefficients
+on the example inExercise 2.95.TheGCDnow has integer coefficients, but they are larger than those
+ofP1. Modifygcd-termsso that it removes common factors from the
+coefficients of the answer by dividing all the coefficients by their (integer)
+greatest common divisor.</p>
+</blockquote>
+<p>Thus, here is how to reduce a rational function to lowest terms:
+- Compute theGCDof the numerator and denominator, using the version
+ofgcd-termsfromExercise 2.96.- When you obtain theGCD, multiply both numerator and denominator by
+the same integerizing factor before dividing through by theGCD, so
+that division by theGCDwill not introduce any noninteger
+coefficients. As the factor you can use the leading coefficient of theGCDraised to the power1+O1−O2, whereO2is the
+order of theGCDandO1is the maximum of the orders of the
+numerator and denominator. This will ensure that dividing the numerator and
+denominator by theGCDwill not introduce any fractions.- The result of this operation will be a numerator and denominator with integer
+coefficients. The coefficients will normally be very large because of all of
+the integerizing factors, so the last step is to remove the redundant factors
+by computing the (integer) greatest common divisor of all the coefficients of
+the numerator and the denominator and dividing through by this factor.</p>
+<blockquote>
+<p>Exercise 2.97:Implement this algorithm as a procedurereduce-termsthat takes two term
+listsnanddas arguments and returns a listnn,dd, which arenanddreduced to lowest terms via the
+algorithm given above. Also write a procedurereduce-poly, analogous toadd-poly, that checks to see if the two polys have the same variable.
+If so,reduce-polystrips off the variable and passes the problem toreduce-terms, then reattaches the variable to the two term lists
+supplied byreduce-terms.Define a procedure analogous toreduce-termsthat does what the originalmake-ratdid for integers:(define(reduce-integers n d)(let((g(gcd n d)))(list(/n g)(/d g))))and definereduceas a generic operation that callsapply-genericto dispatch to eitherreduce-poly(forpolynomialarguments) orreduce-integers(forscheme-numberarguments). You can now
+easily make the rational-arithmetic package reduce fractions to lowest terms by
+havingmake-ratcallreducebefore combining the given numerator
+and denominator to form a rational number. The system now handles rational
+expressions in either integers or polynomials. To test your program, try the
+example at the beginning of this extended exercise:(definep1(make-polynomial&rsquo;x&rsquo;((11)(01))))(definep2(make-polynomial&rsquo;x&rsquo;((31)(0-1))))(definep3(make-polynomial&rsquo;x&rsquo;((11))))(definep4(make-polynomial&rsquo;x&rsquo;((21)(0-1))))(definerf1(make-rational p1 p2))(definerf2(make-rational p3 p4))(add rf1 rf2)See if you get the correct answer, correctly reduced to lowest terms.</p>
+</blockquote>
+<p>TheGCDcomputation is at the heart of any system that does
+operations on rational functions. The algorithm used above, although
+mathematically straightforward, is extremely slow. The slowness is due partly
+to the large number of division operations and partly to the enormous size of
+the intermediate coefficients generated by the pseudodivisions. One of the
+active areas in the development of algebraic-manipulation systems is the design
+of better algorithms for computing polynomialGCDs.128</p>
+<h5>Footnotes</h5>
+<p>115We also have
+to supply an almost identical procedure to handle the types(scheme-number complex).</p>
+<p>116SeeExercise 2.82for generalizations.</p>
+<p>117If we are clever, we can usually get by with fewer
+thann2coercion procedures. For instance, if we know how to convert from
+type 1 to type 2 and from type 2 to type 3, then we can use this knowledge to
+convert from type 1 to type 3. This can greatly decrease the number of
+coercion procedures we need to supply explicitly when we add a new type to the
+system. If we are willing to build the required amount of sophistication into
+our system, we can have it search the “graph” of relations among types and
+automatically generate those coercion procedures that can be inferred from the
+ones that are supplied explicitly.</p>
+<p>118This statement,
+which also appears in the first edition of this book, is just as true now as it
+was when we wrote it twelve years ago. Developing a useful, general framework
+for expressing the relations among different types of entities (what
+philosophers call “ontology”) seems intractably difficult. The main
+difference between the confusion that existed ten years ago and the confusion
+that exists now is that now a variety of inadequate ontological theories have
+been embodied in a plethora of correspondingly inadequate programming
+languages. For example, much of the complexity of object-oriented programming
+languages—and the subtle and confusing differences among contemporary
+object-oriented languages—centers on the treatment of generic operations on
+interrelated types. Our own discussion of computational objects inChapter 3avoids these issues entirely. Readers familiar with
+object-oriented programming will notice that we have much to say in
+chapter 3 about local state, but we do not even mention “classes” or
+“inheritance.” In fact, we suspect that these problems cannot be adequately
+addressed in terms of computer-language design alone, without also drawing on
+work in knowledge representation and automated reasoning.</p>
+<p>119A real number can be projected to an integer using theroundprimitive, which returns the closest integer to its argument.</p>
+<p>120On the other hand,
+we will allow polynomials whose coefficients are themselves polynomials in
+other variables. This will give us essentially the same representational power
+as a full multivariate system, although it does lead to coercion problems, as
+discussed below.</p>
+<p>121For univariate polynomials, giving the value of a polynomial
+at a given set of points can be a particularly good representation. This makes
+polynomial arithmetic extremely simple. To obtain, for example, the sum of two
+polynomials represented in this way, we need only add the values of the
+polynomials at corresponding points. To transform back to a more familiar
+representation, we can use the Lagrange interpolation formula, which shows how
+to recover the coefficients of a polynomial of degreengiven the values of
+the polynomial atn+1points.</p>
+<p>122This operation is very much like the orderedunion-setoperation we developed inExercise 2.62. In
+fact, if we think of the terms of the polynomial as a set ordered according to
+the power of the indeterminate, then the program that produces the term list
+for a sum is almost identical tounion-set.</p>
+<p>123To make this
+work completely smoothly, we should also add to our generic arithmetic system
+the ability to coerce a “number” to a polynomial by regarding it as a
+polynomial of degree zero whose coefficient is the number. This is necessary
+if we are going to perform operations such as[x2+(y+1)x+5]+[x2+2x+1],which requires adding the coefficienty+1to the coefficient 2.</p>
+<p>124In these polynomial examples, we assume that we have implemented
+the generic arithmetic system using the type mechanism suggested inExercise 2.78. Thus, coefficients that are ordinary numbers will be
+represented as the numbers themselves rather than as pairs whosecaris
+the symbolscheme-number.</p>
+<p>125Although we
+are assuming that term lists are ordered, we have implementedadjoin-termto simplyconsthe new term onto the existing term
+list. We can get away with this so long as we guarantee that the procedures
+(such asadd-terms) that useadjoin-termalways call it with a
+higher-order term than appears in the list. If we did not want to make such a
+guarantee, we could have implementedadjoin-termto be similar to theadjoin-setconstructor for the ordered-list representation of sets
+(Exercise 2.61).</p>
+<p>126The fact that Euclid’s Algorithm works for
+polynomials is formalized in algebra by saying that polynomials form a kind of
+algebraic domain called aEuclidean ring. A Euclidean ring is a
+domain that admits addition, subtraction, and commutative multiplication,
+together with a way of assigning to each elementxof the ring a positive
+integer “measure”m(x)with the properties thatm(xy)≥m(x)for any nonzeroxandyand that, given anyxandy, there exists aqsuch thaty=qx+rand eitherr=0orm(r)&lt;m(x). From an abstract point of view, this
+is what is needed to prove that Euclid’s Algorithm works. For the domain of
+integers, the measuremof an integer is the absolute value of the integer
+itself. For the domain of polynomials, the measure of a polynomial is its
+degree.</p>
+<p>127In an implementation likeMITScheme, this produces a polynomial that is indeed a divisor ofQ1andQ2, but with rational coefficients. In many other Scheme systems, in
+which division of integers can produce limited-precision decimal numbers, we
+may fail to get a valid divisor.</p>
+<p>128One
+extremely efficient and elegant method for computing polynomialGCDs
+was discovered by RichardZippel (1979). The method is a probabilistic
+algorithm, as is the fast test for primality that we discussed inChapter 1. Zippel’s book (Zippel 1993) describes this method, together with other ways to
+compute polynomialGCDs.</p>
+<div class="source-note">
+  <p>Adapted from <em>Structure and Interpretation of Computer Programs</em>
+  by Harold Abelson and Gerald Jay Sussman (MIT Press, 1996).
+  Original Scheme examples translated to Python.</p>
+</div>
+</body>
+</html>

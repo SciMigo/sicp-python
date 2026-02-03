@@ -1,0 +1,27 @@
+{
+  "id": "03-recursive-functions",
+  "title": "Recursive Functions",
+  "subtitle": "Recursive vs iterative processes, tree recursion, and memoization",
+  "chapter": "1.8",
+  "description": "Understand recursive function definitions, trace call stacks, and distinguish linear from tree recursion. Learn when recursion leads to exponential blowup and how memoization tames it.",
+  "estimatedMinutes": 40,
+  "prerequisites": ["02-environment-diagrams"],
+
+  "generation": {
+    "minSlides": 8,
+    "maxSlides": 10,
+    "targetSeconds": 420,
+    "preset": "sicp_interactive",
+    "referenceFiles": ["1.2-procedures-and-processes.md"],
+    "diagramTemplates": ["call_stack", "tree_recursion"],
+    "interactionCheckpoints": 2,
+    "enableFragments": true,
+    "enableImages": true,
+    "imageStyle": "clean technical diagram, minimalist, white background",
+    "pyodideEnabled": true
+  },
+
+  "lab": {
+    "exercises": ["1.11", "1.12", "1.13"]
+  }
+}

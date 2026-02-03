@@ -1,0 +1,27 @@
+{
+  "id": "06-trees",
+  "title": "Trees",
+  "subtitle": "Recursive data structures and tree traversal patterns",
+  "chapter": "2.5",
+  "description": "Represent hierarchical data as trees. Learn the tree ADT (constructor + selectors), and master recursive patterns for aggregation, transformation, and search over tree structures.",
+  "estimatedMinutes": 40,
+  "prerequisites": ["05-sequences"],
+
+  "generation": {
+    "minSlides": 8,
+    "maxSlides": 10,
+    "targetSeconds": 420,
+    "preset": "sicp_interactive",
+    "referenceFiles": ["2.2-hierarchical-data.md"],
+    "diagramTemplates": ["tree_structure", "tree_recursion"],
+    "interactionCheckpoints": 2,
+    "enableFragments": true,
+    "enableImages": true,
+    "imageStyle": "clean technical diagram, minimalist, white background",
+    "pyodideEnabled": true
+  },
+
+  "lab": {
+    "exercises": ["2.24", "2.25", "2.26"]
+  }
+}

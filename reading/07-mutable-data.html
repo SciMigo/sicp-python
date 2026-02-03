@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mutable Data — SICP in Python</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters: [
+    {left: '$$', right: '$$', display: true},
+    {left: '$', right: '$', display: false}
+  ]});">
+</script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a2e;
+    --code-bg: #f4f4f8;
+    --border: #e0e0e8;
+    --accent: #4a6fa5;
+    --heading: #16213e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a2e;
+      --fg: #e0e0e8;
+      --code-bg: #16213e;
+      --border: #2a2a4e;
+      --accent: #7ba4d9;
+      --heading: #a8c8f0;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--fg);
+    background: var(--bg);
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  h1 {
+    font-size: 1.8rem;
+    color: var(--heading);
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent);
+  }
+  h2 {
+    font-size: 1.4rem;
+    color: var(--heading);
+    margin: 2rem 0 0.8rem;
+  }
+  h3 {
+    font-size: 1.15rem;
+    color: var(--heading);
+    margin: 1.5rem 0 0.6rem;
+  }
+  p {
+    margin: 0.8rem 0;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 1rem 0;
+  }
+  code {
+    font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 0.9em;
+    background: var(--code-bg);
+    padding: 0.15em 0.35em;
+    border-radius: 3px;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  blockquote {
+    border-left: 4px solid var(--accent);
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
+    color: var(--fg);
+    opacity: 0.85;
+  }
+  ul, ol {
+    margin: 0.8rem 0;
+    padding-left: 1.5rem;
+  }
+  li {
+    margin: 0.3rem 0;
+  }
+  em { font-style: italic; }
+  strong { font-weight: 700; }
+  .source-note {
+    font-size: 0.85rem;
+    color: var(--fg);
+    opacity: 0.6;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<h1>Mutable Data</h1>
+<p>⇡</p>
+<h4>3.1Assignment and Local State</h4>
+<p>We ordinarily view the world as populated by independent objects, each of which
+has a state that changes over time. An object is said to “have state” if its
+behavior is influenced by its history. A bank account, for example, has state
+in that the answer to the question “Can I withdraw $100?” depends upon the
+history of deposit and withdrawal transactions. We can characterize an
+object’s state by one or morestate variables, which among them
+maintain enough information about history to determine the object’s current
+behavior. In a simple banking system, we could characterize the state of an
+account by a current balance rather than by remembering the entire history of
+account transactions.</p>
+<p>In a system composed of many objects, the objects are rarely completely
+independent. Each may influence the states of others through interactions,
+which serve to couple the state variables of one object to those of other
+objects. Indeed, the view that a system is composed of separate objects is
+most useful when the state variables of the system can be grouped into closely
+coupled subsystems that are only loosely coupled to other subsystems.</p>
+<p>This view of a system can be a powerful framework for organizing computational
+models of the system. For such a model to be modular, it should be decomposed
+into computational objects that model the actual objects in the system. Each
+computational object must have its ownlocal state variablesdescribing the actual object’s state. Since the states of objects in the
+system being modeled change over time, the state variables of the corresponding
+computational objects must also change. If we choose to model the flow of time
+in the system by the elapsed time in the computer, then we must have a way to
+construct computational objects whose behaviors change as our programs run. In
+particular, if we wish to model state variables by ordinary symbolic names in
+the programming language, then the language must provide anassignment operatorto enable us to change the value associated with a name.</p>
+<h5>3.1.1Local State Variables</h5>
+<p>To illustrate what we mean by having a computational object with time-varying
+state, let us model the situation of withdrawing money from a bank account. We
+will do this using a procedurewithdraw, which takes as argument anamountto be withdrawn. If there is enough money in the account to
+accommodate the withdrawal, thenwithdrawshould return the balance
+remaining after the withdrawal. Otherwise,withdrawshould return the
+messageInsufficient funds. For example, if we begin with $100 in the
+account, we should obtain the following sequence of responses usingwithdraw:</p>
+<pre><code class="language-scheme">(withdraw 25)
+75
+
+(withdraw 25)
+50
+
+(withdraw 60)
+&quot;Insufficient funds&quot;
+
+(withdraw 15)
+35
+</code></pre>
+<p>Observe that the expression(withdraw 25), evaluated twice, yields
+different values. This is a new kind of behavior for a procedure. Until now,
+all our procedures could be viewed as specifications for computing mathematical
+functions. A call to a procedure computed the value of the function applied to
+the given arguments, and two calls to the same procedure with the same
+arguments always produced the same result.129</p>
+<p>To implementwithdraw, we can use a variablebalanceto indicate
+the balance of money in the account and definewithdrawas a procedure
+that accessesbalance. Thewithdrawprocedure checks to see ifbalanceis at least as large as the requestedamount. If so,withdrawdecrementsbalancebyamountand returns the new
+value ofbalance. Otherwise,withdrawreturns theInsufficient fundsmessage. Here are the definitions ofbalanceandwithdraw:</p>
+<pre><code class="language-scheme">(define balance 100)
+
+(define (withdraw amount)
+ (if (&gt;= balance amount)
+ (begin (set! balance (- balance amount))
+ balance)
+ &quot;Insufficient funds&quot;))
+</code></pre>
+<p>Decrementingbalanceis accomplished by the expression</p>
+<pre><code class="language-scheme">(set! balance (- balance amount))
+</code></pre>
+<p>This uses theset!special form, whose syntax is</p>
+<pre><code class="language-scheme">(set! ⟨name⟩ ⟨new-value⟩)
+</code></pre>
+<p>Here⟨name⟩is a symbol and⟨new-value⟩is any expression.Set!changes⟨name⟩so that its value is the result obtained by
+evaluating⟨new-value⟩. In the case at hand, we are changingbalanceso that its new value will be the result of subtractingamountfrom the previous value ofbalance.130</p>
+<p>Withdrawalso uses thebeginspecial form to cause two
+expressions to be evaluated in the case where theiftest is true: first
+decrementingbalanceand then returning the value ofbalance. In
+general, evaluating the expression</p>
+<pre><code class="language-scheme">(begin ⟨exp₁⟩ ⟨exp₂⟩ … ⟨expₖ⟩)
+</code></pre>
+<p>causes the expressions⟨exp1⟩through⟨expk⟩to be evaluated
+in sequence and the value of the final expression⟨expk⟩to be
+returned as the value of the entirebeginform.131</p>
+<p>Althoughwithdrawworks as desired, the variablebalancepresents
+a problem. As specified above,balanceis a name defined in the global
+environment and is freely accessible to be examined or modified by any
+procedure. It would be much better if we could somehow makebalanceinternal towithdraw, so thatwithdrawwould be the only
+procedure that could accessbalancedirectly and any other procedure
+could accessbalanceonly indirectly (through calls towithdraw).
+This would more accurately model the notion thatbalanceis a local
+state variable used bywithdrawto keep track of the state of the
+account.</p>
+<p>We can makebalanceinternal towithdrawby rewriting the
+definition as follows:</p>
+<pre><code class="language-scheme">(define new-withdraw
+ (let ((balance 100))
+ (lambda (amount)
+ (if (&gt;= balance amount)
+ (begin (set! balance 
+ (- balance amount))
+ balance)
+ &quot;Insufficient funds&quot;))))
+</code></pre>
+<p>What we have done here is useletto establish an environment with a
+local variablebalance, bound to the initial value 100. Within this
+local environment, we uselambdato create a procedure that takesamountas an argument and behaves like our previouswithdrawprocedure. This procedure—returned as the result of evaluating theletexpression—isnew-withdraw, which behaves in precisely the
+same way aswithdrawbut whose variablebalanceis not accessible
+by any other procedure.132</p>
+<p>Combiningset!with local variables is the general programming technique
+we will use for constructing computational objects with local state.
+Unfortunately, using this technique raises a serious problem: When we first
+introduced procedures, we also introduced the substitution model of evaluation
+(1.1.5) to provide an interpretation of what procedure
+application means. We said that applying a procedure should be interpreted as
+evaluating the body of the procedure with the formal parameters replaced by
+their values. The trouble is that, as soon as we introduce assignment into our
+language, substitution is no longer an adequate model of procedure application.
+(We will see why this is so in3.1.3.) As a consequence, we
+technically have at this point no way to understand why thenew-withdrawprocedure behaves as claimed above. In order to really understand a procedure
+such asnew-withdraw, we will need to develop a new model of procedure
+application. In3.2we will introduce such a model, together
+with an explanation ofset!and local variables. First, however, we
+examine some variations on the theme established bynew-withdraw.</p>
+<p>The following procedure,make-withdraw, creates “withdrawal
+processors.” The formal parameterbalanceinmake-withdrawspecifies the initial amount of money in the account.133</p>
+<pre><code class="language-scheme">(define (make-withdraw balance)
+ (lambda (amount)
+ (if (&gt;= balance amount)
+ (begin (set! balance 
+ (- balance amount))
+ balance)
+ &quot;Insufficient funds&quot;)))
+</code></pre>
+<p>Make-withdrawcan be used as follows to create two objectsW1andW2:</p>
+<pre><code class="language-scheme">(define W1 (make-withdraw 100))
+(define W2 (make-withdraw 100))
+
+(W1 50)
+50
+
+(W2 70)
+30
+
+(W2 40)
+&quot;Insufficient funds&quot;
+
+(W1 40)
+10
+</code></pre>
+<p>Observe thatW1andW2are completely independent objects, each
+with its own local state variablebalance. Withdrawals from one do not
+affect the other.</p>
+<p>We can also create objects that handle deposits as well as withdrawals, and
+thus we can represent simple bank accounts. Here is a procedure that returns a
+“bank-account object” with a specified initial balance:</p>
+<pre><code class="language-scheme">(define (make-account balance)
+ (define (withdraw amount)
+ (if (&gt;= balance amount)
+ (begin (set! balance 
+ (- balance amount))
+ balance)
+ &quot;Insufficient funds&quot;))
+ (define (deposit amount)
+ (set! balance (+ balance amount))
+ balance)
+ (define (dispatch m)
+ (cond ((eq? m 'withdraw) withdraw)
+ ((eq? m 'deposit) deposit)
+ (else (error &quot;Unknown request: 
+ MAKE-ACCOUNT&quot; m))))
+ dispatch)
+</code></pre>
+<p>Each call tomake-accountsets up an environment with a local state
+variablebalance. Within this environment,make-accountdefines
+proceduresdepositandwithdrawthat accessbalanceand an
+additional proceduredispatchthat takes a “message” as input and
+returns one of the two local procedures. Thedispatchprocedure itself
+is returned as the value that represents the bank-account object. This is
+precisely themessage-passingstyle of programming that we saw in2.4.3, although here we are using it in conjunction with the
+ability to modify local variables.</p>
+<p>Make-accountcan be used as follows:</p>
+<pre><code class="language-scheme">(define acc (make-account 100))
+
+((acc 'withdraw) 50)
+50
+
+((acc 'withdraw) 60)
+&quot;Insufficient funds&quot;
+
+((acc 'deposit) 40)
+90
+
+((acc 'withdraw) 60)
+30
+</code></pre>
+<p>Each call toaccreturns the locally defineddepositorwithdrawprocedure, which is then applied to the specifiedamount. As was the case withmake-withdraw, another call tomake-account</p>
+<pre><code class="language-scheme">(define acc2 (make-account 100))
+</code></pre>
+<p>will produce a completely separate account object, which maintains its own
+localbalance.</p>
+<blockquote>
+<p>Exercise 3.1:Anaccumulatoris a
+procedure that is called repeatedly with a single numeric argument and
+accumulates its arguments into a sum. Each time it is called, it returns the
+currently accumulated sum. Write a proceduremake-accumulatorthat
+generates accumulators, each maintaining an independent sum. The input tomake-accumulatorshould specify the initial value of the sum; for
+example(defineA(make-accumulator5))(A10)15(A10)25</p>
+<p>Exercise 3.2:In software-testing applications,
+it is useful to be able to count the number of times a given procedure is
+called during the course of a computation. Write a proceduremake-monitoredthat takes as input a procedure,f, that itself
+takes one input. The result returned bymake-monitoredis a third
+procedure, saymf, that keeps track of the number of times it has been
+called by maintaining an internal counter. If the input tomfis the
+special symbolhow-many-calls?, thenmfreturns the value of the
+counter. If the input is the special symbolreset-count, thenmfresets the counter to zero. For any other input,mfreturns the result
+of callingfon that input and increments the counter. For instance, we
+could make a monitored version of thesqrtprocedure:(defines(make-monitored sqrt))(s100)10(s&rsquo;how-many-calls?)1</p>
+<p>Exercise 3.3:Modify themake-accountprocedure so that it creates password-protected accounts. That is,make-accountshould take a symbol as an additional argument, as in(defineacc(make-account100&rsquo;secret-password))The resulting account object should process a request only if it is accompanied
+by the password with which the account was created, and should otherwise return
+a complaint:((acc&rsquo;secret-password&rsquo;withdraw)40)60((acc&rsquo;some-other-password&rsquo;deposit)50)&rdquo;Incorrect password&rdquo;</p>
+<p>Exercise 3.4:Modify themake-accountprocedure ofExercise 3.3by adding another local state variable so that,
+if an account is accessed more than seven consecutive times with an incorrect
+password, it invokes the procedurecall-the-cops.</p>
+</blockquote>
+<h5>3.1.2The Benefits of Introducing Assignment</h5>
+<p>As we shall see, introducing assignment into our programming language leads us
+into a thicket of difficult conceptual issues. Nevertheless, viewing systems
+as collections of objects with local state is a powerful technique for
+maintaining a modular design. As a simple example, consider the design of a
+procedurerandthat, whenever it is called, returns an integer chosen at
+random.</p>
+<p>It is not at all clear what is meant by “chosen at random.” What we
+presumably want is for successive calls torandto produce a sequence of
+numbers that has statistical properties of uniform distribution. We will not
+discuss methods for generating suitable sequences here. Rather, let us assume
+that we have a procedurerand-updatethat has the property that if we
+start with a given numberx1and form</p>
+<pre><code class="language-scheme">x₂ = (rand-update x₁)
+x₃ = (rand-update x₂)
+</code></pre>
+<p>then the sequence of valuesx1,x2,x3, … will have the
+desired statistical properties.134</p>
+<p>We can implementrandas a procedure with a local state variablexthat is initialized to some fixed valuerandom-init. Each call
+torandcomputesrand-updateof the current value ofx,
+returns this as the random number, and also stores this as the new value ofx.</p>
+<pre><code class="language-scheme">(define rand
+ (let ((x random-init))
+ (lambda () (set! x (rand-update x)) x)))
+</code></pre>
+<p>Of course, we could generate the same sequence of random numbers without using
+assignment by simply callingrand-updatedirectly. However, this would
+mean that any part of our program that used random numbers would have to
+explicitly remember the current value ofxto be passed as an argument
+torand-update. To realize what an annoyance this would be, consider
+using random numbers to implement a technique calledMonte Carlo simulation.</p>
+<p>The Monte Carlo method consists of choosing sample experiments at random from a
+large set and then making deductions on the basis of the probabilities
+estimated from tabulating the results of those experiments. For example, we
+can approximateπusing the fact that6/π2is the probability
+that two integers chosen at random will have no factors in common; that is,
+that their greatest common divisor will be 1.135To
+obtain the approximation toπ, we perform a large number of experiments.
+In each experiment we choose two integers at random and perform a test to see
+if theirGCDis 1. The fraction of times that the test is passed
+gives us our estimate of6/π2, and from this we obtain our
+approximation toπ.</p>
+<p>The heart of our program is a proceduremonte-carlo, which takes as
+arguments the number of times to try an experiment, together with the
+experiment, represented as a no-argument procedure that will return either true
+or false each time it is run.Monte-carloruns the experiment for the
+designated number of trials and returns a number telling the fraction of the
+trials in which the experiment was found to be true.</p>
+<pre><code class="language-scheme">(define (estimate-pi trials)
+ (sqrt (/ 6 (monte-carlo trials 
+ cesaro-test))))
+(define (cesaro-test)
+ (= (gcd (rand) (rand)) 1))
+
+(define (monte-carlo trials experiment)
+ (define (iter trials-remaining trials-passed)
+ (cond ((= trials-remaining 0)
+ (/ trials-passed trials))
+ ((experiment)
+ (iter (- trials-remaining 1) 
+ (+ trials-passed 1)))
+ (else
+ (iter (- trials-remaining 1) 
+ trials-passed))))
+ (iter trials 0))
+</code></pre>
+<p>Now let us try the same computation usingrand-updatedirectly rather
+thanrand, the way we would be forced to proceed if we did not use
+assignment to model local state:</p>
+<pre><code class="language-scheme">(define (estimate-pi trials)
+ (sqrt (/ 6 (random-gcd-test trials 
+ random-init))))
+
+(define (random-gcd-test trials initial-x)
+ (define (iter trials-remaining 
+ trials-passed 
+ x)
+ (let ((x1 (rand-update x)))
+ (let ((x2 (rand-update x1)))
+ (cond ((= trials-remaining 0)
+ (/ trials-passed trials))
+ ((= (gcd x1 x2) 1)
+ (iter (- trials-remaining 1)
+ (+ trials-passed 1)
+ x2))
+ (else
+ (iter (- trials-remaining 1)
+ trials-passed
+ x2))))))
+ (iter trials 0 initial-x))
+</code></pre>
+<p>While the program is still simple, it betrays some painful breaches of
+modularity. In our first version of the program, usingrand, we can
+express the Monte Carlo method directly as a generalmonte-carloprocedure that takes as an argument an arbitraryexperimentprocedure.
+In our second version of the program, with no local state for the random-number
+generator,random-gcd-testmust explicitly manipulate the random numbersx1andx2and recyclex2through the iterative loop as the
+new input torand-update. This explicit handling of the random numbers
+intertwines the structure of accumulating test results with the fact that our
+particular experiment uses two random numbers, whereas other Monte Carlo
+experiments might use one random number or three. Even the top-level procedureestimate-pihas to be concerned with supplying an initial random number.
+The fact that the random-number generator’s insides are leaking out into other
+parts of the program makes it difficult for us to isolate the Monte Carlo idea
+so that it can be applied to other tasks. In the first version of the program,
+assignment encapsulates the state of the random-number generator within therandprocedure, so that the details of random-number generation remain
+independent of the rest of the program.</p>
+<p>The general phenomenon illustrated by the Monte Carlo example is this: From the
+point of view of one part of a complex process, the other parts appear to
+change with time. They have hidden time-varying local state. If we wish to
+write computer programs whose structure reflects this decomposition, we make
+computational objects (such as bank accounts and random-number generators)
+whose behavior changes with time. We model state with local state variables,
+and we model the changes of state with assignments to those variables.</p>
+<p>It is tempting to conclude this discussion by saying that, by introducing
+assignment and the technique of hiding state in local variables, we are able to
+structure systems in a more modular fashion than if all state had to be
+manipulated explicitly, by passing additional parameters. Unfortunately, as we
+shall see, the story is not so simple.</p>
+<blockquote>
+<p>Exercise 3.5:Monte Carlo integrationis a method of estimating definite integrals by means of Monte Carlo
+simulation. Consider computing the area of a region of space described by a
+predicateP(x,y)that is true for points(x,y)in the
+region and false for points not in the region. For example, the region
+contained within a circle of radius 3 centered at (5, 7) is described by the
+predicate that tests whether(x−5)2+(y−7)2≤32. To estimate
+the area of the region described by such a predicate, begin by choosing a
+rectangle that contains the region. For example, a rectangle with diagonally
+opposite corners at (2, 4) and (8, 10) contains the circle above. The desired
+integral is the area of that portion of the rectangle that lies in the region.
+We can estimate the integral by picking, at random, points(x,y)that
+lie in the rectangle, and testingP(x,y)for each point to
+determine whether the point lies in the region. If we try this with many
+points, then the fraction of points that fall in the region should give an
+estimate of the proportion of the rectangle that lies in the region. Hence,
+multiplying this fraction by the area of the entire rectangle should produce an
+estimate of the integral.Implement Monte Carlo integration as a procedureestimate-integralthat
+takes as arguments a predicateP, upper and lower boundsx1,x2,y1, andy2for the rectangle, and the number of trials
+to perform in order to produce the estimate. Your procedure should use the
+samemonte-carloprocedure that was used above to estimateπ.
+Use yourestimate-integralto produce an estimate ofπby
+measuring the area of a unit circle.You will find it useful to have a procedure that returns a number chosen at
+random from a given range. The followingrandom-in-rangeprocedure
+implements this in terms of therandomprocedure used in1.2.6, which returns a nonnegative number less than its
+input.136(define(random-in-range low high)(let((range(-high low)))(+low(random range))))</p>
+<p>Exercise 3.6:It is useful to be able to reset a
+random-number generator to produce a sequence starting from a given value.
+Design a newrandprocedure that is called with an argument that is
+either the symbolgenerateor the symbolresetand behaves as
+follows:(rand &lsquo;generate)produces a new random number;((rand
+&lsquo;reset) ⟨new-value⟩)resets the internal state variable to the
+designated⟨new-value⟩. Thus, by resetting the state, one can generate
+repeatable sequences. These are very handy to have when testing and debugging
+programs that use random numbers.</p>
+</blockquote>
+<h5>3.1.3The Costs of Introducing Assignment</h5>
+<p>As we have seen, theset!operation enables us to model objects that
+have local state. However, this advantage comes at a price. Our programming
+language can no longer be interpreted in terms of the substitution model of
+procedure application that we introduced in1.1.5. Moreover, no
+simple model with “nice” mathematical properties can be an adequate framework
+for dealing with objects and assignment in programming languages.</p>
+<p>So long as we do not use assignments, two evaluations of the same procedure
+with the same arguments will produce the same result, so that procedures can be
+viewed as computing mathematical functions. Programming without any use of
+assignments, as we did throughout the first two chapters of this book, is
+accordingly known asfunctional programming.</p>
+<p>To understand how assignment complicates matters, consider a simplified version
+of themake-withdrawprocedure of3.1.1that does not
+bother to check for an insufficient amount:</p>
+<pre><code class="language-scheme">(define (make-simplified-withdraw balance)
+ (lambda (amount)
+ (set! balance (- balance amount))
+ balance))
+
+(define W (make-simplified-withdraw 25))
+
+(W 20)
+5
+
+(W 10)
+-5
+</code></pre>
+<p>Compare this procedure with the followingmake-decrementerprocedure,
+which does not useset!:</p>
+<pre><code class="language-scheme">(define (make-decrementer balance)
+ (lambda (amount)
+ (- balance amount)))
+</code></pre>
+<p>Make-decrementerreturns a procedure that subtracts its input from a
+designated amountbalance, but there is no accumulated effect over
+successive calls, as withmake-simplified-withdraw:</p>
+<pre><code class="language-scheme">(define D (make-decrementer 25))
+
+(D 20)
+5
+
+(D 10)
+15
+</code></pre>
+<p>We can use the substitution model to explain howmake-decrementerworks.
+For instance, let us analyze the evaluation of the expression</p>
+<pre><code class="language-scheme">((make-decrementer 25) 20)
+</code></pre>
+<p>We first simplify the operator of the combination by substituting 25 forbalancein the body ofmake-decrementer. This reduces the
+expression to</p>
+<pre><code class="language-scheme">((lambda (amount) (- 25 amount)) 20)
+</code></pre>
+<p>Now we apply the operator by substituting 20 foramountin the body of
+thelambdaexpression:</p>
+<pre><code class="language-scheme">(- 25 20)
+</code></pre>
+<p>The final answer is 5.</p>
+<p>Observe, however, what happens if we attempt a similar substitution analysis
+withmake-simplified-withdraw:</p>
+<pre><code class="language-scheme">((make-simplified-withdraw 25) 20)
+</code></pre>
+<p>We first simplify the operator by substituting 25 forbalancein the
+body ofmake-simplified-withdraw. This reduces the expression
+to137</p>
+<pre><code class="language-scheme">((lambda (amount) 
+ (set! balance (- 25 amount)) 25)
+ 20)
+</code></pre>
+<p>Now we apply the operator by substituting 20 foramountin the body of
+thelambdaexpression:</p>
+<pre><code class="language-scheme">(set! balance (- 25 20)) 25
+</code></pre>
+<p>If we adhered to the substitution model, we would have to say that the meaning
+of the procedure application is to first setbalanceto 5 and then
+return 25 as the value of the expression. This gets the wrong answer. In
+order to get the correct answer, we would have to somehow distinguish the first
+occurrence ofbalance(before the effect of theset!) from the
+second occurrence ofbalance(after the effect of theset!), and
+the substitution model cannot do this.</p>
+<p>The trouble here is that substitution is based ultimately on the notion that
+the symbols in our language are essentially names for values. But as soon as
+we introduceset!and the idea that the value of a variable can change,
+a variable can no longer be simply a name. Now a variable somehow refers to a
+place where a value can be stored, and the value stored at this place can
+change. In3.2we will see how environments play this role of
+“place” in our computational model.</p>
+<h6>Sameness and change</h6>
+<p>The issue surfacing here is more profound than the mere breakdown of a
+particular model of computation. As soon as we introduce change into our
+computational models, many notions that were previously straightforward become
+problematical. Consider the concept of two things being “the same.”</p>
+<p>Suppose we callmake-decrementertwice with the same argument to create
+two procedures:</p>
+<pre><code class="language-scheme">(define D1 (make-decrementer 25))
+(define D2 (make-decrementer 25))
+</code></pre>
+<p>AreD1andD2the same? An acceptable answer is yes, becauseD1andD2have the same computational behavior—each is a
+procedure that subtracts its input from 25. In fact,D1could be
+substituted forD2in any computation without changing the result.</p>
+<p>Contrast this with making two calls tomake-simplified-withdraw:</p>
+<pre><code class="language-scheme">(define W1 (make-simplified-withdraw 25))
+(define W2 (make-simplified-withdraw 25))
+</code></pre>
+<p>AreW1andW2the same? Surely not, because calls toW1andW2have distinct effects, as shown by the following sequence of
+interactions:</p>
+<pre><code class="language-scheme">(W1 20)
+5
+
+(W1 20)
+-15
+
+(W2 20)
+5
+</code></pre>
+<p>Even thoughW1andW2are “equal” in the sense that they are
+both created by evaluating the same expression,(make-simplified-withdraw
+25), it is not true thatW1could be substituted forW2in any
+expression without changing the result of evaluating the expression.</p>
+<p>A language that supports the concept that “equals can be substituted for
+equals” in an expression without changing the value of the expression is said
+to bereferentially transparent. Referential transparency is
+violated when we includeset!in our computer language. This makes it
+tricky to determine when we can simplify expressions by substituting equivalent
+expressions. Consequently, reasoning about programs that use assignment
+becomes drastically more difficult.</p>
+<p>Once we forgo referential transparency, the notion of what it means for
+computational objects to be “the same” becomes difficult to capture in a
+formal way. Indeed, the meaning of “same” in the real world that our
+programs model is hardly clear in itself. In general, we can determine that
+two apparently identical objects are indeed “the same one” only by modifying
+one object and then observing whether the other object has changed in the same
+way. But how can we tell if an object has “changed” other than by observing
+the “same” object twice and seeing whether some property of the object
+differs from one observation to the next? Thus, we cannot determine “change”
+without somea priorinotion of “sameness,” and we cannot determine
+sameness without observing the effects of change.</p>
+<p>As an example of how this issue arises in programming, consider the situation
+where Peter and Paul have a bank account with $100 in it. There is a
+substantial difference between modeling this as</p>
+<pre><code class="language-scheme">(define peter-acc (make-account 100))
+(define paul-acc (make-account 100))
+</code></pre>
+<p>and modeling it as</p>
+<pre><code class="language-scheme">(define peter-acc (make-account 100))
+(define paul-acc peter-acc)
+</code></pre>
+<p>In the first situation, the two bank accounts are distinct. Transactions made
+by Peter will not affect Paul’s account, and vice versa. In the second
+situation, however, we have definedpaul-accto bethe same thingaspeter-acc. In effect, Peter and Paul now have a joint bank account,
+and if Peter makes a withdrawal frompeter-accPaul will observe less
+money inpaul-acc. These two similar but distinct situations can cause
+confusion in building computational models. With the shared account, in
+particular, it can be especially confusing that there is one object (the bank
+account) that has two different names (peter-accandpaul-acc);
+if we are searching for all the places in our program wherepaul-acccan
+be changed, we must remember to look also at things that changepeter-acc.138</p>
+<p>With reference to the above remarks on “sameness” and “change,” observe
+that if Peter and Paul could only examine their bank balances, and could not
+perform operations that changed the balance, then the issue of whether the two
+accounts are distinct would be moot. In general, so long as we never modify
+data objects, we can regard a compound data object to be precisely the totality
+of its pieces. For example, a rational number is determined by giving its
+numerator and its denominator. But this view is no longer valid in the
+presence of change, where a compound data object has an “identity” that is
+something different from the pieces of which it is composed. A bank account is
+still “the same” bank account even if we change the balance by making a
+withdrawal; conversely, we could have two different bank accounts with the same
+state information. This complication is a consequence, not of our programming
+language, but of our perception of a bank account as an object. We do not, for
+example, ordinarily regard a rational number as a changeable object with
+identity, such that we could change the numerator and still have “the same”
+rational number.</p>
+<h6>Pitfalls of imperative programming</h6>
+<p>In contrast to functional programming, programming that makes extensive use of
+assignment is known asimperative programming. In addition to
+raising complications about computational models, programs written in
+imperative style are susceptible to bugs that cannot occur in functional
+programs. For example, recall the iterative factorial program from1.2.1:</p>
+<pre><code class="language-scheme">(define (factorial n)
+ (define (iter product counter)
+ (if (&gt; counter n)
+ product
+ (iter (* counter product)
+ (+ counter 1))))
+ (iter 1 1))
+</code></pre>
+<p>Instead of passing arguments in the internal iterative loop, we could adopt a
+more imperative style by using explicit assignment to update the values of the
+variablesproductandcounter:</p>
+<pre><code class="language-scheme">(define (factorial n)
+ (let ((product 1)
+ (counter 1))
+ (define (iter)
+ (if (&gt; counter n)
+ product
+ (begin (set! product (* counter 
+ product))
+ (set! counter (+ counter 1))
+ (iter))))
+ (iter)))
+</code></pre>
+<p>This does not change the results produced by the program, but it does introduce
+a subtle trap. How do we decide the order of the assignments? As it happens,
+the program is correct as written. But writing the assignments in the opposite
+order</p>
+<pre><code class="language-scheme">(set! counter (+ counter 1))
+(set! product (* counter product))
+</code></pre>
+<p>would have produced a different, incorrect result. In general, programming
+with assignment forces us to carefully consider the relative orders of the
+assignments to make sure that each statement is using the correct version of
+the variables that have been changed. This issue simply does not arise in
+functional programs.139</p>
+<p>The complexity of imperative programs becomes even worse if we consider
+applications in which several processes execute concurrently. We will return
+to this in3.4. First, however, we will address the issue of
+providing a computational model for expressions that involve assignment, and
+explore the uses of objects with local state in designing simulations.</p>
+<blockquote>
+<p>Exercise 3.7:Consider the bank account objects
+created bymake-account, with the password modification described inExercise 3.3. Suppose that our banking system requires the ability to
+make joint accounts. Define a proceduremake-jointthat accomplishes
+this.Make-jointshould take three arguments. The first is a
+password-protected account. The second argument must match the password with
+which the account was defined in order for themake-jointoperation to
+proceed. The third argument is a new password.Make-jointis to create
+an additional access to the original account using the new password. For
+example, ifpeter-accis a bank account with passwordopen-sesame, then(definepaul-acc(make-joint peter-acc&rsquo;open-sesame&rsquo;rosebud))will allow one to make transactions onpeter-accusing the namepaul-accand the passwordrosebud. You may wish to modify your
+solution toExercise 3.3to accommodate this new feature.</p>
+<p>Exercise 3.8:When we defined the evaluation
+model in1.1.3, we said that the first step in evaluating an
+expression is to evaluate its subexpressions. But we never specified the order
+in which the subexpressions should be evaluated (e.g., left to right or right
+to left). When we introduce assignment, the order in which the arguments to a
+procedure are evaluated can make a difference to the result. Define a simple
+procedurefsuch that evaluating(+(f0)(f1))will return 0 if
+the arguments to+are evaluated from left to right but will return 1 if
+the arguments are evaluated from right to left.</p>
+</blockquote>
+<h5>Footnotes</h5>
+<p>129Actually, this is not quite
+true. One exception was the random-number generator in1.2.6.
+Another exception involved the operation/type tables we introduced in2.4.3, where the values of two calls togetwith the same
+arguments depended on intervening calls toput. On the other hand,
+until we introduce assignment, we have no way to create such procedures
+ourselves.</p>
+<p>130The value of
+aset!expression is implementation-dependent.Set!should be
+used only for its effect, not for its value.</p>
+<p>The nameset!reflects a naming convention used in Scheme: Operations
+that change the values of variables (or that change data structures, as we will
+see in3.3) are given names that end with an exclamation point.
+This is similar to the convention of designating predicates by names that end
+with a question mark.</p>
+<p>131We have already
+usedbeginimplicitly in our programs, because in Scheme the body of a
+procedure can be a sequence of expressions. Also, the⟨consequent⟩part
+of each clause in acondexpression can be a sequence of expressions
+rather than a single expression.</p>
+<p>132In programming-language jargon, the variablebalanceis said to beencapsulatedwithin thenew-withdrawprocedure. Encapsulation reflects the general
+system-design principle known as thehiding principle: One can make a
+system more modular and robust by protecting parts of the system from each
+other; that is, by providing information access only to those parts of the
+system that have a “need to know.”</p>
+<p>133In contrast withnew-withdrawabove, we do not have to useletto makebalancea local variable, since formal parameters are already local.
+This will be clearer after the discussion of the environment model of
+evaluation in3.2. (See alsoExercise 3.10.)</p>
+<p>134One common way to implementrand-updateis to use the rule thatxis updated toax+bmodulom, wherea,b, andmare appropriately chosen
+integers. Chapter 3 ofKnuth 1981includes an extensive discussion of
+techniques for generating sequences of random numbers and establishing their
+statistical properties. Notice that therand-updateprocedure computes
+a mathematical function: Given the same input twice, it produces the same
+output. Therefore, the number sequence produced byrand-updatecertainly is not “random,” if by “random” we insist that each number in the
+sequence is unrelated to the preceding number. The relation between “real
+randomness” and so-calledpseudo-randomsequences, which are
+produced by well-determined computations and yet have suitable statistical
+properties, is a complex question involving difficult issues in mathematics and
+philosophy. Kolmogorov, Solomonoff, and Chaitin have made great progress in
+clarifying these issues; a discussion can be found inChaitin 1975.</p>
+<p>135This theorem is due to
+E. Cesàro. See section 4.5.2 ofKnuth 1981for a discussion and a proof.</p>
+<p>136MITScheme provides such a procedure. Ifrandomis given an exact integer (as in1.2.6) it returns
+an exact integer, but if it is given a decimal value (as in this exercise) it
+returns a decimal value.</p>
+<p>137We don’t substitute for the occurrence ofbalancein theset!expression because the⟨name⟩in aset!is not
+evaluated. If we did substitute for it, we would get(set! 25 (- 25
+amount)), which makes no sense.</p>
+<p>138The phenomenon of a single computational object
+being accessed by more than one name is known asaliasing. The joint
+bank account situation illustrates a very simple example of an alias. In3.3we will see much more complex examples, such as “distinct”
+compound data structures that share parts. Bugs can occur in our programs if
+we forget that a change to an object may also, as a “side effect,” change a
+“different” object because the two “different” objects are actually a
+single object appearing under different aliases. These so-calledside-effect bugsare so difficult to locate and to analyze that some
+people have proposed that programming languages be designed in such a way as to
+not allow side effects or aliasing (Lampson et al. 1981;Morris et al. 1980).</p>
+<p>139In view of this, it is ironic that introductory
+programming is most often taught in a highly imperative style. This may be a
+vestige of a belief, common throughout the 1960s and 1970s, that programs that
+call procedures must inherently be less efficient than programs that perform
+assignments. (Steele 1977debunks this argument.) Alternatively it may
+reflect a view that step-by-step assignment is easier for beginners to
+visualize than procedure call. Whatever the reason, it often saddles beginning
+programmers with “should I set this variable before or after that one”
+concerns that can complicate programming and obscure the important ideas.</p>
+<hr />
+<p>⇡</p>
+<h4>3.3Modeling with Mutable Data</h4>
+<p>Chapter 2dealt with compound data as a means for constructing computational
+objects that have several parts, in order to model real-world objects that have
+several aspects. In that chapter we introduced the discipline of data
+abstraction, according to which data structures are specified in terms of
+constructors, which create data objects, and selectors, which access the parts
+of compound data objects. But we now know that there is another aspect of data
+that chapter 2 did not address. The desire to model systems composed of
+objects that have changing state leads us to the need to modify compound data
+objects, as well as to construct and select from them. In order to model
+compound objects with changing state, we will design data abstractions to
+include, in addition to selectors and constructors, operations calledmutators, which modify data objects. For instance, modeling a
+banking system requires us to change account balances. Thus, a data structure
+for representing bank accounts might admit an operation</p>
+<pre><code class="language-scheme">(set-balance! ⟨account⟩ ⟨new-value⟩)
+</code></pre>
+<p>that changes the balance of the designated account to the designated new value.
+Data objects for which mutators are defined are known asmutable data objects.</p>
+<p>Chapter 2 introduced pairs as a general-purpose “glue” for synthesizing
+compound data. We begin this section by defining basic mutators for pairs, so
+that pairs can serve as building blocks for constructing mutable data objects.
+These mutators greatly enhance the representational power of pairs, enabling us
+to build data structures other than the sequences and trees that we worked with
+in2.2. We also present some examples of simulations in which
+complex systems are modeled as collections of objects with local state.</p>
+<h5>3.3.1Mutable List Structure</h5>
+<p>The basic operations on pairs—cons,car, andcdr—can
+be used to construct list structure and to select parts from list structure,
+but they are incapable of modifying list structure. The same is true of the
+list operations we have used so far, such asappendandlist,
+since these can be defined in terms ofcons,car, andcdr.
+To modify list structures we need new operations.</p>
+<p>The primitive mutators for pairs areset-car!andset-cdr!.Set-car!takes two arguments, the first of which must
+be a pair. It modifies this pair, replacing thecarpointer by a
+pointer to the second argument ofset-car!.144</p>
+<p>As an example, suppose thatxis bound to the list((a b) c d)andyto the list(e f)as illustrated inFigure 3.12.
+Evaluating the expression(set-car! x y)modifies the pair to whichxis bound, replacing itscarby the value ofy. The
+result of the operation is shown inFigure 3.13. The structurexhas been modified and would now be printed as((e f) c d). The pairs
+representing the list(a b), identified by the pointer that was
+replaced, are now detached from the original structure.145</p>
+<p><em>[Figure: Figure 3.12:Listsx:((a b) c d)andy:(e f).]</em></p>
+<p><em>[Figure: Figure 3.13:Effect of(set-car! x y)on the lists inFigure 3.12.]</em></p>
+<p>CompareFigure 3.13withFigure 3.14, which illustrates the result
+of executing(define z (cons y (cdr x)))withxandybound to the original lists ofFigure 3.12. The variablezis now
+bound to a new pair created by theconsoperation; the list to whichxis bound is unchanged.</p>
+<p><em>[Figure: Figure 3.14:Effect of(define z (cons y (cdr x)))on the lists inFigure 3.12.]</em></p>
+<p>Theset-cdr!operation is similar toset-car!. The only
+difference is that thecdrpointer of the pair, rather than thecarpointer, is replaced. The effect of executing(set-cdr! x y)on the lists ofFigure 3.12is shown inFigure 3.15. Here thecdrpointer ofxhas been replaced by the pointer to(e
+f). Also, the list(c d), which used to be thecdrofx,
+is now detached from the structure.</p>
+<p><em>[Figure: Figure 3.15:Effect of(set-cdr! x y)on the lists inFigure 3.12.]</em></p>
+<p>Consbuilds new list structure by creating new pairs, whileset-car!andset-cdr!modify existing pairs. Indeed, we could
+implementconsin terms of the two mutators, together with a procedureget-new-pair, which returns a new pair that is not part of any existing
+list structure. We obtain the new pair, set itscarandcdrpointers to the designated objects, and return the new pair as the result of
+thecons.146</p>
+<pre><code class="language-scheme">(define (cons x y)
+ (let ((new (get-new-pair)))
+ (set-car! new x)
+ (set-cdr! new y)
+ new))
+</code></pre>
+<blockquote>
+<p>Exercise 3.12:The following procedure for
+appending lists was introduced in2.2.1:(define(append x y)(if(null? x)y(cons(carx)(append(cdrx)y))))Appendforms a new list by successivelyconsing the elements ofxontoy. The procedureappend!is similar toappend, but it is a mutator rather than a constructor. It appends the
+lists by splicing them together, modifying the final pair ofxso that
+itscdris nowy. (It is an error to callappend!with an
+emptyx.)(define(append! x y)(set-cdr!(last-pair x)y)x)Herelast-pairis a procedure that returns the last pair in its
+argument:(define(last-pair x)(if(null?(cdrx))x(last-pair(cdrx))))Consider the interaction(definex(list&rsquo;a&rsquo;b))(definey(list&rsquo;c&rsquo;d))(definez(append x y))z(a b c d)(cdrx)⟨response⟩(definew(append! x y))w(a b c d)(cdrx)⟨response⟩What are the missing⟨response⟩s? Draw box-and-pointer diagrams to
+explain your answer.</p>
+<p>Exercise 3.13:Consider the followingmake-cycleprocedure, which uses thelast-pairprocedure defined
+inExercise 3.12:(define(make-cycle x)(set-cdr!(last-pair x)x)x)Draw a box-and-pointer diagram that shows the structurezcreated by(definez(make-cycle(list&rsquo;a&rsquo;b&rsquo;c)))What happens if we try to compute(last-pair z)?</p>
+<p>Exercise 3.14:The following procedure is quite
+useful, although obscure:(define(mystery x)(define(loop x y)(if(null? x)y(let((temp(cdrx)))(set-cdr! x y)(loop temp x))))(loop x&rsquo;()))Loopuses the “temporary” variabletempto hold the old value
+of thecdrofx, since theset-cdr!on the next line
+destroys thecdr. Explain whatmysterydoes in general. Supposevis defined by(define v (list &lsquo;a &lsquo;b &lsquo;c &lsquo;d)). Draw the
+box-and-pointer diagram that represents the list to whichvis bound.
+Suppose that we now evaluate(define w (mystery v)). Draw
+box-and-pointer diagrams that show the structuresvandwafter
+evaluating this expression. What would be printed as the values ofvandw?</p>
+</blockquote>
+<h6>Sharing and identity</h6>
+<p>We mentioned in3.1.3the theoretical issues of “sameness” and
+“change” raised by the introduction of assignment. These issues arise in
+practice when individual pairs aresharedamong different data
+objects. For example, consider the structure formed by</p>
+<pre><code class="language-scheme">(define x (list 'a 'b))
+(define z1 (cons x x))
+</code></pre>
+<p>As shown inFigure 3.16,z1is a pair whosecarandcdrboth point to the same pairx. This sharing ofxby
+thecarandcdrofz1is a consequence of the
+straightforward way in whichconsis implemented. In general, usingconsto construct lists will result in an interlinked structure of pairs
+in which many individual pairs are shared by many different structures.</p>
+<p><em>[Figure: Figure 3.16:The listz1formed by(cons x x).]</em></p>
+<p>In contrast toFigure 3.16,Figure 3.17shows the structure created
+by</p>
+<pre><code class="language-scheme">(define z2 
+ (cons (list 'a 'b) (list 'a 'b)))
+</code></pre>
+<p><em>[Figure: Figure 3.17:The listz2formed by(cons (list &lsquo;a &lsquo;b) (list &lsquo;a &lsquo;b)).]</em></p>
+<p>In this structure, the pairs in the two(a b)lists are distinct,
+although the actual symbols are shared.147</p>
+<p>When thought of as a list,z1andz2both represent “the same”
+list,((a b) a b). In general, sharing is completely undetectable if we
+operate on lists using onlycons,car, andcdr. However,
+if we allow mutators on list structure, sharing becomes significant. As an
+example of the difference that sharing can make, consider the following
+procedure, which modifies thecarof the structure to which it is
+applied:</p>
+<pre><code class="language-scheme">(define (set-to-wow! x)
+ (set-car! (car x) 'wow)
+ x)
+</code></pre>
+<p>Even thoughz1andz2are “the same” structure, applyingset-to-wow!to them yields different results. Withz1, altering
+thecaralso changes thecdr, because inz1thecarand thecdrare the same pair. Withz2, thecarandcdrare distinct, soset-to-wow!modifies only thecar:</p>
+<pre><code class="language-scheme">z1
+((a b) a b)
+
+(set-to-wow! z1)
+((wow b) wow b)
+
+z2
+((a b) a b)
+
+(set-to-wow! z2)
+((wow b) a b)
+</code></pre>
+<p>One way to detect sharing in list structures is to use the predicateeq?, which we introduced in2.3.1as a way to test whether
+two symbols are equal. More generally,(eq? x y)tests whetherxandyare the same object (that is, whetherxandyare equal as pointers). Thus, withz1andz2as defined
+inFigure 3.16andFigure 3.17,(eq? (car z1) (cdr
+z1))is true and(eq? (car z2) (cdr z2))is false.</p>
+<p>As will be seen in the following sections, we can exploit sharing to greatly
+extend the repertoire of data structures that can be represented by pairs. On
+the other hand, sharing can also be dangerous, since modifications made to
+structures will also affect other structures that happen to share the modified
+parts. The mutation operationsset-car!andset-cdr!should be
+used with care; unless we have a good understanding of how our data objects are
+shared, mutation can have unanticipated results.148</p>
+<blockquote>
+<p>Exercise 3.15:Draw box-and-pointer diagrams to
+explain the effect ofset-to-wow!on the structuresz1andz2above.</p>
+<p>Exercise 3.16:Ben Bitdiddle decides to write a
+procedure to count the number of pairs in any list structure. “It’s easy,”
+he reasons. “The number of pairs in any structure is the number in thecarplus the number in thecdrplus one more to count the current
+pair.” So Ben writes the following procedure:(define(count-pairs x)(if(not(pair? x))0(+(count-pairs(carx))(count-pairs(cdrx))1)))Show that this procedure is not correct. In particular, draw box-and-pointer
+diagrams representing list structures made up of exactly three pairs for which
+Ben’s procedure would return 3; return 4; return 7; never return at all.</p>
+<p>Exercise 3.17:Devise a correct version of thecount-pairsprocedure ofExercise 3.16that returns the number of
+distinct pairs in any structure. (Hint: Traverse the structure, maintaining an
+auxiliary data structure that is used to keep track of which pairs have already
+been counted.)</p>
+<p>Exercise 3.18:Write a procedure that examines a
+list and determines whether it contains a cycle, that is, whether a program
+that tried to find the end of the list by taking successivecdrs would
+go into an infinite loop.Exercise 3.13constructed such lists.</p>
+<p>Exercise 3.19:RedoExercise 3.18using an
+algorithm that takes only a constant amount of space. (This requires a very
+clever idea.)</p>
+</blockquote>
+<h6>Mutation is just assignment</h6>
+<p>When we introduced compound data, we observed in2.1.3that pairs
+can be represented purely in terms of procedures:</p>
+<pre><code class="language-scheme">(define (cons x y)
+ (define (dispatch m)
+ (cond ((eq? m 'car) x)
+ ((eq? m 'cdr) y)
+ (else (error &quot;Undefined 
+ operation: CONS&quot; m))))
+ dispatch)
+
+(define (car z) (z 'car))
+(define (cdr z) (z 'cdr))
+</code></pre>
+<p>The same observation is true for mutable data. We can implement mutable data
+objects as procedures using assignment and local state. For instance, we can
+extend the above pair implementation to handleset-car!andset-cdr!in a manner analogous to the way we implemented bank accounts
+usingmake-accountin3.1.1:</p>
+<pre><code class="language-scheme">(define (cons x y)
+ (define (set-x! v) (set! x v))
+ (define (set-y! v) (set! y v))
+ (define (dispatch m)
+ (cond ((eq? m 'car) x)
+ ((eq? m 'cdr) y)
+ ((eq? m 'set-car!) set-x!)
+ ((eq? m 'set-cdr!) set-y!)
+ (else (error &quot;Undefined 
+ operation: CONS&quot; m))))
+ dispatch)
+
+(define (car z) (z 'car))
+(define (cdr z) (z 'cdr))
+
+(define (set-car! z new-value)
+ ((z 'set-car!) new-value)
+ z)
+
+(define (set-cdr! z new-value)
+ ((z 'set-cdr!) new-value)
+ z)
+</code></pre>
+<p>Assignment is all that is needed, theoretically, to account for the behavior of
+mutable data. As soon as we admitset!to our language, we raise all
+the issues, not only of assignment, but of mutable data in general.149</p>
+<blockquote>
+<p>Exercise 3.20:Draw environment diagrams to
+illustrate the evaluation of the sequence of expressions(definex(cons12))(definez(consx x))(set-car!(cdrz)17)(carx)17using the procedural implementation of pairs given above. (CompareExercise 3.11.)</p>
+</blockquote>
+<h5>3.3.2Representing Queues</h5>
+<p>The mutatorsset-car!andset-cdr!enable us to use pairs to
+construct data structures that cannot be built withcons,car,
+andcdralone. This section shows how to use pairs to represent a data
+structure called a queue. Section3.3.3will show how to represent data
+structures called tables.</p>
+<p>Aqueueis a sequence in which items are inserted at one end (called
+therearof the queue) and deleted from the other end (thefront).Figure 3.18shows an initially empty queue in which
+the itemsaandbare inserted. Thenais removed,canddare inserted, andbis removed. Because items are
+always removed in the order in which they are inserted, a queue is sometimes
+called aFIFO(first in, first out) buffer.</p>
+<p><em>[Figure: Figure 3.18:Queue operations.]</em></p>
+<p>In terms of data abstraction, we can regard a queue as defined by the following
+set of operations:
+- a constructor:(make-queue)returns an empty queue (a queue containing
+no items).- two selectors:(empty-queue? ⟨queue⟩)tests if the queue is empty.(front-queue ⟨queue⟩)returns the object at the front of the queue, signaling an error if the queue
+is empty; it does not modify the queue.- two mutators:(insert-queue! ⟨queue⟩ ⟨item⟩)inserts the item at the rear of the queue and returns the modified queue as its
+value.(delete-queue! ⟨queue⟩)removes the item at the front of the queue and returns the modified queue as
+its value, signaling an error if the queue is empty before the deletion.
+Because a queue is a sequence of items, we could certainly represent it as an
+ordinary list; the front of the queue would be thecarof the list,
+inserting an item in the queue would amount to appending a new element at the
+end of the list, and deleting an item from the queue would just be taking thecdrof the list. However, this representation is inefficient, because
+in order to insert an item we must scan the list until we reach the end. Since
+the only method we have for scanning a list is by successivecdroperations, this scanning requiresΘ(n)steps for a list ofnitems. A simple modification to the list representation overcomes this
+disadvantage by allowing the queue operations to be implemented so that they
+requireΘ(1)steps; that is, so that the number of steps needed is
+independent of the length of the queue.</p>
+<p>The difficulty with the list representation arises from the need to scan to
+find the end of the list. The reason we need to scan is that, although the
+standard way of representing a list as a chain of pairs readily provides us
+with a pointer to the beginning of the list, it gives us no easily accessible
+pointer to the end. The modification that avoids the drawback is to represent
+the queue as a list, together with an additional pointer that indicates the
+final pair in the list. That way, when we go to insert an item, we can consult
+the rear pointer and so avoid scanning the list.</p>
+<p>A queue is represented, then, as a pair of pointers,front-ptrandrear-ptr, which indicate, respectively, the first and last pairs in an
+ordinary list. Since we would like the queue to be an identifiable object, we
+can useconsto combine the two pointers. Thus, the queue itself will
+be theconsof the two pointers.Figure 3.19illustrates this
+representation.</p>
+<p><em>[Figure: Figure 3.19:Implementation of a queue as a list with front and rear pointers.]</em></p>
+<p>To define the queue operations we use the following procedures, which enable us
+to select and to modify the front and rear pointers of a queue:</p>
+<pre><code class="language-scheme">(define (front-ptr queue) (car queue))
+(define (rear-ptr queue) (cdr queue))
+(define (set-front-ptr! queue item) 
+ (set-car! queue item))
+(define (set-rear-ptr! queue item) 
+ (set-cdr! queue item))
+</code></pre>
+<p>Now we can implement the actual queue operations. We will consider a queue to
+be empty if its front pointer is the empty list:</p>
+<pre><code class="language-scheme">(define (empty-queue? queue) 
+ (null? (front-ptr queue)))
+</code></pre>
+<p>Themake-queueconstructor returns, as an initially empty queue, a pair
+whosecarandcdrare both the empty list:</p>
+<pre><code class="language-scheme">(define (make-queue) (cons '() '()))
+</code></pre>
+<p>To select the item at the front of the queue, we return thecarof the
+pair indicated by the front pointer:</p>
+<pre><code class="language-scheme">(define (front-queue queue)
+ (if (empty-queue? queue)
+ (error &quot;FRONT called with an 
+ empty queue&quot; queue)
+ (car (front-ptr queue))))
+</code></pre>
+<p>To insert an item in a queue, we follow the method whose result is indicated inFigure 3.20. We first create a new pair whosecaris the item to
+be inserted and whosecdris the empty list. If the queue was initially
+empty, we set the front and rear pointers of the queue to this new pair.
+Otherwise, we modify the final pair in the queue to point to the new pair, and
+also set the rear pointer to the new pair.</p>
+<p><em>[Figure: Figure 3.20:Result of using(insert-queue! q &lsquo;d)on the queue ofFigure 3.19.]</em></p>
+<pre><code class="language-scheme">(define (insert-queue! queue item)
+ (let ((new-pair (cons item '())))
+ (cond ((empty-queue? queue)
+ (set-front-ptr! queue new-pair)
+ (set-rear-ptr! queue new-pair)
+ queue)
+ (else (set-cdr! (rear-ptr queue) 
+ new-pair)
+ (set-rear-ptr! queue new-pair)
+ queue))))
+</code></pre>
+<p>To delete the item at the front of the queue, we merely modify the front
+pointer so that it now points at the second item in the queue, which can be
+found by following thecdrpointer of the first item (seeFigure 3.21):150</p>
+<pre><code class="language-scheme">(define (delete-queue! queue)
+ (cond ((empty-queue? queue)
+ (error &quot;DELETE! called with 
+ an empty queue&quot; queue))
+ (else (set-front-ptr! 
+ queue 
+ (cdr (front-ptr queue)))
+ queue)))
+</code></pre>
+<p><em>[Figure: Figure 3.21:Result of using(delete-queue! q)on the queue ofFigure 3.20.]</em></p>
+<blockquote>
+<p>Exercise 3.21:Ben Bitdiddle decides to test the
+queue implementation described above. He types in the procedures to the Lisp
+interpreter and proceeds to try them out:(defineq1(make-queue))(insert-queue! q1&rsquo;a)((a)a)(insert-queue! q1&rsquo;b)((a b)b)(delete-queue! q1)((b)b)(delete-queue! q1)(()b)“It’s all wrong!” he complains. “The interpreter’s response shows that the
+last item is inserted into the queue twice. And when I delete both items, the
+secondbis still there, so the queue isn’t empty, even though it’s
+supposed to be.” Eva Lu Ator suggests that Ben has misunderstood what is
+happening. “It’s not that the items are going into the queue twice,” she
+explains. “It’s just that the standard Lisp printer doesn’t know how to make
+sense of the queue representation. If you want to see the queue printed
+correctly, you’ll have to define your own print procedure for queues.” Explain
+what Eva Lu is talking about. In particular, show why Ben’s examples produce
+the printed results that they do. Define a procedureprint-queuethat
+takes a queue as input and prints the sequence of items in the queue.</p>
+<p>Exercise 3.22:Instead of representing a queue
+as a pair of pointers, we can build a queue as a procedure with local state.
+The local state will consist of pointers to the beginning and the end of an
+ordinary list. Thus, themake-queueprocedure will have the form(define(make-queue)(let((front-ptr…)(rear-ptr…))⟨definitions of internal procedures⟩(define(dispatch m)…)dispatch))Complete the definition ofmake-queueand provide implementations of the
+queue operations using this representation.</p>
+<p>Exercise 3.23:Adeque(“double-ended
+queue”) is a sequence in which items can be inserted and deleted at either the
+front or the rear. Operations on deques are the constructormake-deque,
+the predicateempty-deque?, selectorsfront-dequeandrear-deque, and mutatorsfront-insert-deque!,rear-insert-deque!,front-delete-deque!,rear-delete-deque!. Show how to represent deques using pairs, and give
+implementations of the operations.151All operations should be accomplished inΘ(1)steps.</p>
+</blockquote>
+<h5>3.3.3Representing Tables</h5>
+<p>When we studied various ways of representing sets inChapter 2, we
+mentioned in2.3.3the task of maintaining a table of records
+indexed by identifying keys. In the implementation of data-directed
+programming in2.4.3, we made extensive use of two-dimensional
+tables, in which information is stored and retrieved using two keys. Here we
+see how to build tables as mutable list structures.</p>
+<p>We first consider a one-dimensional table, in which each value is stored under
+a single key. We implement the table as a list of records, each of which is
+implemented as a pair consisting of a key and the associated value. The records
+are glued together to form a list by pairs whosecars point to
+successive records. These gluing pairs are called thebackboneof
+the table. In order to have a place that we can change when we add a new
+record to the table, we build the table as aheaded list. A headed
+list has a special backbone pair at the beginning, which holds a dummy
+“record”—in this case the arbitrarily chosen symbol<em>table</em>.Figure 3.22shows the box-and-pointer diagram for the table</p>
+<pre><code class="language-scheme">a: 1
+b: 2
+c: 3
+</code></pre>
+<p><em>[Figure: Figure 3.22:A table represented as a headed list.]</em></p>
+<p>To extract information from a table we use thelookupprocedure, which
+takes a key as argument and returns the associated value (or false if there is
+no value stored under that key).Lookupis defined in terms of theassocoperation, which expects a key and a list of records as arguments.
+Note thatassocnever sees the dummy record.Assocreturns the
+record that has the given key as itscar.152Lookupthen checks to see that the resulting record
+returned byassocis not false, and returns the value (thecdr)
+of the record.</p>
+<pre><code class="language-scheme">(define (lookup key table)
+ (let ((record (assoc key (cdr table))))
+ (if record
+ (cdr record)
+ false)))
+
+(define (assoc key records)
+ (cond ((null? records) false)
+ ((equal? key (caar records)) 
+ (car records))
+ (else (assoc key (cdr records)))))
+</code></pre>
+<p>To insert a value in a table under a specified key, we first useassocto see if there is already a record in the table with this key. If not, we
+form a new record byconsing the key with the value, and insert this at
+the head of the table’s list of records, after the dummy record. If there
+already is a record with this key, we set thecdrof this record to the
+designated new value. The header of the table provides us with a fixed
+location to modify in order to insert the new record.153</p>
+<pre><code class="language-scheme">(define (insert! key value table)
+ (let ((record (assoc key (cdr table))))
+ (if record
+ (set-cdr! record value)
+ (set-cdr! table
+ (cons (cons key value) 
+ (cdr table)))))
+ 'ok)
+</code></pre>
+<p>To construct a new table, we simply create a list containing the symbol<em>table</em>:</p>
+<pre><code class="language-scheme">(define (make-table)
+ (list '*table*))
+</code></pre>
+<h6>Two-dimensional tables</h6>
+<p>In a two-dimensional table, each value is indexed by two keys. We can
+construct such a table as a one-dimensional table in which each key identifies
+a subtable.Figure 3.23shows the box-and-pointer diagram for the table</p>
+<pre><code class="language-scheme">math: +: 43 letters: a: 97
+ -: 45 b: 98
+ *: 42
+</code></pre>
+<p>which has two subtables. (The subtables don’t need a special header symbol,
+since the key that identifies the subtable serves this purpose.)</p>
+<p><em>[Figure: Figure 3.23:A two-dimensional table.]</em></p>
+<p>When we look up an item, we use the first key to identify the correct subtable.
+Then we use the second key to identify the record within the subtable.</p>
+<pre><code class="language-scheme">(define (lookup key-1 key-2 table)
+ (let ((subtable (assoc key-1 (cdr table))))
+ (if subtable
+ (let ((record 
+ (assoc key-2 (cdr subtable))))
+ (if record (cdr record) false))
+ false)))
+</code></pre>
+<p>To insert a new item under a pair of keys, we useassocto see if there
+is a subtable stored under the first key. If not, we build a new subtable
+containing the single record (key-2,value) and insert it into
+the table under the first key. If a subtable already exists for the first key,
+we insert the new record into this subtable, using the insertion method for
+one-dimensional tables described above:</p>
+<pre><code class="language-scheme">(define (insert! key-1 key-2 value table)
+ (let ((subtable (assoc key-1 (cdr table))))
+ (if subtable
+ (let ((record 
+ (assoc key-2 (cdr subtable))))
+ (if record
+ (set-cdr! record value)
+ (set-cdr! 
+ subtable
+ (cons (cons key-2 value)
+ (cdr subtable)))))
+ (set-cdr! 
+ table
+ (cons (list key-1 (cons key-2 value))
+ (cdr table)))))
+ 'ok)
+</code></pre>
+<h6>Creating local tables</h6>
+<p>Thelookupandinsert!operations defined above take the table as
+an argument. This enables us to use programs that access more than one table.
+Another way to deal with multiple tables is to have separatelookupandinsert!procedures for each table. We can do this by representing a
+table procedurally, as an object that maintains an internal table as part of
+its local state. When sent an appropriate message, this “table object”
+supplies the procedure with which to operate on the internal table. Here is a
+generator for two-dimensional tables represented in this fashion:</p>
+<pre><code class="language-scheme">(define (make-table)
+ (let ((local-table (list '*table*)))
+ (define (lookup key-1 key-2)
+ (let ((subtable 
+ (assoc key-1 (cdr local-table))))
+ (if subtable
+ (let ((record 
+ (assoc key-2 
+ (cdr subtable))))
+ (if record (cdr record) false))
+ false)))
+ (define (insert! key-1 key-2 value)
+ (let ((subtable 
+ (assoc key-1 (cdr local-table))))
+ (if subtable
+ (let ((record 
+ (assoc key-2 
+ (cdr subtable))))
+ (if record
+ (set-cdr! record value)
+ (set-cdr! 
+ subtable
+ (cons (cons key-2 value)
+ (cdr subtable)))))
+ (set-cdr! 
+ local-table
+ (cons (list key-1
+ (cons key-2 value))
+ (cdr local-table)))))
+ 'ok)
+ (define (dispatch m)
+ (cond ((eq? m 'lookup-proc) lookup)
+ ((eq? m 'insert-proc!) insert!)
+ (else (error &quot;Unknown operation: 
+ TABLE&quot; m))))
+ dispatch))
+</code></pre>
+<p>Usingmake-table, we could implement thegetandputoperations used in2.4.3for data-directed programming, as
+follows:</p>
+<pre><code class="language-scheme">(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc!))
+</code></pre>
+<p>Gettakes as arguments two keys, andputtakes as arguments two
+keys and a value. Both operations access the same local table, which is
+encapsulated within the object created by the call tomake-table.</p>
+<blockquote>
+<p>Exercise 3.24:In the table implementations
+above, the keys are tested for equality usingequal?(called byassoc). This is not always the appropriate test. For instance, we
+might have a table with numeric keys in which we don’t need an exact match to
+the number we’re looking up, but only a number within some tolerance of it.
+Design a table constructormake-tablethat takes as an argument asame-key?procedure that will be used to test “equality” of keys.Make-tableshould return adispatchprocedure that can be used to
+access appropriatelookupandinsert!procedures for a local
+table.</p>
+<p>Exercise 3.25:Generalizing one- and
+two-dimensional tables, show how to implement a table in which values are
+stored under an arbitrary number of keys and different values may be stored
+under different numbers of keys. Thelookupandinsert!procedures should take as input a list of keys used to access the table.</p>
+<p>Exercise 3.26:To search a table as implemented
+above, one needs to scan through the list of records. This is basically the
+unordered list representation of2.3.3. For large tables, it may
+be more efficient to structure the table in a different manner. Describe a
+table implementation where the (key, value) records are organized using a
+binary tree, assuming that keys can be ordered in some way (e.g., numerically
+or alphabetically). (CompareExercise 2.66ofChapter 2.)</p>
+<p>Exercise 3.27:Memoization(also
+calledtabulation) is a technique that enables a procedure to record,
+in a local table, values that have previously been computed. This technique
+can make a vast difference in the performance of a program. A memoized
+procedure maintains a table in which values of previous calls are stored using
+as keys the arguments that produced the values. When the memoized procedure is
+asked to compute a value, it first checks the table to see if the value is
+already there and, if so, just returns that value. Otherwise, it computes the
+new value in the ordinary way and stores this in the table. As an example of
+memoization, recall from1.2.2the exponential process for
+computing Fibonacci numbers:(define(fib n)(cond((=n0)0)((=n1)1)(else(+(fib(-n1))(fib(-n2))))))The memoized version of the same procedure is(definememo-fib(memoize(lambda(n)(cond((=n0)0)((=n1)1)(else(+(memo-fib(-n1))(memo-fib(-n2))))))))where the memoizer is defined as(define(memoize f)(let((table(make-table)))(lambda(x)(let((previously-computed-result(lookup x table)))(orpreviously-computed-result(let((result(f x)))(insert! x result table)result))))))Draw an environment diagram to analyze the computation of(memo-fib 3).
+Explain whymemo-fibcomputes thenthFibonacci number in a number
+of steps proportional ton. Would the scheme still work if we had simply
+definedmemo-fibto be(memoize fib)?</p>
+</blockquote>
+<h5>3.3.4A Simulator for Digital Circuits</h5>
+<p>Designing complex digital systems, such as computers, is an important
+engineering activity. Digital systems are constructed by interconnecting
+simple elements. Although the behavior of these individual elements is simple,
+networks of them can have very complex behavior. Computer simulation of
+proposed circuit designs is an important tool used by digital systems
+engineers. In this section we design a system for performing digital logic
+simulations. This system typifies a kind of program called anevent-driven simulation, in which actions (“events”) trigger
+further events that happen at a later time, which in turn trigger more events,
+and so on.</p>
+<p>Our computational model of a circuit will be composed of objects that
+correspond to the elementary components from which the circuit is constructed.
+There arewires, which carrydigital signals. A digital
+signal may at any moment have only one of two possible values, 0 and 1. There
+are also various types of digitalfunction boxes, which connect wires
+carrying input signals to other output wires. Such boxes produce output
+signals computed from their input signals. The output signal is delayed by a
+time that depends on the type of the function box. For example, aninverteris a primitive function box that inverts its input. If the
+input signal to an inverter changes to 0, then one inverter-delay later the
+inverter will change its output signal to 1. If the input signal to an
+inverter changes to 1, then one inverter-delay later the inverter will change
+its output signal to 0. We draw an inverter symbolically as inFigure 3.24. 
+Anand-gate, also shown in figure 3.24, is a primitive
+function box with two inputs and one output. It drives its output signal to a
+value that is thelogical andof the inputs. That is, if both of its
+input signals become 1, then one and-gate-delay time later the and-gate will
+force its output signal to be 1; otherwise the output will be 0. Anor-gateis a similar two-input primitive function box that drives its
+output signal to a value that is thelogical orof the inputs. That
+is, the output will become 1 if at least one of the input signals is 1;
+otherwise the output will become 0.</p>
+<p><em>[Figure: Figure 3.24:Primitive functions in the digital logic simulator.]</em></p>
+<p>We can connect primitive functions together to construct more complex
+functions. To accomplish this we wire the outputs of some function boxes to
+the inputs of other function boxes. For example, thehalf-addercircuit shown inFigure 3.25consists of an or-gate, two and-gates, and
+an inverter. It takes two input signals, A and B, and has two output signals,
+S and C. S will become 1 whenever precisely one of A and B is 1, and C will
+become 1 whenever A and B are both 1. We can see from the figure that, because
+of the delays involved, the outputs may be generated at different times. Many
+of the difficulties in the design of digital circuits arise from this fact.</p>
+<p><em>[Figure: Figure 3.25:A half-adder circuit.]</em></p>
+<p>We will now build a program for modeling the digital logic circuits we wish to
+study. The program will construct computational objects modeling the wires,
+which will “hold” the signals. Function boxes will be modeled by procedures
+that enforce the correct relationships among the signals.</p>
+<p>One basic element of our simulation will be a proceduremake-wire, which
+constructs wires. For example, we can construct six wires as follows:</p>
+<pre><code class="language-scheme">(define a (make-wire))
+(define b (make-wire))
+(define c (make-wire))
+(define d (make-wire))
+(define e (make-wire))
+(define s (make-wire))
+</code></pre>
+<p>We attach a function box to a set of wires by calling a procedure that
+constructs that kind of box. The arguments to the constructor procedure are
+the wires to be attached to the box. For example, given that we can construct
+and-gates, or-gates, and inverters, we can wire together the half-adder shown
+inFigure 3.25:</p>
+<pre><code class="language-scheme">(or-gate a b d)
+ok
+
+(and-gate a b c)
+ok
+
+(inverter c e)
+ok
+
+(and-gate d e s)
+ok
+</code></pre>
+<p>Better yet, we can explicitly name this operation by defining a procedurehalf-adderthat constructs this circuit, given the four external wires
+to be attached to the half-adder:</p>
+<pre><code class="language-scheme">(define (half-adder a b s c)
+ (let ((d (make-wire)) (e (make-wire)))
+ (or-gate a b d)
+ (and-gate a b c)
+ (inverter c e)
+ (and-gate d e s)
+ 'ok))
+</code></pre>
+<p>The advantage of making this definition is that we can usehalf-adderitself as a building block in creating more complex circuits.Figure 3.26, 
+for example, shows afull-addercomposed of two half-adders
+and an or-gate.154We can construct a full-adder as follows:</p>
+<pre><code class="language-scheme">(define (full-adder a b c-in sum c-out)
+ (let ((c1 (make-wire)) 
+ (c2 (make-wire))
+ (s (make-wire)))
+ (half-adder b c-in s c1)
+ (half-adder a s sum c2)
+ (or-gate c1 c2 c-out)
+ 'ok))
+</code></pre>
+<p><em>[Figure: Figure 3.26:A full-adder circuit.]</em></p>
+<p>Having definedfull-adderas a procedure, we can now use it as a
+building block for creating still more complex circuits. (For example, seeExercise 3.30.)</p>
+<p>In essence, our simulator provides us with the tools to construct a language of
+circuits. If we adopt the general perspective on languages with which we
+approached the study of Lisp in1.1, we can say that the
+primitive function boxes form the primitive elements of the language, that
+wiring boxes together provides a means of combination, and that specifying
+wiring patterns as procedures serves as a means of abstraction.</p>
+<h6>Primitive function boxes</h6>
+<p>The primitive function boxes implement the “forces” by which a change in the
+signal on one wire influences the signals on other wires. To build function
+boxes, we use the following operations on wires:
+- (get-signal ⟨wire⟩)returns the current value of the signal on the wire.- (set-signal! ⟨wire⟩ ⟨new value⟩)changes the value of the signal on the wire to the new value.- (add-action! ⟨wire⟩ ⟨procedure of no arguments⟩)asserts that the designated procedure should be run whenever the signal on the
+wire changes value. Such procedures are the vehicles by which changes in the
+signal value on the wire are communicated to other wires.
+In addition, we will make use of a procedureafter-delaythat takes a
+time delay and a procedure to be run and executes the given procedure after the
+given delay.</p>
+<p>Using these procedures, we can define the primitive digital logic functions.
+To connect an input to an output through an inverter, we useadd-action!to associate with the input wire a procedure that will be run whenever the
+signal on the input wire changes value. The procedure computes thelogical-notof the input signal, and then, after oneinverter-delay, sets the output signal to be this new value:</p>
+<pre><code class="language-scheme">(define (inverter input output)
+ (define (invert-input)
+ (let ((new-value 
+ (logical-not (get-signal input))))
+ (after-delay 
+ inverter-delay
+ (lambda ()
+ (set-signal! output new-value)))))
+ (add-action! input invert-input)
+ 'ok)
+
+(define (logical-not s)
+ (cond ((= s 0) 1)
+ ((= s 1) 0)
+ (else (error &quot;Invalid signal&quot; s))))
+</code></pre>
+<p>An and-gate is a little more complex. The action procedure must be run if
+either of the inputs to the gate changes. It computes thelogical-and(using a procedure analogous tological-not) of the values of the
+signals on the input wires and sets up a change to the new value to occur on
+the output wire after oneand-gate-delay.</p>
+<pre><code class="language-scheme">(define (and-gate a1 a2 output)
+ (define (and-action-procedure)
+ (let ((new-value
+ (logical-and (get-signal a1) 
+ (get-signal a2))))
+ (after-delay 
+ and-gate-delay
+ (lambda ()
+ (set-signal! output new-value)))))
+ (add-action! a1 and-action-procedure)
+ (add-action! a2 and-action-procedure)
+ 'ok)
+</code></pre>
+<blockquote>
+<p>Exercise 3.28:Define an or-gate as a primitive
+function box. Youror-gateconstructor should be similar toand-gate.</p>
+<p>Exercise 3.29:Another way to construct an
+or-gate is as a compound digital logic device, built from and-gates and
+inverters. Define a procedureor-gatethat accomplishes this. What is
+the delay time of the or-gate in terms ofand-gate-delayandinverter-delay?</p>
+<p>Exercise 3.30:Figure 3.27shows aripple-carry adderformed by stringing togethernfull-adders.
+This is the simplest form of parallel adder for adding twon-bit binary
+numbers. The inputsA1,A2,A3, …,AnandB1,B2,B3,
+…,Bnare the two binary numbers to be added (eachAkandBkis a 0 or a 1). The circuit generatesS1,S2,S3, …,Sn,
+thenbits of the sum, andC, the carry from the addition. Write a
+procedureripple-carry-adderthat generates this circuit. The procedure
+should take as arguments three lists ofnwires each—theAk, theBk, and theSk—and also another wireC. The major drawback of the
+ripple-carry adder is the need to wait for the carry signals to propagate.
+What is the delay needed to obtain the complete output from ann-bit
+ripple-carry adder, expressed in terms of the delays for and-gates, or-gates,
+and inverters?</p>
+</blockquote>
+<p><em>[Figure: Figure 3.27:A ripple-carry adder forn-bit numbers.]</em></p>
+<h6>Representing wires</h6>
+<p>A wire in our simulation will be a computational object with two local state
+variables: asignal-value(initially taken to be 0) and a collection ofaction-proceduresto be run when the signal changes value. We implement
+the wire, using message-passing style, as a collection of local procedures
+together with adispatchprocedure that selects the appropriate local
+operation, just as we did with the simple bank-account object in3.1.1:</p>
+<pre><code class="language-scheme">(define (make-wire)
+ (let ((signal-value 0) 
+ (action-procedures '()))
+ (define (set-my-signal! new-value)
+ (if (not (= signal-value new-value))
+ (begin (set! signal-value new-value)
+ (call-each 
+ action-procedures))
+ 'done))
+ (define (accept-action-procedure! proc)
+ (set! action-procedures 
+ (cons proc action-procedures))
+ (proc))
+ (define (dispatch m)
+ (cond ((eq? m 'get-signal) 
+ signal-value)
+ ((eq? m 'set-signal!) 
+ set-my-signal!)
+ ((eq? m 'add-action!) 
+ accept-action-procedure!)
+ (else (error &quot;Unknown operation: 
+ WIRE&quot; m))))
+ dispatch))
+</code></pre>
+<p>The local procedureset-my-signal!tests whether the new signal value
+changes the signal on the wire. If so, it runs each of the action procedures,
+using the following procedurecall-each, which calls each of the items
+in a list of no-argument procedures:</p>
+<pre><code class="language-scheme">(define (call-each procedures)
+ (if (null? procedures)
+ 'done
+ (begin ((car procedures))
+ (call-each (cdr procedures)))))
+</code></pre>
+<p>The local procedureaccept-action-procedure!adds the given procedure to
+the list of procedures to be run, and then runs the new procedure once. (SeeExercise 3.31.)</p>
+<p>With the localdispatchprocedure set up as specified, we can provide
+the following procedures to access the local operations on
+wires:155</p>
+<pre><code class="language-scheme">(define (get-signal wire)
+ (wire 'get-signal))
+(define (set-signal! wire new-value)
+ ((wire 'set-signal!) new-value))
+(define (add-action! wire action-procedure)
+ ((wire 'add-action!) action-procedure))
+</code></pre>
+<p>Wires, which have time-varying signals and may be incrementally attached to
+devices, are typical of mutable objects. We have modeled them as procedures
+with local state variables that are modified by assignment. When a new wire is
+created, a new set of state variables is allocated (by theletexpression inmake-wire) and a newdispatchprocedure is
+constructed and returned, capturing the environment with the new state
+variables.</p>
+<p>The wires are shared among the various devices that have been connected to
+them. Thus, a change made by an interaction with one device will affect all
+the other devices attached to the wire. The wire communicates the change to
+its neighbors by calling the action procedures provided to it when the
+connections were established.</p>
+<h6>The agenda</h6>
+<p>The only thing needed to complete the simulator isafter-delay. The
+idea here is that we maintain a data structure, called anagenda,
+that contains a schedule of things to do. The following operations are defined
+for agendas:
+- (make-agenda)returns a new empty agenda.- (empty-agenda? ⟨agenda⟩)is true if the specified agenda is
+empty.- (first-agenda-item ⟨agenda⟩)returns the first item on the
+agenda.- (remove-first-agenda-item! ⟨agenda⟩)modifies the agenda by
+removing the first item.- (add-to-agenda! ⟨time⟩ ⟨action⟩ ⟨agenda⟩)modifies the agenda by adding the given action procedure to be run at the 
+specified time.- (current-time ⟨agenda⟩)returns the current simulation time.
+The particular agenda that we use is denoted bythe-agenda. The
+procedureafter-delayadds new elements tothe-agenda:</p>
+<pre><code class="language-scheme">(define (after-delay delay action)
+ (add-to-agenda! 
+ (+ delay (current-time the-agenda))
+ action
+ the-agenda))
+</code></pre>
+<p>The simulation is driven by the procedurepropagate, which operates onthe-agenda, executing each procedure on the agenda in sequence. In
+general, as the simulation runs, new items will be added to the agenda, andpropagatewill continue the simulation as long as there are items on the
+agenda:</p>
+<pre><code class="language-scheme">(define (propagate)
+ (if (empty-agenda? the-agenda)
+ 'done
+ (let ((first-item 
+ (first-agenda-item the-agenda)))
+ (first-item)
+ (remove-first-agenda-item! the-agenda)
+ (propagate))))
+</code></pre>
+<h6>A sample simulation</h6>
+<p>The following procedure, which places a “probe” on a wire, shows the
+simulator in action. The probe tells the wire that, whenever its signal
+changes value, it should print the new signal value, together with the current
+time and a name that identifies the wire:</p>
+<pre><code class="language-scheme">(define (probe name wire)
+ (add-action! 
+ wire
+ (lambda ()
+ (newline)
+ (display name)
+ (display &quot; &quot;)
+ (display (current-time the-agenda))
+ (display &quot; New-value = &quot;)
+ (display (get-signal wire)))))
+</code></pre>
+<p>We begin by initializing the agenda and specifying delays for the primitive
+function boxes:</p>
+<pre><code class="language-scheme">(define the-agenda (make-agenda))
+(define inverter-delay 2)
+(define and-gate-delay 3)
+(define or-gate-delay 5)
+</code></pre>
+<p>Now we define four wires, placing probes on two of them:</p>
+<pre><code class="language-scheme">(define input-1 (make-wire))
+(define input-2 (make-wire))
+(define sum (make-wire))
+(define carry (make-wire))
+
+(probe 'sum sum)
+sum 0 New-value = 0
+
+(probe 'carry carry)
+carry 0 New-value = 0
+</code></pre>
+<p>Next we connect the wires in a half-adder circuit (as inFigure 3.25),
+set the signal oninput-1to 1, and run the simulation:</p>
+<pre><code class="language-scheme">(half-adder input-1 input-2 sum carry)
+ok
+
+(set-signal! input-1 1)
+done
+
+(propagate)
+sum 8 New-value = 1
+done
+</code></pre>
+<p>Thesumsignal changes to 1 at time 8. We are now eight time units from
+the beginning of the simulation. At this point, we can set the signal oninput-2to 1 and allow the values to propagate:</p>
+<pre><code class="language-scheme">(set-signal! input-2 1)
+done
+
+(propagate)
+carry 11 New-value = 1
+sum 16 New-value = 0
+done
+</code></pre>
+<p>Thecarrychanges to 1 at time 11 and thesumchanges to 0 at
+time 16.</p>
+<blockquote>
+<p>Exercise 3.31:The internal procedureaccept-action-procedure!defined inmake-wirespecifies that when
+a new action procedure is added to a wire, the procedure is immediately run.
+Explain why this initialization is necessary. In particular, trace through the
+half-adder example in the paragraphs above and say how the system’s response
+would differ if we had definedaccept-action-procedure!as(define(accept-action-procedure! proc)(set!action-procedures(consproc action-procedures)))</p>
+</blockquote>
+<h6>Implementing the agenda</h6>
+<p>Finally, we give details of the agenda data structure, which holds the
+procedures that are scheduled for future execution.</p>
+<p>The agenda is made up oftime segments. Each time segment is a pair
+consisting of a number (the time) and a queue (seeExercise 3.32) that
+holds the procedures that are scheduled to be run during that time segment.</p>
+<pre><code class="language-scheme">(define (make-time-segment time queue)
+ (cons time queue))
+(define (segment-time s) (car s))
+(define (segment-queue s) (cdr s))
+</code></pre>
+<p>We will operate on the time-segment queues using the queue operations described
+in3.3.2.</p>
+<p>The agenda itself is a one-dimensional table of time segments. It differs from
+the tables described in3.3.3in that the segments will be sorted
+in order of increasing time. In addition, we store thecurrent time(i.e., the time of the last action that was processed) at the head of the
+agenda. A newly constructed agenda has no time segments and has a current time
+of 0:156</p>
+<pre><code class="language-scheme">(define (make-agenda) (list 0))
+(define (current-time agenda) (car agenda))
+(define (set-current-time! agenda time)
+ (set-car! agenda time))
+(define (segments agenda) (cdr agenda))
+(define (set-segments! agenda segments)
+ (set-cdr! agenda segments))
+(define (first-segment agenda) 
+ (car (segments agenda)))
+(define (rest-segments agenda) 
+ (cdr (segments agenda)))
+</code></pre>
+<p>An agenda is empty if it has no time segments:</p>
+<pre><code class="language-scheme">(define (empty-agenda? agenda)
+ (null? (segments agenda)))
+</code></pre>
+<p>To add an action to an agenda, we first check if the agenda is empty. If so,
+we create a time segment for the action and install this in the agenda.
+Otherwise, we scan the agenda, examining the time of each segment. If we find
+a segment for our appointed time, we add the action to the associated queue.
+If we reach a time later than the one to which we are appointed, we insert a
+new time segment into the agenda just before it. If we reach the end of the
+agenda, we must create a new time segment at the end.</p>
+<pre><code class="language-scheme">(define (add-to-agenda! time action agenda)
+ (define (belongs-before? segments)
+ (or (null? segments)
+ (&lt; time 
+ (segment-time (car segments)))))
+ (define (make-new-time-segment time action)
+ (let ((q (make-queue)))
+ (insert-queue! q action)
+ (make-time-segment time q)))
+ (define (add-to-segments! segments)
+ (if (= (segment-time (car segments)) time)
+ (insert-queue! 
+ (segment-queue (car segments))
+ action)
+ (let ((rest (cdr segments)))
+ (if (belongs-before? rest)
+ (set-cdr!
+ segments
+ (cons (make-new-time-segment 
+ time 
+ action)
+ (cdr segments)))
+ (add-to-segments! rest)))))
+ (let ((segments (segments agenda)))
+ (if (belongs-before? segments)
+ (set-segments!
+ agenda
+ (cons (make-new-time-segment 
+ time 
+ action)
+ segments))
+ (add-to-segments! segments))))
+</code></pre>
+<p>The procedure that removes the first item from the agenda deletes the item at
+the front of the queue in the first time segment. If this deletion makes the
+time segment empty, we remove it from the list of segments:157</p>
+<pre><code class="language-scheme">(define (remove-first-agenda-item! agenda)
+ (let ((q (segment-queue 
+ (first-segment agenda))))
+ (delete-queue! q)
+ (if (empty-queue? q)
+ (set-segments! 
+ agenda 
+ (rest-segments agenda)))))
+</code></pre>
+<p>The first agenda item is found at the head of the queue in the first time
+segment. Whenever we extract an item, we also update the current
+time:158</p>
+<pre><code class="language-scheme">(define (first-agenda-item agenda)
+ (if (empty-agenda? agenda)
+ (error &quot;Agenda is empty: 
+ FIRST-AGENDA-ITEM&quot;)
+ (let ((first-seg 
+ (first-segment agenda)))
+ (set-current-time! 
+ agenda 
+ (segment-time first-seg))
+ (front-queue 
+ (segment-queue first-seg)))))
+</code></pre>
+<blockquote>
+<p>Exercise 3.32:The procedures to be run during
+each time segment of the agenda are kept in a queue. Thus, the procedures for
+each segment are called in the order in which they were added to the agenda
+(first in, first out). Explain why this order must be used. In particular,
+trace the behavior of an and-gate whose inputs change from 0, 1 to 1, 0 in the
+same segment and say how the behavior would differ if we stored a segment’s
+procedures in an ordinary list, adding and removing procedures only at the
+front (last in, first out).</p>
+</blockquote>
+<h5>3.3.5Propagation of Constraints</h5>
+<p>Computer programs are traditionally organized as one-directional computations,
+which perform operations on prespecified arguments to produce desired outputs.
+On the other hand, we often model systems in terms of relations among
+quantities. For example, a mathematical model of a mechanical structure might
+include the information that the deflectiondof a metal rod is related to
+the forceFon the rod, the lengthLof the rod, the cross-sectional
+areaA, and the elastic modulusEvia the equationdAE=FL.Such an equation is not one-directional. Given any four of the quantities, we
+can use it to compute the fifth. Yet translating the equation into a
+traditional computer language would force us to choose one of the quantities to
+be computed in terms of the other four. Thus, a procedure for computing the
+areaAcould not be used to compute the deflectiond, even though the
+computations ofAanddarise from the same
+equation.159</p>
+<p>In this section, we sketch the design of a language that enables us to work in
+terms of relations themselves. The primitive elements of the language areprimitive constraints, which state that certain relations hold
+between quantities. For example,(adder a b c)specifies that the
+quantitiesa,b, andcmust be related by the equationa+b=c,(multiplier x y z)expresses the constraintxy=z, and(constant 3.14 x)says that the value ofxmust be 3.14.</p>
+<p>Our language provides a means of combining primitive constraints in order to
+express more complex relations. We combine constraints by constructingconstraint networks, in which constraints are joined byconnectors. A connector is an object that “holds” a value that may
+participate in one or more constraints. For example, we know that the
+relationship between Fahrenheit and Celsius temperatures is9C=5(F−32).Such a constraint can be thought of as a network consisting of primitive adder,
+multiplier, and constant constraints (Figure 3.28). In the figure, we
+see on the left a multiplier box with three terminals, labeledm1,m2,
+andp. These connect the multiplier to the rest of the network as follows:
+Them1terminal is linked to a connectorC, which will hold the Celsius
+temperature. Them2terminal is linked to a connectorw, which is also
+linked to a constant box that holds 9. Thepterminal, which the
+multiplier box constrains to be the product ofm1andm2, is linked to
+thepterminal of another multiplier box, whosem2is connected to a
+constant 5 and whosem1is connected to one of the terms in a sum.</p>
+<p><em>[Figure: Figure 3.28:The relation9C=5(F−32)expressed as a constraint network.]</em></p>
+<p>Computation by such a network proceeds as follows: When a connector is given a
+value (by the user or by a constraint box to which it is linked), it awakens
+all of its associated constraints (except for the constraint that just awakened
+it) to inform them that it has a value. Each awakened constraint box then
+polls its connectors to see if there is enough information to determine a value
+for a connector. If so, the box sets that connector, which then awakens all of
+its associated constraints, and so on. For instance, in conversion between
+Celsius and Fahrenheit,w,x, andyare immediately set by the
+constant boxes to 9, 5, and 32, respectively. The connectors awaken the
+multipliers and the adder, which determine that there is not enough information
+to proceed. If the user (or some other part of the network) setsCto a
+value (say 25), the leftmost multiplier will be awakened, and it will setuto25⋅9=225. Thenuawakens the second multiplier, which setsvto
+45, andvawakens the adder, which setsfto 77.</p>
+<h6>Using the constraint system</h6>
+<p>To use the constraint system to carry out the temperature computation outlined
+above, we first create two connectors,CandF, by calling the
+constructormake-connector, and linkCandFin an
+appropriate network:</p>
+<pre><code class="language-scheme">(define C (make-connector))
+(define F (make-connector))
+(celsius-fahrenheit-converter C F)
+ok
+</code></pre>
+<p>The procedure that creates the network is defined as follows:</p>
+<pre><code class="language-scheme">(define (celsius-fahrenheit-converter c f)
+ (let ((u (make-connector))
+ (v (make-connector))
+ (w (make-connector))
+ (x (make-connector))
+ (y (make-connector)))
+ (multiplier c w u)
+ (multiplier v x u)
+ (adder v y f)
+ (constant 9 w)
+ (constant 5 x)
+ (constant 32 y)
+ 'ok))
+</code></pre>
+<p>This procedure creates the internal connectorsu,v,w,x, andy, and links them as shown inFigure 3.28using the
+primitive constraint constructorsadder,multiplier, andconstant. Just as with the digital-circuit simulator of3.3.4, expressing these combinations of primitive elements in terms of
+procedures automatically provides our language with a means of abstraction for
+compound objects.</p>
+<p>To watch the network in action, we can place probes on the connectorsCandF, using aprobeprocedure similar to the one we used to
+monitor wires in3.3.4. Placing a probe on a connector will
+cause a message to be printed whenever the connector is given a value:</p>
+<pre><code class="language-scheme">(probe &quot;Celsius temp&quot; C)
+(probe &quot;Fahrenheit temp&quot; F)
+</code></pre>
+<p>Next we set the value ofCto 25. (The third argument toset-value!tellsCthat this directive comes from theuser.)</p>
+<pre><code class="language-scheme">(set-value! C 25 'user)
+Probe: Celsius temp = 25
+Probe: Fahrenheit temp = 77
+done
+</code></pre>
+<p>The probe onCawakens and reports the value.Calso propagates
+its value through the network as described above. This setsFto 77,
+which is reported by the probe onF.</p>
+<p>Now we can try to setFto a new value, say 212:</p>
+<pre><code class="language-scheme">(set-value! F 212 'user)
+Error! Contradiction (77 212)
+</code></pre>
+<p>The connector complains that it has sensed a contradiction: Its value is 77,
+and someone is trying to set it to 212. If we really want to reuse the network
+with new values, we can tellCto forget its old value:</p>
+<pre><code class="language-scheme">(forget-value! C 'user)
+Probe: Celsius temp = ?
+Probe: Fahrenheit temp = ?
+done
+</code></pre>
+<p>Cfinds that theuser, who set its value originally, is now
+retracting that value, soCagrees to lose its value, as shown by the
+probe, and informs the rest of the network of this fact. This information
+eventually propagates toF, which now finds that it has no reason for
+continuing to believe that its own value is 77. Thus,Falso gives up
+its value, as shown by the probe.</p>
+<p>Now thatFhas no value, we are free to set it to 212:</p>
+<pre><code class="language-scheme">(set-value! F 212 'user)
+Probe: Fahrenheit temp = 212
+Probe: Celsius temp = 100
+done
+</code></pre>
+<p>This new value, when propagated through the network, forcesCto have a
+value of 100, and this is registered by the probe onC. Notice that the
+very same network is being used to computeCgivenFand to
+computeFgivenC. This nondirectionality of computation is the
+distinguishing feature of constraint-based systems.</p>
+<h6>Implementing the constraint system</h6>
+<p>The constraint system is implemented via procedural objects with local state,
+in a manner very similar to the digital-circuit simulator of3.3.4. Although the primitive objects of the constraint system are
+somewhat more complex, the overall system is simpler, since there is no concern
+about agendas and logic delays.</p>
+<p>The basic operations on connectors are the following:
+- (has-value? ⟨connector⟩)tells whether the connector has a value.- (get-value ⟨connector⟩)returns the connector’s current value.- (set-value! ⟨connector⟩ ⟨new-value⟩ ⟨informant⟩)indicates that the informant is requesting the connector to set its value to
+the new value.- (forget-value! ⟨connector⟩ ⟨retractor⟩)tells the connector
+that the retractor is requesting it to forget its value.- (connect ⟨connector⟩ ⟨new-constraint⟩)tells the connector
+to participate in the new constraint.
+The connectors communicate with the constraints by means of the proceduresinform-about-value, which tells the given constraint that the connector
+has a value, andinform-about-no-value, which tells the constraint that
+the connector has lost its value.</p>
+<p>Adderconstructs an adder constraint among summand connectorsa1anda2and asumconnector. An adder is implemented as a
+procedure with local state (the proceduremebelow):</p>
+<pre><code class="language-scheme">(define (adder a1 a2 sum)
+ (define (process-new-value)
+ (cond ((and (has-value? a1) 
+ (has-value? a2))
+ (set-value! sum
+ (+ (get-value a1) 
+ (get-value a2))
+ me))
+ ((and (has-value? a1) 
+ (has-value? sum))
+ (set-value! a2
+ (- (get-value sum) 
+ (get-value a1))
+ me))
+ ((and (has-value? a2) 
+ (has-value? sum))
+ (set-value! a1
+ (- (get-value sum) 
+ (get-value a2))
+ me))))
+ (define (process-forget-value)
+ (forget-value! sum me)
+ (forget-value! a1 me)
+ (forget-value! a2 me)
+ (process-new-value))
+ (define (me request)
+ (cond ((eq? request 'I-have-a-value)
+ (process-new-value))
+ ((eq? request 'I-lost-my-value)
+ (process-forget-value))
+ (else (error &quot;Unknown request: 
+ ADDER&quot; request))))
+ (connect a1 me)
+ (connect a2 me)
+ (connect sum me)
+ me)
+</code></pre>
+<p>Adderconnects the new adder to the designated connectors and returns it
+as its value. The procedureme, which represents the adder, acts as a
+dispatch to the local procedures. The following “syntax interfaces” (seeFootnote 155in3.3.4) are used in conjunction with
+the dispatch:</p>
+<pre><code class="language-scheme">(define (inform-about-value constraint)
+ (constraint 'I-have-a-value))
+(define (inform-about-no-value constraint)
+ (constraint 'I-lost-my-value))
+</code></pre>
+<p>The adder’s local procedureprocess-new-valueis called when the adder
+is informed that one of its connectors has a value. The adder first checks to
+see if botha1anda2have values. If so, it tellssumto
+set its value to the sum of the two addends. Theinformantargument toset-value!isme, which is the adder object itself. Ifa1anda2do not both have values, then the adder checks to see if perhapsa1andsumhave values. If so, it setsa2to the
+difference of these two. Finally, ifa2andsumhave values,
+this gives the adder enough information to seta1. If the adder is told
+that one of its connectors has lost a value, it requests that all of its
+connectors now lose their values. (Only those values that were set by this
+adder are actually lost.) Then it runsprocess-new-value. The reason
+for this last step is that one or more connectors may still have a value (that
+is, a connector may have had a value that was not originally set by the adder),
+and these values may need to be propagated back through the adder.</p>
+<p>A multiplier is very similar to an adder. It will set itsproductto 0
+if either of the factors is 0, even if the other factor is not known.</p>
+<pre><code class="language-scheme">(define (multiplier m1 m2 product)
+ (define (process-new-value)
+ (cond ((or (and (has-value? m1) 
+ (= (get-value m1) 0))
+ (and (has-value? m2) 
+ (= (get-value m2) 0)))
+ (set-value! product 0 me))
+ ((and (has-value? m1) 
+ (has-value? m2))
+ (set-value! product
+ (* (get-value m1) 
+ (get-value m2))
+ me))
+ ((and (has-value? product) 
+ (has-value? m1))
+ (set-value! m2
+ (/ (get-value product) 
+ (get-value m1))
+ me))
+ ((and (has-value? product) 
+ (has-value? m2))
+ (set-value! m1
+ (/ (get-value product) 
+ (get-value m2))
+ me))))
+ (define (process-forget-value)
+ (forget-value! product me)
+ (forget-value! m1 me)
+ (forget-value! m2 me)
+ (process-new-value))
+ (define (me request)
+ (cond ((eq? request 'I-have-a-value)
+ (process-new-value))
+ ((eq? request 'I-lost-my-value)
+ (process-forget-value))
+ (else
+ (error &quot;Unknown request: 
+ MULTIPLIER&quot; 
+ request))))
+ (connect m1 me)
+ (connect m2 me)
+ (connect product me)
+ me)
+</code></pre>
+<p>Aconstantconstructor simply sets the value of the designated
+connector. AnyI-have-a-valueorI-lost-my-valuemessage sent to
+the constant box will produce an error.</p>
+<pre><code class="language-scheme">(define (constant value connector)
+ (define (me request)
+ (error &quot;Unknown request: CONSTANT&quot; 
+ request))
+ (connect connector me)
+ (set-value! connector value me)
+ me)
+</code></pre>
+<p>Finally, a probe prints a message about the setting or unsetting of
+the designated connector:</p>
+<pre><code class="language-scheme">(define (probe name connector)
+ (define (print-probe value)
+ (newline) (display &quot;Probe: &quot;)
+ (display name) (display &quot; = &quot;)
+ (display value))
+ (define (process-new-value)
+ (print-probe (get-value connector)))
+ (define (process-forget-value)
+ (print-probe &quot;?&quot;))
+ (define (me request)
+ (cond ((eq? request 'I-have-a-value)
+ (process-new-value))
+ ((eq? request 'I-lost-my-value)
+ (process-forget-value))
+ (else (error &quot;Unknown request: 
+ PROBE&quot; request))))
+ (connect connector me)
+ me)
+</code></pre>
+<h6>Representing connectors</h6>
+<p>A connector is represented as a procedural object with local state variablesvalue, the current value of the connector;informant, the object
+that set the connector’s value; andconstraints, a list of the
+constraints in which the connector participates.</p>
+<pre><code class="language-scheme">(define (make-connector)
+ (let ((value false) 
+ (informant false) 
+ (constraints '()))
+ (define (set-my-value newval setter)
+ (cond ((not (has-value? me))
+ (set! value newval)
+ (set! informant setter)
+ (for-each-except 
+ setter
+ inform-about-value
+ constraints))
+ ((not (= value newval))
+ (error &quot;Contradiction&quot; 
+ (list value newval)))
+ (else 'ignored)))
+ (define (forget-my-value retractor)
+ (if (eq? retractor informant)
+ (begin (set! informant false)
+ (for-each-except 
+ retractor
+ inform-about-no-value
+ constraints))
+ 'ignored))
+ (define (connect new-constraint)
+ (if (not (memq new-constraint 
+ constraints))
+ (set! constraints
+ (cons new-constraint 
+ constraints)))
+ (if (has-value? me)
+ (inform-about-value new-constraint))
+ 'done)
+ (define (me request)
+ (cond ((eq? request 'has-value?)
+ (if informant true false))
+ ((eq? request 'value) value)
+ ((eq? request 'set-value!) 
+ set-my-value)
+ ((eq? request 'forget) 
+ forget-my-value)
+ ((eq? request 'connect) connect)
+ (else (error &quot;Unknown operation: 
+ CONNECTOR&quot;
+ request))))
+ me))
+</code></pre>
+<p>The connector’s local procedureset-my-valueis called when there is a
+request to set the connector’s value. If the connector does not currently have
+a value, it will set its value and remember asinformantthe constraint
+that requested the value to be set.160Then the connector will notify all of its participating
+constraints except the constraint that requested the value to be set. This is
+accomplished using the following iterator, which applies a designated procedure
+to all items in a list except a given one:</p>
+<pre><code class="language-scheme">(define (for-each-except exception 
+ procedure 
+ list)
+ (define (loop items)
+ (cond ((null? items) 'done)
+ ((eq? (car items) exception) 
+ (loop (cdr items)))
+ (else (procedure (car items))
+ (loop (cdr items)))))
+ (loop list))
+</code></pre>
+<p>If a connector is asked to forget its value, it runs the local procedureforget-my-value, which first checks to make sure that the request is
+coming from the same object that set the value originally. If so, the
+connector informs its associated constraints about the loss of the value.</p>
+<p>The local procedureconnectadds the designated new constraint to the
+list of constraints if it is not already in that list. Then, if the connector
+has a value, it informs the new constraint of this fact.</p>
+<p>The connector’s proceduremeserves as a dispatch to the other internal
+procedures and also represents the connector as an object. The following
+procedures provide a syntax interface for the dispatch:</p>
+<pre><code class="language-scheme">(define (has-value? connector)
+ (connector 'has-value?))
+(define (get-value connector)
+ (connector 'value))
+(define (set-value! connector 
+ new-value 
+ informant)
+ ((connector 'set-value!) 
+ new-value 
+ informant))
+(define (forget-value! connector retractor)
+ ((connector 'forget) retractor))
+(define (connect connector new-constraint)
+ ((connector 'connect) new-constraint))
+</code></pre>
+<blockquote>
+<p>Exercise 3.33:Using primitive multiplier,
+adder, and constant constraints, define a procedureaveragerthat takes
+three connectorsa,b, andcas inputs and establishes the
+constraint that the value ofcis the average of the values ofaandb.</p>
+<p>Exercise 3.34:Louis Reasoner wants to build a
+squarer, a constraint device with two terminals such that the value of
+connectorbon the second terminal will always be the square of the
+valueaon the first terminal. He proposes the following simple device
+made from a multiplier:(define(squarer a b)(multiplier a a b))There is a serious flaw in this idea. Explain.</p>
+<p>Exercise 3.35:Ben Bitdiddle tells Louis that
+one way to avoid the trouble inExercise 3.34is to define a squarer as a
+new primitive constraint. Fill in the missing portions in Ben’s outline for a
+procedure to implement such a constraint:(define(squarer a b)(define(process-new-value)(if(has-value? b)(if(&lt;(get-value b)0)(error&rdquo;square less than 0: 
+SQUARER&rdquo;(get-value b))⟨alternative1⟩)⟨alternative2⟩))(define(process-forget-value)⟨body1⟩)(define(me request)⟨body2⟩)⟨rest of definition⟩
+me)</p>
+<p>Exercise 3.36:Suppose we evaluate the following
+sequence of expressions in the global environment:(definea(make-connector))(defineb(make-connector))(set-value! a10&rsquo;user)At some time during evaluation of theset-value!, the following
+expression from the connector’s local procedure is evaluated:(for-each-except 
+setter inform-about-value constraints)Draw an environment diagram showing the environment in which the above
+expression is evaluated.</p>
+<p>Exercise 3.37:Thecelsius-fahrenheit-converterprocedure is cumbersome when compared with
+a more expression-oriented style of definition, such as(define(celsius-fahrenheit-converter x)(c+(c<em>(c/(cv9)(cv5))x)(cv32)))(defineC(make-connector))(defineF(celsius-fahrenheit-converter C))Herec+,c</em>, etc. are the “constraint” versions of the
+arithmetic operations. For example,c+takes two connectors as
+arguments and returns a connector that is related to these by an adder
+constraint:(define(c+x y)(let((z(make-connector)))(adder x y z)z))Define analogous proceduresc-,c*,c/, andcv(constant value) that enable us to define compound constraints as in the
+converter example above.161</p>
+</blockquote>
+<h5>Footnotes</h5>
+<p>144Set-car!andset-cdr!return implementation-dependent values. Likeset!, they
+should be used only for their effect.</p>
+<p>145We see from
+this that mutation operations on lists can create “garbage” that is not part
+of any accessible structure. We will see in5.3.2that Lisp
+memory-management systems include agarbage collector, which
+identifies and recycles the memory space used by unneeded pairs.</p>
+<p>146Get-new-pairis one of the operations that
+must be implemented as part of the memory management required by a Lisp
+implementation. We will discuss this in5.3.1.</p>
+<p>147The two pairs are distinct
+because each call toconsreturns a new pair. The symbols are shared;
+in Scheme there is a unique symbol with any given name. Since Scheme provides
+no way to mutate a symbol, this sharing is undetectable. Note also that the
+sharing is what enables us to compare symbols usingeq?, which simply
+checks equality of pointers.</p>
+<p>148The subtleties of
+dealing with sharing of mutable data objects reflect the underlying issues of
+“sameness” and “change” that were raised in3.1.3. We
+mentioned there that admitting change to our language requires that a compound
+object must have an “identity” that is something different from the pieces
+from which it is composed. In Lisp, we consider this “identity” to be the
+quality that is tested byeq?, i.e., by equality of pointers. Since in
+most Lisp implementations a pointer is essentially a memory address, we are
+“solving the problem” of defining the identity of objects by stipulating that
+a data object “itself” is the information stored in some particular set of
+memory locations in the computer. This suffices for simple Lisp programs, but
+is hardly a general way to resolve the issue of “sameness” in computational
+models.</p>
+<p>149On
+the other hand, from the viewpoint of implementation, assignment requires us to
+modify the environment, which is itself a mutable data structure. Thus,
+assignment and mutation are equipotent: Each can be implemented in terms of the
+other.</p>
+<p>150If the first item is the final item in the queue, the front
+pointer will be the empty list after the deletion, which will mark the queue as
+empty; we needn’t worry about updating the rear pointer, which will still point
+to the deleted item, becauseempty-queue?looks only at the front
+pointer.</p>
+<p>151Be careful not to make the
+interpreter try to print a structure that contains cycles. (SeeExercise 3.13.)</p>
+<p>152Becauseassocusesequal?, it can recognize keys that are symbols, numbers, or list
+structure.</p>
+<p>153Thus, the first
+backbone pair is the object that represents the table “itself”; that is, a
+pointer to the table is a pointer to this pair. This same backbone pair always
+starts the table. If we did not arrange things in this way,insert!would have to return a new value for the start of the table when it added a new
+record.</p>
+<p>154A full-adder is a basic circuit element used in adding
+two binary numbers. Here A and B are the bits at corresponding positions in
+the two numbers to be added, andCinis the carry bit from the
+addition one place to the right. The circuit generates SUM, which is the sum
+bit in the corresponding position, andCout, which is the carry
+bit to be propagated to the left.</p>
+<p>155These procedures are simply
+syntactic sugar that allow us to use ordinary procedural syntax to access the
+local procedures of objects. It is striking that we can interchange the role
+of “procedures” and “data” in such a simple way. For example, if we write(wire &lsquo;get-signal)we think ofwireas a procedure that is called
+with the messageget-signalas input. Alternatively, writing(get-signal wire)encourages us to think ofwireas a data object
+that is the input to a procedureget-signal. The truth of the matter is
+that, in a language in which we can deal with procedures as objects, there is
+no fundamental difference between “procedures” and “data,” and we can
+choose our syntactic sugar to allow us to program in whatever style we choose.</p>
+<p>156The agenda is a headed list, like the tables in3.3.3, but since the list is headed by the time, we do not need an
+additional dummy header (such as the<em>table</em>symbol used with tables).</p>
+<p>157Observe
+that theifexpression in this procedure has no⟨alternative⟩expression. Such a “one-armedifstatement” is used to decide whether
+to do something, rather than to select between two expressions. Anifexpression returns an unspecified value if the predicate is false and there is
+no⟨alternative⟩.</p>
+<p>158In this way, the current time will always be the time of the
+action most recently processed. Storing this time at the head of the agenda
+ensures that it will still be available even if the associated time segment has
+been deleted.</p>
+<p>159Constraint propagation first appeared in the incredibly
+forward-lookingSKETCHPADsystem of IvanSutherland (1963). A
+beautiful constraint-propagation system based on the Smalltalk language was
+developed by AlanBorning (1977)at Xerox Palo Alto Research Center. Sussman,
+Stallman, and Steele applied constraint propagation to electrical circuit
+analysis (Sussman and Stallman 1975;Sussman and Steele 1980). TK!Solver
+(Konopasek and Jayaraman 1984) is an extensive modeling environment based on
+constraints.</p>
+<p>160Thesettermight not be a
+constraint. In our temperature example, we useduseras thesetter.</p>
+<p>161The expression-oriented format is convenient
+because it avoids the need to name the intermediate expressions in a
+computation. Our original formulation of the constraint language is cumbersome
+in the same way that many languages are cumbersome when dealing with operations
+on compound data. For example, if we wanted to compute the product(a+b)⋅(c+d), where the variables represent vectors, we could work
+in “imperative style,” using procedures that set the values of designated
+vector arguments but do not themselves return vectors as values:</p>
+<pre><code class="language-scheme">(v-sum a b temp1)
+(v-sum c d temp2)
+(v-prod temp1 temp2 answer)
+</code></pre>
+<p>Alternatively, we could deal with expressions, using procedures that return
+vectors as values, and thus avoid explicitly mentioningtemp1andtemp2:</p>
+<pre><code class="language-scheme">(define answer 
+ (v-prod (v-sum a b) (v-sum c d)))
+</code></pre>
+<p>Since Lisp allows us to return compound objects as values of procedures, we can
+transform our imperative-style constraint language into an expression-oriented
+style as shown in this exercise. In languages that are impoverished in
+handling compound objects, such as Algol, Basic, and Pascal (unless one
+explicitly uses Pascal pointer variables), one is usually stuck with the
+imperative style when manipulating compound objects. Given the advantage of
+the expression-oriented format, one might ask if there is any reason to have
+implemented the system in imperative style, as we did in this section. One
+reason is that the non-expression-oriented constraint language provides a
+handle on constraint objects (e.g., the value of theadderprocedure) as
+well as on connector objects. This is useful if we wish to extend the system
+with new operations that communicate with constraints directly rather than only
+indirectly via operations on connectors. Although it is easy to implement the
+expression-oriented style in terms of the imperative implementation, it is very
+difficult to do the converse.</p>
+<div class="source-note">
+  <p>Adapted from <em>Structure and Interpretation of Computer Programs</em>
+  by Harold Abelson and Gerald Jay Sussman (MIT Press, 1996).
+  Original Scheme examples translated to Python.</p>
+</div>
+</body>
+</html>

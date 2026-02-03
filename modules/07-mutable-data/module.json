@@ -1,0 +1,27 @@
+{
+  "id": "07-mutable-data",
+  "title": "Mutable Data",
+  "subtitle": "State, identity, and why mutation breaks substitution",
+  "chapter": "2.6",
+  "description": "Introduce mutation into the picture. Understand nonlocal, aliasing dangers, the mutable default trap, and the fundamental trade-off: mutation enables state modeling but makes reasoning harder.",
+  "estimatedMinutes": 35,
+  "prerequisites": ["05-sequences"],
+
+  "generation": {
+    "minSlides": 8,
+    "maxSlides": 10,
+    "targetSeconds": 420,
+    "preset": "sicp_interactive",
+    "referenceFiles": ["3.1-assignment-local-state.md", "3.3-mutable-data.md"],
+    "diagramTemplates": ["environment_diagram", "object_identity"],
+    "interactionCheckpoints": 2,
+    "enableFragments": true,
+    "enableImages": true,
+    "imageStyle": "clean technical diagram, minimalist, white background",
+    "pyodideEnabled": true
+  },
+
+  "lab": {
+    "exercises": ["3.1", "3.2", "3.3"]
+  }
+}

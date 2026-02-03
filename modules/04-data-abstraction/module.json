@@ -1,0 +1,27 @@
+{
+  "id": "04-data-abstraction",
+  "title": "Data Abstraction",
+  "subtitle": "Constructors, selectors, and the power of abstraction barriers",
+  "chapter": "2.2",
+  "description": "Separate the use of data from its implementation. Build rational number arithmetic behind a clean interface, then see that even functions can serve as data.",
+  "estimatedMinutes": 50,
+  "prerequisites": ["03-recursive-functions"],
+
+  "generation": {
+    "minSlides": 9,
+    "maxSlides": 11,
+    "targetSeconds": 480,
+    "preset": "sicp_interactive",
+    "referenceFiles": ["2.1-data-abstraction.md"],
+    "diagramTemplates": ["abstraction_barrier", "data_structure"],
+    "interactionCheckpoints": 2,
+    "enableFragments": true,
+    "enableImages": true,
+    "imageStyle": "clean technical diagram, minimalist, white background",
+    "pyodideEnabled": true
+  },
+
+  "lab": {
+    "exercises": ["2.1", "2.2", "2.3"]
+  }
+}

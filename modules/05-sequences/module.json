@@ -1,0 +1,27 @@
+{
+  "id": "05-sequences",
+  "title": "Sequences",
+  "subtitle": "Lists, the signal-processing view, and lazy evaluation with generators",
+  "chapter": "2.3",
+  "description": "Process data with map, filter, and reduce. See sequences as pipelines, master list comprehensions, and discover Python generators for lazy, memory-efficient computation.",
+  "estimatedMinutes": 45,
+  "prerequisites": ["04-data-abstraction"],
+
+  "generation": {
+    "minSlides": 8,
+    "maxSlides": 10,
+    "targetSeconds": 420,
+    "preset": "sicp_interactive",
+    "referenceFiles": ["2.2-hierarchical-data.md"],
+    "diagramTemplates": ["sequence_pipeline", "list_structure"],
+    "interactionCheckpoints": 2,
+    "enableFragments": true,
+    "enableImages": true,
+    "imageStyle": "clean technical diagram, minimalist, white background",
+    "pyodideEnabled": true
+  },
+
+  "lab": {
+    "exercises": ["2.17", "2.18", "2.19"]
+  }
+}

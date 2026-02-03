@@ -1,0 +1,27 @@
+{
+  "id": "02-environment-diagrams",
+  "title": "Environment Diagrams",
+  "subtitle": "How names get values, and how evaluation actually proceeds",
+  "chapter": "1.7",
+  "description": "Build a mental model for how Python tracks names and values. Trace function calls through frames, understand name lookup and shadowing, and see why closures work.",
+  "estimatedMinutes": 30,
+  "prerequisites": ["01-higher-order-functions"],
+
+  "generation": {
+    "minSlides": 7,
+    "maxSlides": 9,
+    "targetSeconds": 360,
+    "preset": "sicp_interactive",
+    "referenceFiles": ["3.2-environment-model.md"],
+    "diagramTemplates": ["environment_diagram", "call_stack"],
+    "interactionCheckpoints": 2,
+    "enableFragments": true,
+    "enableImages": true,
+    "imageStyle": "clean technical diagram, minimalist, white background",
+    "pyodideEnabled": true
+  },
+
+  "lab": {
+    "exercises": ["1.35", "1.36"]
+  }
+}
