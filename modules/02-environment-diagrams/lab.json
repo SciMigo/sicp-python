@@ -94,7 +94,7 @@
         "Use `nonlocal total` in functions that rebind `total`.",
         "`start` is also remembered in the parent frame, so `reset` can use it."
       ],
-      "solution": "def make_accumulator(start):\n    total = start\n\n    def add(amount):\n        nonlocal total\n        total += amount\n        return total\n\n    def get_total():\n        return total\n\n    def reset():\n        nonlocal total\n        total = start\n        return total\n\n    return add, get_total, reset\n\nThe key idea is that `add`, `get_total`, and `reset` are all defined inside the same call to `make_accumulator`, so they share the same parent frame. `add` and `reset` need `nonlocal total` because they rebind `total`; `get_total` only reads it."
+      "solution": "def make_accumulator(start):\n    total = start\n\n    def add(amount):\n        nonlocal total\n        total += amount\n        return total\n\n    def get_total():\n        return total\n\n    def reset():\n        nonlocal total\n        total = start\n        return total\n\n    return add, get_total, reset\n\n\n# The key idea is that `add`, `get_total`, and `reset` are all defined\n# inside the same call to `make_accumulator`, so they share the same parent\n# frame. `add` and `reset` need `nonlocal total` because they rebind\n# `total`; `get_total` only reads it.\n"
     }
   ]
 }
