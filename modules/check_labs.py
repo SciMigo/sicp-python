@@ -8,27 +8,51 @@ Stdlib only, no dependencies:
 
 Exits non-zero if any solution fails.
 
-Solutions come in two shapes. Implement/extend exercises are answered in
-Python and must run and pass. Predict/trace exercises are answered in prose,
-which is not code; those are reported as "prose" and skipped. That is correct
-content, not a gap.
+Solutions come in three shapes:
+
+- Python, for implement/extend exercises. It must run and pass.
+- prose, for predict/trace exercises ("it prints 2, because the instance
+  attribute shadows the class attribute"). Correct content; skipped.
+- broken code, which is the one to catch: an answer that opens a block or
+  returns a value, so it was written to run, and does not parse. The usual
+  cause is an explanatory sentence appended without a `#`, or a markdown
+  code fence left around the answer — the fenced code trips the same
+  markers. A learner who pastes it gets a SyntaxError.
+
+  A fence is not itself a marker: a predict answer legitimately quotes
+  expected OUTPUT in one, and flagging that would recreate the false
+  positives this exists to remove.
+
+Classifying by "does it compile" alone puts broken code in the prose bucket
+and reports it as fine. That hid a defect in the published labs.
 """
 
 from __future__ import annotations
 
 import io
 import json
+import re
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
 
 
-def is_python(source):
+#: Markers that say an answer meant to run: it opens a block or returns a
+#: value. A prose answer quotes code inline (`double(2)`) but does not do this.
+CODE_MARKERS = re.compile(
+    r"^\s*(def |class |import |from |return |for |while |if |elif |else:"
+    r"|try:|except|with |@)",
+    re.M,
+)
+
+
+def classify(source):
+    """"python", "prose" or "broken_code"."""
     try:
         compile(source, "<solution>", "exec")
     except SyntaxError:
-        return False
-    return True
+        return "broken_code" if CODE_MARKERS.search(source) else "prose"
+    return "python"
 
 
 def run_solution(solution, tests):
@@ -70,8 +94,15 @@ def main():
                 print(f"NO SOLUTION  {label}/{ex_id}")
                 failed += 1
                 continue
-            if not is_python(solution):
+            kind = classify(solution)
+            if kind == "prose":
                 prose += 1
+                continue
+            if kind == "broken_code":
+                failed += 1
+                print(f"BROKEN  {label}/{ex_id}")
+                print("          solution reads as Python but does not parse "
+                      "— a learner who pastes it gets a SyntaxError")
                 continue
             results = run_solution(solution, tests)
             bad = [(n, e) for n, e in results if e]

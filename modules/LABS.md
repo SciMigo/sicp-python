@@ -35,25 +35,36 @@ own tests. Stdlib only, no dependencies, no network:
 python3 modules/check_labs.py
 ```
 
-Solutions come in two shapes, and the distinction matters when reading the
+Solutions come in three shapes, and the distinction matters when reading the
 output of this or any other checker:
 
 - Implement/extend exercises are answered in **Python**. They must run and pass.
 - Predict/trace exercises are answered in **prose** — "it prints 2, because the
-  instance attribute shadows the class attribute". That is correct content, so
-  `check_labs.py` reports it as prose and skips it. A checker that assumes every
-  solution is code will report all 13 as syntax errors; they are not defects.
+  instance attribute shadows the class attribute". Correct content; reported as
+  prose and skipped.
+- **Broken code** is the one to catch: an answer that opens a block or returns
+  a value, so it was written to run, and does not parse. A learner who pastes
+  it gets a `SyntaxError`.
+
+Classifying by "does it compile" alone puts broken code in the prose bucket and
+calls the lab clean. That is exactly what happened: two solutions shipped
+unrunnable and the checker reported 0 failures for months.
+
+Current state: **19 solutions pass, 0 fail, 11 answered in prose.**
 
 Separately, `01/ex3` and `08/ex3` ship starter code that raises until it is
 filled in — `pass` stubs plus demo calls at the bottom. Also by design.
-Current state: **17 solutions pass, 0 fail, 13 answered in prose.**
 
 ## Provenance
 
 Every `lab.json` was extracted verbatim from the file published for that
-module, checksum-verified on 2026-09-22. Six still match exactly; **three
-reference solutions have since been fixed here and are not yet republished**
-— see below. The course is a mix of two generation runs:
+module, checksum-verified on 2026-09-22. Seven still match exactly. Two carry
+changes that have not been published yet:
+
+- `02-environment-diagrams` — the unrunnable solution above.
+- `04-data-abstraction` — its lab title, which used to carry a LaTeX artifact.
+
+The course is a mix of two generation runs:
 
 | Module | Published |
 |---|---|
@@ -62,46 +73,46 @@ reference solutions have since been fixed here and are not yet republished**
 
 Modules 01–03 come from a later regeneration; 04–09 are from the original run.
 
-## Reference solutions: fixed here, stale where published
+## Unrunnable reference solutions
 
-Three reference solutions used to fail their own tests. A learner who revealed
-the solution and re-ran the tests saw red. They are fixed in this repo and
-**still broken in the published labs** until those are regenerated:
+Five reference solutions could not run. A learner who revealed one and re-ran
+the tests saw red, or pasted it and got a `SyntaxError`.
+
+Three failed their own tests, and are **published**:
 
 | Module | Exercise | Was |
 |---|---|---|
 | 04-data-abstraction | `ex3_extend_sub_rat_survives_repr_swap` | 3/3 failed — `_normalize` / `install_tuple_repr` undefined |
-| 08-oop | `ex1_predict_fee_shadowing` | 2/2 failed — solution was comments only, defined no `ch` |
-| 08-oop | `ex3_implement_extend_equ_generic` | 6/6 failed — body was the placeholder `# Same code as starter up to install_equ_package...` |
+| 08-oop | `ex1_predict_fee_shadowing` | 2/2 failed — comments only, defined no `ch` |
+| 08-oop | `ex3_implement_extend_equ_generic` | 6/6 failed — body was a placeholder comment |
 
-One root cause: the `solution` held only the **fragment** the learner fills,
-while a checker — or anyone pasting it into the editor — runs it standalone.
-The fix makes each one a complete runnable program, the shape the six passing
-modules already use. `prompt_md`, `starter_code` and `tests` were not touched,
-so nothing changed about what the learner is asked or graded on.
-## `06-trees` has an unpublished rewrite
+Their cause: the `solution` held only the **fragment** the learner fills, while
+a checker — or anyone pasting it into the editor — runs it standalone. Each is
+now a complete runnable program, the shape the other modules use.
 
-`lab.remake-2026-08-31.json` is a later re-authoring of the trees lab that was
-never published. It is kept because it is the better lab on the merits: it
-covers SICP 2.24/2.25/2.26, exactly what `module.json` declares, where the
-published lab substitutes 2.28.
+Two more did not parse at all, and the checker had been calling them prose:
 
-**It is not a drop-in replacement.** Its `slide_anchor` values point at the
-rebuilt trees deck, which is also unpublished — the deck learners see is still
-the February one. Shipping the lab without the deck would anchor exercises to
-slides the learner never sees. Promoting it means publishing deck and lab
-together.
+| Module | Exercise | Was |
+|---|---|---|
+| 02-environment-diagrams | `ex3_extend_accumulator_closure` | working code with an explanatory sentence on the last line and no `#` |
+| 06-trees (the unpublished rewrite) | `ex3_extend_all_paths` | a markdown answer — prose, then the code inside a fence |
+
+In every case `prompt_md`, `starter_code` and `tests` were left alone, so
+nothing changed about what the learner is asked or graded on.
 
 ## How these files are used today
 
-`lab.json` is **not yet wired into publication**. The pipeline still publishes
-the lab it generates into its own build output; nothing reads this file except
-a check for whether it exists. So these files are the reviewable record and the
-recovery source, and making them the thing that gets published is a separate
-change on the pipeline side.
+Historically the pipeline published the lab it generated into its own build
+output, and nothing read this file except a check for whether it exists — so an
+edit here reached nobody until someone copied it back by hand.
 
-The practical consequence: edits here do not reach learners until the labs are
-regenerated or republished.
+A pipeline change now in review makes publication read `lab.json` directly,
+validated, with the lab page re-rendered from it. Once that lands these files
+are the source of truth and an edit here ships on the next deploy. Until it
+does, a fix here still needs that manual step.
+
+Either way, **a change in this repo does not reach learners until someone runs
+a deploy.** Merging is not publishing.
 
 ## `module.json` → `lab.exercises` is a hint, not a spec
 
