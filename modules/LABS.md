@@ -46,13 +46,14 @@ output of this or any other checker:
 
 Separately, `01/ex3` and `08/ex3` ship starter code that raises until it is
 filled in — `pass` stubs plus demo calls at the bottom. Also by design.
-Current state: **14 solutions pass, 3 fail, 13 answered in prose.**
+Current state: **17 solutions pass, 0 fail, 13 answered in prose.**
 
 ## Provenance
 
 Every `lab.json` was extracted verbatim from the file published for that
-module, checksum-verified on 2026-09-22 — all nine match exactly. The course
-turns out to be a mix of two generation runs:
+module, checksum-verified on 2026-09-22. Six still match exactly; **three
+reference solutions have since been fixed here and are not yet republished**
+— see below. The course is a mix of two generation runs:
 
 | Module | Published |
 |---|---|
@@ -61,20 +62,23 @@ turns out to be a mix of two generation runs:
 
 Modules 01–03 come from a later regeneration; 04–09 are from the original run.
 
-## Three reference solutions fail their own tests
+## Reference solutions: fixed here, stale where published
 
-A learner who reveals the solution and re-runs the tests sees red. This is
-true of the published labs as well as of the files here:
+Three reference solutions used to fail their own tests. A learner who revealed
+the solution and re-ran the tests saw red. They are fixed in this repo and
+**still broken in the published labs** until those are regenerated:
 
-| Module | Exercise | Failure |
+| Module | Exercise | Was |
 |---|---|---|
-| 04-data-abstraction | `ex3_extend_sub_rat_survives_repr_swap` | 3/3 — `_normalize` / `install_tuple_repr` undefined |
-| 08-oop | `ex1_predict_fee_shadowing` | 2/2 — solution is comments only, defines no `ch` |
-| 08-oop | `ex3_implement_extend_equ_generic` | 6/6 — body is the placeholder `# Same code as starter up to install_equ_package...` |
+| 04-data-abstraction | `ex3_extend_sub_rat_survives_repr_swap` | 3/3 failed — `_normalize` / `install_tuple_repr` undefined |
+| 08-oop | `ex1_predict_fee_shadowing` | 2/2 failed — solution was comments only, defined no `ch` |
+| 08-oop | `ex3_implement_extend_equ_generic` | 6/6 failed — body was the placeholder `# Same code as starter up to install_equ_package...` |
 
-One root cause: the `solution` holds only the **fragment** the learner fills,
+One root cause: the `solution` held only the **fragment** the learner fills,
 while a checker — or anyone pasting it into the editor — runs it standalone.
-The six passing modules ship complete, runnable solutions.
+The fix makes each one a complete runnable program, the shape the six passing
+modules already use. `prompt_md`, `starter_code` and `tests` were not touched,
+so nothing changed about what the learner is asked or graded on.
 ## `06-trees` has an unpublished rewrite
 
 `lab.remake-2026-08-31.json` is a later re-authoring of the trees lab that was
