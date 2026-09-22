@@ -1,0 +1,94 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "sequences-lab",
+  "title": "Sequences Lab: Pipelines with map, filter, and folds",
+  "description": "Practice building programs as sequence pipelines (select → transform → combine), predict behavior before running, trace lazy iterator flow, and implement pipelines using fold/accumulate (SICP-inspired).",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 5000
+  },
+  "exercises": [
+    {
+      "exercise_id": "ex1_predict_pipeline_sum_odd_squares",
+      "title": "Predict a Pipeline Result (odd squares)",
+      "slide_anchor": 7,
+      "prompt_md": "**Predict the output** before running:\n\n```python\ndef odd_square_sum(n):\n    return sum(map(lambda x: x * x,\n                   filter(lambda x: x % 2 == 1, range(1, n + 1))))\n\nprint(odd_square_sum(10))\nprint(odd_square_sum(1))\n```\n\nWhat will be printed?\n\nA) `165` then `1`\nB) `220` then `1`\nC) `165` then `0`\nD) Error (because `map`/`filter` are iterators)",
+      "starter_code": "def odd_square_sum(n):\n    return sum(map(lambda x: x * x,\n                   filter(lambda x: x % 2 == 1, range(1, n + 1))))\n\n# Prediction (write BEFORE running):\n# I predict the two printed lines are:\n# 1) ???\n# 2) ???\n\n# Uncomment to check:\n# print(odd_square_sum(10))\n# print(odd_square_sum(1))\n",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "assert odd_square_sum(10) == 165"
+        },
+        {
+          "name": "t2",
+          "code": "assert odd_square_sum(1) == 1"
+        },
+        {
+          "name": "t3",
+          "code": "assert odd_square_sum(0) == 0"
+        }
+      ],
+      "hints": [
+        "Stages: range(1..n) → filter odd → square each → sum.",
+        "For n=10, the odd numbers are 1,3,5,7,9.",
+        "`sum(...)` can consume an iterator (so no error)."
+      ],
+      "solution": "def odd_square_sum(n):\n    return sum(map(lambda x: x * x,\n                   filter(lambda x: x % 2 == 1, range(1, n + 1))))\n\n# odd_square_sum(10) = 1^2+3^2+5^2+7^2+9^2 = 165\n# odd_square_sum(1) = 1\n"
+    },
+    {
+      "exercise_id": "ex2_trace_lazy_map_filter",
+      "title": "Trace Laziness: Who Gets Pulled From the Source?",
+      "slide_anchor": 8,
+      "prompt_md": "This exercise models a *lazy pipeline* by recording events instead of printing.\n\n1) **Trace** which `source` elements are demanded to produce `a = next(it)`.\n2) Then trace what happens when we consume the rest with `list(it)`.\n\n```python\ndef run():\n    out = []\n    def source():\n        for x in [1, 2, 3, 4]:\n            out.append(f\"source {x}\")\n            yield x\n\n    it = map(lambda x: x * x,\n             filter(lambda x: x % 2 == 0, source()))\n\n    a = next(it)\n    out.append(f\"a {a}\")\n\n    b = list(it)\n    out.append(f\"b {b}\")\n\n    return out\n```\n\n**Task**: Before running, write the exact list that `run()` returns.\n\nThen run it to confirm.",
+      "starter_code": "def run():\n    out = []\n\n    def source():\n        for x in [1, 2, 3, 4]:\n            out.append(f\"source {x}\")\n            yield x\n\n    it = map(lambda x: x * x,\n             filter(lambda x: x % 2 == 0, source()))\n\n    # Trace questions (answer as comments):\n    # Q1: Which 'source x' entries must happen before a = next(it) succeeds?\n    # Q2: After that, when b = list(it) runs, which remaining 'source x' entries happen?\n    # Q3: Why does 'source 3' appear even though 3 is filtered out?\n\n    a = next(it)\n    out.append(f\"a {a}\")\n\n    b = list(it)\n    out.append(f\"b {b}\")\n\n    return out\n\n# Prediction (write BEFORE running):\n# I predict run() returns:\n# [ ... ??? ... ]\n\n# Uncomment to check:\n# print(run())\n",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "assert run() == ['source 1', 'source 2', 'a 4', 'source 3', 'source 4', 'b [16]']"
+        }
+      ],
+      "hints": [
+        "`filter` must *inspect* each incoming element to decide keep/drop.",
+        "`next(it)` pulls just enough from the source to produce one mapped value.",
+        "Even filtered-out items still get pulled from the source (they're just not passed onward)."
+      ],
+      "solution": "def run():\n    out = []\n\n    def source():\n        for x in [1, 2, 3, 4]:\n            out.append(f\"source {x}\")\n            yield x\n\n    it = map(lambda x: x * x,\n             filter(lambda x: x % 2 == 0, source()))\n\n    # next(it) needs the first even source value.\n    # It will pull 1 (drop), then 2 (keep) and square it.\n    a = next(it)\n    out.append(f\"a {a}\")\n\n    # list(it) consumes the rest of the pipeline.\n    # It pulls 3 (drop), then 4 (keep) and squares it.\n    b = list(it)\n    out.append(f\"b {b}\")\n\n    return out\n"
+    },
+    {
+      "exercise_id": "ex3_extend_accumulate_map_filter_pipeline_sicp_2_33",
+      "title": "Accumulate Builds Pipelines (SICP Ex 2.33 + Exit Ticket)",
+      "slide_anchor": 9,
+      "prompt_md": "In SICP, many sequence operations are built from a single pattern: **accumulation** (fold).\n\nImplement `accumulate` as a **fold-right**:\n\n\\[ accumulate(op, z, [a1,a2,...,an]) = op(a1, op(a2, ... op(an, z))) \\]\n\nThen use it to build `my_map` and `my_filter` (no explicit loops).\n\nFinally, **extend** it into an exit-ticket pipeline:\n\n> `sum_cubes_div_by_3(n)` returns \\( \\sum k^3 \\) over integers \\(1 \\le k \\le n\\) where \\(3 \\mid k\\).\n\nWrite your prediction for `sum_cubes_div_by_3(10)` before running tests.",
+      "starter_code": "def accumulate(op, z, seq):\n    \"\"\"Fold-right accumulation.\n\n    accumulate(op, z, [a1, a2, ..., an])\n      = op(a1, op(a2, ... op(an, z)))\n\n    >>> accumulate(lambda x, y: x - y, 0, [1, 2, 3])\n    2\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef my_map(f, seq):\n    \"\"\"Return [f(x) for x in seq], but built from accumulate.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef my_filter(pred, seq):\n    \"\"\"Return [x for x in seq if pred(x)], but built from accumulate.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef sum_cubes_div_by_3(n):\n    \"\"\"Exit ticket pipeline.\n\n    Return sum(k^3 for k in 1..n if k % 3 == 0).\n\n    Prediction prompt:\n    - I predict sum_cubes_div_by_3(10) == ???\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n",
+      "tests": [
+        {
+          "name": "t1_fold_right_order_matters",
+          "code": "assert accumulate(lambda x, y: x / y, 1, [8, 4, 2]) == 4"
+        },
+        {
+          "name": "t2_map_via_accumulate",
+          "code": "assert my_map(lambda x: x * x, [1, 2, 3, 4]) == [1, 4, 9, 16]"
+        },
+        {
+          "name": "t3_filter_via_accumulate",
+          "code": "assert my_filter(lambda x: x > 3, [1, 5, 2, 7, 3]) == [5, 7]"
+        },
+        {
+          "name": "t4_exit_ticket",
+          "code": "assert sum_cubes_div_by_3(10) == 972"
+        },
+        {
+          "name": "t5_exit_ticket_small",
+          "code": "assert sum_cubes_div_by_3(2) == 0"
+        }
+      ],
+      "hints": [
+        "For fold-right: if seq is empty, return z; otherwise return op(first, accumulate(op, z, rest)).",
+        "To build a list without mutation: use list concatenation like [item] + rest_list.",
+        "For my_filter: your combining function can decide whether to prepend x or skip it.",
+        "For sum_cubes_div_by_3: think stages: enumerate → filter → map (cube) → combine (sum)."
+      ],
+      "solution": "def accumulate(op, z, seq):\n    if seq == []:\n        return z\n    return op(seq[0], accumulate(op, z, seq[1:]))\n\n\ndef my_map(f, seq):\n    return accumulate(lambda x, xs: [f(x)] + xs, [], list(seq))\n\n\ndef my_filter(pred, seq):\n    return accumulate(lambda x, xs: ([x] + xs) if pred(x) else xs, [], list(seq))\n\n\ndef sum_cubes_div_by_3(n):\n    cubes = my_map(lambda k: k * k * k,\n                   my_filter(lambda k: k % 3 == 0, range(1, n + 1)))\n    return accumulate(lambda x, y: x + y, 0, cubes)\n"
+    }
+  ]
+}

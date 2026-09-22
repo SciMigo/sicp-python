@@ -1,0 +1,90 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "lecture-$4$:-data-abstraction-lab",
+  "title": "Lecture $4$: Data Abstraction — Lab",
+  "description": "Practice abstraction barriers with rationals and pairs: predict normalized representations, trace closure-based pairs, and implement rational subtraction that survives a representation swap.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 5000
+  },
+  "exercises": [
+    {
+      "exercise_id": "ex1_predict_normalized_rationals",
+      "title": "Predict Normalization Results (SICP Ex 2.1)",
+      "slide_anchor": 6,
+      "prompt_md": "**Predict the output** (write it down before running).\n\nThis `make_rat` reduces by `gcd` and normalizes the sign so the denominator is always positive.\n\n```python\nfrom math import gcd\n\ndef make_rat(n, d):\n    if d == 0:\n        raise ZeroDivisionError\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return (n, d)\n\ndef numer(r):\n    return r[0]\n\ndef denom(r):\n    return r[1]\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef rat_str(r):\n    return f\"{numer(r)}/{denom(r)}\"\n\nprint(make_rat(2, 4))\nprint(rat_str(make_rat(1, -2)))\nprint(rat_str(add_rat(make_rat(1, 3), make_rat(1, 6))))\n```\n\nWhat are the three printed lines (in order)?",
+      "starter_code": "from math import gcd\n\ndef make_rat(n, d):\n    if d == 0:\n        raise ZeroDivisionError\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return (n, d)\n\ndef numer(r):\n    return r[0]\n\ndef denom(r):\n    return r[1]\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef rat_str(r):\n    return f\"{numer(r)}/{denom(r)}\"\n\n# Prediction (before running):\n# Line 1: \n# Line 2: \n# Line 3: \n\n# Uncomment to check:\n# print(make_rat(2, 4))\n# print(rat_str(make_rat(1, -2)))\n# print(rat_str(add_rat(make_rat(1, 3), make_rat(1, 6))))\n",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "assert make_rat(2, 4) == (1, 2)"
+        },
+        {
+          "name": "t2",
+          "code": "assert rat_str(make_rat(1, -2)) == '-1/2'"
+        },
+        {
+          "name": "t3",
+          "code": "assert rat_str(add_rat(make_rat(1,3), make_rat(1,6))) == '1/2'"
+        }
+      ],
+      "hints": [
+        "Normalization means the *stored* pair might not match the inputs.",
+        "Reduction: divide numerator and denominator by gcd(n, d).",
+        "Sign rule: the denominator ends up positive; the sign (if any) goes on the numerator."
+      ],
+      "solution": "The prints are:\n(1, 2)\n-1/2\n1/2\n\nBecause make_rat(2,4) reduces to (1,2); make_rat(1,-2) normalizes sign to (-1,2); and 1/3 + 1/6 = 1/2, then make_rat reduces/normalizes."
+    },
+    {
+      "exercise_id": "ex2_trace_pairs_as_closures",
+      "title": "Trace Message-Passing Pairs (SICP Ex 2.4)",
+      "slide_anchor": 7,
+      "prompt_md": "This is a *procedural* (closure) representation of pairs.\n\n1) **Predict** what the final `print` outputs.\n2) **Trace** the evaluation of `car(p)` using the substitution model: show what `p` is, what function gets called, and which value is returned.\n\n```python\ndef cons(x, y):\n    return lambda m: m(x, y)\n\ndef car(z):\n    return z(lambda p, q: p)\n\ndef cdr(z):\n    return z(lambda p, q: q)\n\np = cons(3, 4)\nprint(car(p) + cdr(p))\n```\n\nWrite your trace as comments in the starter code.",
+      "starter_code": "def cons(x, y):\n    return lambda m: m(x, y)\n\ndef car(z):\n    return z(lambda p, q: p)\n\ndef cdr(z):\n    return z(lambda p, q: q)\n\np = cons(3, 4)\n\n# Prediction:\n# print(...) will output: \n\n# Trace (substitution-style) for car(p):\n# 1. p is ...\n# 2. car(p) = p(lambda p,q: p)\n# 3. then ...\n# 4. returns ...\n\nprint(car(p) + cdr(p))\n",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "p = cons(3, 4)\nassert car(p) == 3\nassert cdr(p) == 4"
+        },
+        {
+          "name": "t2",
+          "code": "nested = cons(cons(1, 2), cons(10, 20))\nassert car(car(nested)) == 1\nassert cdr(car(nested)) == 2\nassert car(cdr(nested)) == 10\nassert cdr(cdr(nested)) == 20"
+        }
+      ],
+      "hints": [
+        "In this representation, a 'pair' is a function that takes a selector function `m`.",
+        "`car` passes in a function that returns its first argument; `cdr` passes in one that returns its second argument.",
+        "For tracing: expand `p = cons(3, 4)` into a lambda that closes over `x=3` and `y=4`."
+      ],
+      "solution": "Prediction: it prints 7.\n\nTrace sketch:\n- p = cons(3,4) = (lambda m: m(3,4)) with x=3,y=4 closed over.\n- car(p) = p(lambda p,q: p)\n- so (lambda m: m(3,4))(lambda p,q: p)\n- => (lambda p,q: p)(3,4)\n- => 3.\nSimilarly, cdr(p) => 4, so 3+4 = 7."
+    },
+    {
+      "exercise_id": "ex3_extend_sub_rat_survives_repr_swap",
+      "title": "Implement sub_rat and Swap Representations Without Breaking Users",
+      "slide_anchor": 10,
+      "prompt_md": "You will do two things:\n\n1) **Implement** `sub_rat(x, y)` using *only* `make_rat`, `numer`, and `denom` (stay above the abstraction barrier).\n2) **Extend** the system by implementing `install_closure_repr()` so rationals are represented using *closures*, not tuples — without changing `add_rat`, `mul_rat`, `sub_rat`, or `equal_rat`.\n\nRules:\n- `sub_rat` must not use tuple indexing like `x[0]`.\n- After calling `install_closure_repr()`, existing arithmetic functions must still work.\n\nStarter code already provides tuple-based rationals via `install_tuple_repr()`.\n\n**Goal:** The same rational arithmetic code works under both representations.",
+      "starter_code": "from math import gcd\n\n# --- Rational operations (ABOVE the barrier): do not change these. ---\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef mul_rat(x, y):\n    return make_rat(numer(x) * numer(y), denom(x) * denom(y))\n\ndef equal_rat(x, y):\n    return numer(x) * denom(y) == numer(y) * denom(x)\n\ndef sub_rat(x, y):\n    \"\"\"Return x - y using ONLY make_rat, numer, denom.\"\"\"\n    # YOUR CODE HERE\n    raise NotImplementedError\n\n# --- Representation installers (BELOW the barrier): you may change these. ---\n\ndef _normalize(n, d):\n    if d == 0:\n        raise ZeroDivisionError(\"denominator cannot be 0\")\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return n, d\n\n\ndef install_tuple_repr():\n    \"\"\"Install tuple-based representation (n, d).\"\"\"\n    global make_rat, numer, denom, rat_str\n\n    def make_rat(n, d):\n        n, d = _normalize(n, d)\n        return (n, d)\n\n    def numer(r):\n        return r[0]\n\n    def denom(r):\n        return r[1]\n\n    def rat_str(r):\n        return f\"{numer(r)}/{denom(r)}\"\n\n\ndef install_closure_repr():\n    \"\"\"Install closure-based representation.\n\n    After installing, a rational r should be a function (a closure) that\n    'remembers' its normalized numerator and denominator.\n\n    You must set the globals: make_rat, numer, denom, rat_str.\n    \"\"\"\n    # YOUR CODE HERE\n    raise NotImplementedError\n\n\n# Default to tuple repr for interactive experimenting\ninstall_tuple_repr()\n\n# Try it (after you implement):\n# x = make_rat(1, 3)\n# y = make_rat(1, 6)\n# print(rat_str(sub_rat(x, y)))  # expected 1/6\n# install_closure_repr()\n# x = make_rat(1, 3)\n# y = make_rat(1, 6)\n# print(rat_str(sub_rat(x, y)))  # expected 1/6\n",
+      "tests": [
+        {
+          "name": "t1_tuple_sub_and_normalize",
+          "code": "install_tuple_repr()\nx = make_rat(1, 3)\ny = make_rat(1, 6)\nassert rat_str(sub_rat(x, y)) == '1/6'\nassert rat_str(sub_rat(make_rat(1, -2), make_rat(1, 3))) == '-5/6'\nassert isinstance(make_rat(2, 4), tuple)\nassert rat_str(make_rat(6, -9)) == '-2/3'"
+        },
+        {
+          "name": "t2_tuple_ops_still_ok",
+          "code": "install_tuple_repr()\na = make_rat(2, 5)\nb = make_rat(1, 10)\nassert rat_str(add_rat(a, b)) == '1/2'\nassert rat_str(mul_rat(a, b)) == '1/25'\nassert equal_rat(make_rat(2, 4), make_rat(1, 2))"
+        },
+        {
+          "name": "t3_closure_repr_swap_does_not_break_ops",
+          "code": "install_closure_repr()\n# Representation check:\nr = make_rat(2, 4)\nassert callable(r), 'In closure repr, a rational should be callable (a function/closure)'\nassert rat_str(r) == '1/2'\n# Arithmetic still works:\nx = make_rat(1, 3)\ny = make_rat(1, 6)\nassert rat_str(add_rat(x, y)) == '1/2'\nassert rat_str(sub_rat(x, y)) == '1/6'\nassert equal_rat(make_rat(6, -9), make_rat(-2, 3))\nassert rat_str(mul_rat(make_rat(-2, 3), make_rat(3, 4))) == '-1/2'"
+        }
+      ],
+      "hints": [
+        "For subtraction: x - y = (n1/d1) - (n2/d2) = (n1*d2 - n2*d1) / (d1*d2). Build the result with make_rat.",
+        "For closure repr, you can use a dispatch function that returns n when asked for 0 and d when asked for 1 (like the lecture's pair).",
+        "Keep normalization in the constructor: make_rat should call _normalize before storing n and d.",
+        "Only the installer should know whether rationals are tuples or closures."
+      ],
+      "solution": "from math import gcd\n\n# --- Rational operations (ABOVE the barrier): unchanged from the starter. ---\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef mul_rat(x, y):\n    return make_rat(numer(x) * numer(y), denom(x) * denom(y))\n\ndef equal_rat(x, y):\n    return numer(x) * denom(y) == numer(y) * denom(x)\n\ndef sub_rat(x, y):\n    \"\"\"Return x - y using ONLY make_rat, numer, denom.\n\n    Part 1: the same shape as add_rat with a minus. No tuple indexing, so\n    this keeps working when the representation changes underneath it.\n    \"\"\"\n    return make_rat(\n        numer(x) * denom(y) - numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\n# --- Representation installers (BELOW the barrier). ---\n\ndef _normalize(n, d):\n    if d == 0:\n        raise ZeroDivisionError(\"denominator cannot be 0\")\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return n, d\n\n\ndef install_tuple_repr():\n    \"\"\"Install tuple-based representation (n, d).\"\"\"\n    global make_rat, numer, denom, rat_str\n\n    def make_rat(n, d):\n        n, d = _normalize(n, d)\n        return (n, d)\n\n    def numer(r):\n        return r[0]\n\n    def denom(r):\n        return r[1]\n\n    def rat_str(r):\n        return f\"{numer(r)}/{denom(r)}\"\n\n\ndef install_closure_repr():\n    \"\"\"Part 2: a rational becomes a closure that remembers n and d.\n\n    Only make_rat / numer / denom / rat_str change. add_rat, mul_rat,\n    sub_rat and equal_rat are never touched — that is the whole point of\n    the abstraction barrier.\n    \"\"\"\n    global make_rat, numer, denom, rat_str\n\n    def make_rat(n, d):\n        n, d = _normalize(n, d)\n\n        def dispatch(m):\n            if m == 0:\n                return n\n            if m == 1:\n                return d\n            raise ValueError('m must be 0 (numer) or 1 (denom)')\n\n        return dispatch\n\n    def numer(r):\n        return r(0)\n\n    def denom(r):\n        return r(1)\n\n    def rat_str(r):\n        return f\"{numer(r)}/{denom(r)}\"\n\n\ninstall_tuple_repr()\n"
+    }
+  ]
+}
