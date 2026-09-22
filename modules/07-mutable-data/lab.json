@@ -1,0 +1,89 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "mutable-data-lab",
+  "title": "Mutable Data Lab",
+  "description": "Practice reasoning about time-varying state: mutation vs rebinding, closures with nonlocal state, aliasing, identity vs equality, and the mutable-default-argument trap.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 5000
+  },
+  "exercises": [
+    {
+      "exercise_id": "ex1_predict_mutable_default_aliasing",
+      "title": "Predict: The Mutable Default Trap",
+      "slide_anchor": 8,
+      "prompt_md": "**Predict the result** before running.\n\nThis function has a mutable default argument:\n\n```python\ndef append_bad(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\ndef demo():\n    a = append_bad(1)\n    b = append_bad(2)\n    fresh = append_bad(3, [])\n    return a, b, (a is b), fresh\n```\n\n1) What does `demo()` return?\n2) Why is `(a is b)` either `True` or `False`?\n\nAfter you write your prediction, run the code to check.",
+      "starter_code": "def append_bad(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\ndef demo():\n    a = append_bad(1)\n    b = append_bad(2)\n    fresh = append_bad(3, [])\n    return a, b, (a is b), fresh\n\n# Prediction (write before running):\n# I predict demo() returns: ???\n\n# Uncomment to check:\n# print(demo())\n",
+      "tests": [
+        {
+          "name": "t1_value",
+          "code": "assert demo() == ([1, 2], [1, 2], True, [3])"
+        },
+        {
+          "name": "t2_identity",
+          "code": "a, b, same, fresh = demo(); assert same is True and a is b and fresh is not a"
+        }
+      ],
+      "hints": [
+        "Default argument expressions are evaluated once, at function definition time.",
+        "`bucket.append(...)` mutates the *existing list object* in place.",
+        "`is` checks whether two names refer to the same object (identity), not whether they have equal contents."
+      ],
+      "solution": "def append_bad(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\ndef demo():\n    a = append_bad(1)\n    b = append_bad(2)\n    fresh = append_bad(3, [])\n    return a, b, (a is b), fresh\n"
+    },
+    {
+      "exercise_id": "ex2_trace_withdraw_closure",
+      "title": "Trace: Where Does the Balance Live?",
+      "slide_anchor": 4,
+      "prompt_md": "This closure uses `nonlocal` to update a private `balance` over time.\n\n```python\ndef make_withdraw(balance):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n    return withdraw\n```\n\n**Trace** `run()` by writing (in comments) what `balance` is after each call, and what each call returns.\n\nFocus questions:\n- Which frame stores `balance`?\n- Does a failed withdrawal change `balance`?\n\nThen run to confirm.",
+      "starter_code": "def make_withdraw(balance):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n    return withdraw\n\ndef run():\n    wd = make_withdraw(100)\n    # Trace in comments (before running):\n    # Call 1: wd(25) returns ___, balance becomes ___\n    # Call 2: wd(25) returns ___, balance becomes ___\n    # Call 3: wd(60) returns ___, balance becomes ___\n    # Call 4: wd(15) returns ___, balance becomes ___\n    return [wd(25), wd(25), wd(60), wd(15)]\n\n# Uncomment to check:\n# print(run())\n",
+      "tests": [
+        {
+          "name": "t1_outputs",
+          "code": "assert run() == [75, 50, 'Insufficient funds', 35]"
+        },
+        {
+          "name": "t2_independent_closures",
+          "code": "wd1 = make_withdraw(10); wd2 = make_withdraw(10); assert wd1(3) == 7 and wd2(3) == 7 and wd1(3) == 4 and wd2(3) == 4"
+        }
+      ],
+      "hints": [
+        "`withdraw` is a closure: it carries a reference to the frame created by `make_withdraw`.",
+        "`nonlocal balance` means rebinding the name `balance` in the enclosing frame (not creating a new local variable).",
+        "If the function returns \"Insufficient funds\", it should not subtract anything."
+      ],
+      "solution": "def make_withdraw(balance):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n    return withdraw\n\ndef run():\n    wd = make_withdraw(100)\n    return [wd(25), wd(25), wd(60), wd(15)]\n"
+    },
+    {
+      "exercise_id": "ex3_extend_password_account_sicp_3_3",
+      "title": "Extend: Password-Protected Account (SICP Ex 3.3)",
+      "slide_anchor": 5,
+      "prompt_md": "Modify message-passing bank accounts to require a password.\n\nImplement `make_account(balance, password)` so that:\n- `acc(correct_pw, \"withdraw\")` returns a **function** that withdraws.\n- `acc(correct_pw, \"deposit\")` returns a **function** that deposits.\n- Any request with a wrong password returns the string **\"Incorrect password\"** (not a function).\n\n**Predict (before running)** what each line should evaluate to:\n\n```python\nacc = make_account(100, \"secret\")\nacc(\"secret\", \"deposit\")(50)      # ?\nacc(\"secret\", \"withdraw\")(30)    # ?\nacc(\"wrong\", \"withdraw\")         # ?\n```\n\nThen implement and run the tests.",
+      "starter_code": "def make_account(balance, password):\n    \"\"\"Return a password-protected dispatch function.\n\n    acc(pw, msg) returns either a function (withdraw/deposit) or the string\n    \"Incorrect password\".\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n# Prediction (write before running):\n# acc = make_account(100, \"secret\")\n# acc(\"secret\", \"deposit\")(50) => ???\n# acc(\"secret\", \"withdraw\")(30) => ???\n# acc(\"wrong\", \"withdraw\") => ???\n",
+      "tests": [
+        {
+          "name": "t1_deposit_withdraw",
+          "code": "acc = make_account(100, 'secret'); assert acc('secret', 'deposit')(50) == 150; assert acc('secret', 'withdraw')(30) == 120"
+        },
+        {
+          "name": "t2_wrong_password_returns_string",
+          "code": "acc = make_account(100, 'secret'); assert acc('wrong', 'withdraw') == 'Incorrect password'"
+        },
+        {
+          "name": "t3_state_is_private_and_persists",
+          "code": "acc = make_account(10, 'pw'); assert acc('pw', 'withdraw')(3) == 7; assert acc('pw', 'withdraw')(3) == 4"
+        },
+        {
+          "name": "t4_unknown_message_raises",
+          "code": "acc = make_account(1, 'pw'); ok = False\ntry:\n    acc('pw', 'balance')\nexcept ValueError:\n    ok = True\nassert ok"
+        }
+      ],
+      "hints": [
+        "Use `nonlocal balance` inside `withdraw` and `deposit` to update the enclosed state.",
+        "`dispatch` should check the password *before* choosing which operation to return.",
+        "Return a function for valid requests; return a string for invalid password."
+      ],
+      "solution": "def make_account(balance, password):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n\n    def deposit(amount):\n        nonlocal balance\n        balance += amount\n        return balance\n\n    def dispatch(pw, message):\n        if pw != password:\n            return \"Incorrect password\"\n        if message == \"withdraw\":\n            return withdraw\n        if message == \"deposit\":\n            return deposit\n        raise ValueError(f\"Unknown request: {message}\")\n\n    return dispatch\n"
+    }
+  ]
+}

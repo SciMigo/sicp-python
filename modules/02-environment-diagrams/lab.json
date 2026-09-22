@@ -1,0 +1,100 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "environment-diagrams-lab",
+  "title": "Environment Diagrams Lab",
+  "description": "Practice predicting, tracing, and implementing programs using the environment model: frames, bindings, lookup, parent links, closures, shadowing, and nonlocal mutation.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 5000
+  },
+  "exercises": [
+    {
+      "exercise_id": "ex1_predict_defined_not_called",
+      "title": "Predict: Defined, Not Called",
+      "slide_anchor": 9,
+      "prompt_md": "**Predict the output before running.**\n\n```python\ndef outer():\n    x = 1\n    def inner(y):\n        return x + y\n    x = 5\n    return inner\n\nx = 100\nf = outer()\nprint(f(2))\nprint(x)\n```\n\nWhat will be printed?\n\nRemember: a function's parent frame is the frame where it was **defined**, not where it is called.",
+      "starter_code": "def outer():\n    x = 1\n    def inner(y):\n        return x + y\n    x = 5\n    return inner\n\nx = 100\nf = outer()\n\n# First, write your prediction as a comment:\n# I predict the two printed values are: ??? and ???\n\n# Then uncomment to check:\n# print(f(2))\n# print(x)",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "assert f(2) == 7, 'inner should read x=5 from outer\\'s frame, then add y=2'"
+        },
+        {
+          "name": "t2",
+          "code": "assert x == 100, 'the global x should still be 100'"
+        },
+        {
+          "name": "t3",
+          "code": "assert outer()(10) == 15, 'outer returns a closure whose parent frame has x=5'"
+        }
+      ],
+      "hints": [
+        "`inner` is defined inside the frame created by calling `outer()`.",
+        "The closure remembers the frame, not just the value of `x` at the moment `inner` was defined.",
+        "Before `outer` returns, it rebinds its local `x` from 1 to 5.",
+        "The global `x = 100` is a different binding in a different frame."
+      ],
+      "solution": "The output is:\n\n7\n100\n\nCalling `outer()` creates a frame where `x` is first 1. Then `inner` is defined, so its parent link points to that `outer` frame. After that, `x` in the `outer` frame is rebound to 5. When `f(2)` calls `inner`, `y` is 2 in the `inner` call frame, and lookup for `x` follows the parent link to the `outer` frame, finding 5. So `x + y` is 7. The global `x` remains 100."
+    },
+    {
+      "exercise_id": "ex2_trace_shared_counter_frame",
+      "title": "Trace: Two Closures, One Shared Frame",
+      "slide_anchor": 7,
+      "prompt_md": "Trace the environment frames for this program.\n\n```python\ndef make_counter():\n    n = 0\n    def inc():\n        nonlocal n\n        n += 1\n        return n\n    def get():\n        return n\n    return inc, get\n\ninc, get = make_counter()\na = inc()\nb = inc()\nc = get()\nprint(a, b, c)\n```\n\nFor your trace, answer:\n\n1. What bindings are in the global frame after `inc, get = make_counter()`?\n2. What bindings are in the `make_counter` frame that both closures remember?\n3. How does `n` change after each call to `inc()`?\n4. Why does `get()` return the same `n` that `inc()` modified?",
+      "starter_code": "def make_counter():\n    n = 0\n    def inc():\n        nonlocal n\n        n += 1\n        return n\n    def get():\n        return n\n    return inc, get\n\ninc, get = make_counter()\n\n# Trace before running:\n# Global frame contains: make_counter, inc, get\n# Shared parent frame contains n = ???\n# After first inc(): n = ???, returned ???\n# After second inc(): n = ???, returned ???\n# get() returns ??? because ???\n\na = inc()\nb = inc()\nc = get()\nprint(a, b, c)",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "new_inc, new_get = make_counter()\nassert new_get() == 0, 'a new counter should start with n=0'"
+        },
+        {
+          "name": "t2",
+          "code": "new_inc, new_get = make_counter()\nassert new_inc() == 1, 'first inc should update shared n to 1'\nassert new_inc() == 2, 'second inc should update shared n to 2'\nassert new_get() == 2, 'get should read the same shared n'"
+        },
+        {
+          "name": "t3",
+          "code": "inc1, get1 = make_counter()\ninc2, get2 = make_counter()\ninc1()\ninc1()\ninc2()\nassert get1() == 2, 'first counter has its own remembered frame'\nassert get2() == 1, 'second counter has a separate remembered frame'"
+        }
+      ],
+      "hints": [
+        "`inc` and `get` are both defined during the same call to `make_counter()`.",
+        "Therefore, both returned functions have the same parent frame.",
+        "`nonlocal n` means assignment changes `n` in the remembered parent frame.",
+        "Calling `make_counter()` a second time creates a new frame with a different `n`."
+      ],
+      "solution": "After `inc, get = make_counter()`, the global frame has `make_counter`, `inc`, and `get`. The names `inc` and `get` are bound to two function objects, both with parent link `f1`, the frame created by calling `make_counter()`. In `f1`, `n` starts as 0, and the local names `inc` and `get` are also bound while the function body runs. The first `inc()` uses `nonlocal n`, changes `f1`'s `n` to 1, and returns 1. The second `inc()` changes the same `n` to 2 and returns 2. Then `get()` looks for `n`; it is not local to `get`, so lookup follows its parent link to `f1` and finds `n = 2`. The program prints `1 2 2`."
+    },
+    {
+      "exercise_id": "ex3_extend_accumulator_closure",
+      "title": "Implement and Extend: Accumulator with Reset",
+      "slide_anchor": 10,
+      "prompt_md": "Implement `make_accumulator(start)`, which returns three closures that share one frame:\n\n- `add(amount)` adds `amount` to the running total and returns the new total.\n- `get_total()` returns the current total without changing it.\n- `reset()` resets the total back to the original `start` value and returns it.\n\nExample:\n\n```python\nadd, get_total, reset = make_accumulator(10)\nadd(5)       # 15\nadd(-3)      # 12\nget_total()  # 12\nreset()      # 10\n```\n\nBefore coding, predict why all three functions must share the same parent frame.",
+      "starter_code": "def make_accumulator(start):\n    total = start\n\n    def add(amount):\n        # YOUR CODE HERE\n        pass\n\n    def get_total():\n        # YOUR CODE HERE\n        pass\n\n    def reset():\n        # YOUR CODE HERE\n        pass\n\n    return add, get_total, reset\n\n# Predict before running:\n# add, get_total, reset = make_accumulator(10)\n# print(add(5), add(-3), get_total(), reset(), get_total())\n# Expected: ???\n\n# Uncomment to test manually:\n# add, get_total, reset = make_accumulator(10)\n# print(add(5), add(-3), get_total(), reset(), get_total())",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "add, get_total, reset = make_accumulator(10)\nassert get_total() == 10, 'initial total should be start'"
+        },
+        {
+          "name": "t2",
+          "code": "add, get_total, reset = make_accumulator(10)\nassert add(5) == 15, 'add should update total'\nassert add(-3) == 12, 'add should keep using the updated total'\nassert get_total() == 12, 'get_total should read the shared total'"
+        },
+        {
+          "name": "t3",
+          "code": "add, get_total, reset = make_accumulator(10)\nadd(5)\nadd(-3)\nassert reset() == 10, 'reset should restore total to start'\nassert get_total() == 10, 'get_total should see the reset value'"
+        },
+        {
+          "name": "t4",
+          "code": "add1, get1, reset1 = make_accumulator(0)\nadd2, get2, reset2 = make_accumulator(100)\nassert add1(1) == 1\nassert add2(1) == 101\nassert get1() == 1, 'separate calls to make_accumulator should create separate frames'\nassert get2() == 101, 'separate accumulators should not share total'"
+        }
+      ],
+      "hints": [
+        "`total` lives in the frame created by `make_accumulator(start)`.",
+        "`add`, `get_total`, and `reset` are all defined in that same frame.",
+        "Use `nonlocal total` in functions that rebind `total`.",
+        "`start` is also remembered in the parent frame, so `reset` can use it."
+      ],
+      "solution": "def make_accumulator(start):\n    total = start\n\n    def add(amount):\n        nonlocal total\n        total += amount\n        return total\n\n    def get_total():\n        return total\n\n    def reset():\n        nonlocal total\n        total = start\n        return total\n\n    return add, get_total, reset\n\nThe key idea is that `add`, `get_total`, and `reset` are all defined inside the same call to `make_accumulator`, so they share the same parent frame. `add` and `reset` need `nonlocal total` because they rebind `total`; `get_total` only reads it."
+    }
+  ]
+}

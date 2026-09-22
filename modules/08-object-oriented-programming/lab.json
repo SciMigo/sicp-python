@@ -1,0 +1,98 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "object-oriented-programming:-o-lab",
+  "title": "OOP, Inheritance, and Generic Operations (SICP-style Lab)",
+  "description": "Predict outputs, trace dispatch (attribute lookup + data-directed tables), then implement and extend a tiny generic-operation system inspired by SICP.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 5000
+  },
+  "exercises": [
+    {
+      "exercise_id": "ex1_predict_fee_shadowing",
+      "title": "Predict: Instance Attribute Shadows Class Attribute (CheckingAccount fee)",
+      "slide_anchor": 11,
+      "prompt_md": "**Predict what will be printed** (write your prediction as a comment *before* running).\n\nFocus question: when `withdraw` uses `self.withdrawal_fee`, will it use the class attribute or the instance attribute?\n\n```python\nclass Account:\n    def __init__(self, holder, balance=0):\n        self.holder = holder\n        self.balance = balance\n\n    def withdraw(self, amount):\n        if amount > self.balance:\n            return 'Insufficient funds'\n        self.balance -= amount\n        return self.balance\n\nclass CheckingAccount(Account):\n    withdrawal_fee = 1\n\n    def withdraw(self, amount):\n        return super().withdraw(amount + self.withdrawal_fee)\n\nch = CheckingAccount('Eve', 10)\nch.withdrawal_fee = 5\nch.withdraw(3)\nprint(ch.balance)\n```\n\nWhat does it print?",
+      "starter_code": "class Account:\n    def __init__(self, holder, balance=0):\n        self.holder = holder\n        self.balance = balance\n\n    def withdraw(self, amount):\n        if amount > self.balance:\n            return 'Insufficient funds'\n        self.balance -= amount\n        return self.balance\n\nclass CheckingAccount(Account):\n    withdrawal_fee = 1\n\n    def withdraw(self, amount):\n        return super().withdraw(amount + self.withdrawal_fee)\n\nch = CheckingAccount('Eve', 10)\n\n# Prediction (before running):\n# I predict print(ch.balance) prints: _____\n\nch.withdrawal_fee = 5\nch.withdraw(3)\nprint(ch.balance)\n",
+      "tests": [
+        {
+          "name": "t1_balance_after_withdraw",
+          "code": "assert ch.balance == 2, 'Expected balance 2: withdraw(3) plus fee 5 withdraws 8 total from 10.'"
+        },
+        {
+          "name": "t2_instance_shadows_class",
+          "code": "assert CheckingAccount.withdrawal_fee == 1 and ch.withdrawal_fee == 5"
+        }
+      ],
+      "hints": [
+        "Attribute lookup for `self.withdrawal_fee`: check the instance (`ch.__dict__`) first, then the class, then parents.",
+        "`ch.withdrawal_fee = 5` creates an instance attribute (it does not change `CheckingAccount.withdrawal_fee`).",
+        "So `withdraw(3)` becomes `super().withdraw(3 + 5)`."
+      ],
+      "solution": "# It prints 2.\n# Mechanism: `self.withdrawal_fee` is looked up on the instance first; the instance attribute 5 shadows the class attribute 1.\n"
+    },
+    {
+      "exercise_id": "ex2_trace_apply_generic_complex_wrapper",
+      "title": "Trace: Why adding a 'complex' method works (SICP Ex 2.77 flavor)",
+      "slide_anchor": 9,
+      "prompt_md": "This is a tiny data-directed dispatch system.\n\n`z` is tagged as `'complex'`, but inside it stores another tagged value (like `'rect'`).\n\n**Task (trace, by hand):** When evaluating `magnitude(z)`,\n1) How many times is `apply_generic` invoked?\n2) What type-tag(s) does it see each time?\n3) Which function does it dispatch to each time?\n\nThen run to verify it returns `5.0`.\n\n```python\nimport math\n\ndef attach_tag(tag, contents):\n    return (tag, contents)\n\ndef type_tag(d):\n    return d[0]\n\ndef contents(d):\n    return d[1]\n\n_op = {}\n\ndef put(op, tags, fn):\n    _op[(op, tuple(tags))] = fn\n\ndef get(op, tags):\n    return _op.get((op, tuple(tags)))\n\ndef apply_generic(op, x):\n    fn = get(op, [type_tag(x)])\n    return fn(contents(x))\n\ndef magnitude(z):\n    return apply_generic('magnitude', z)\n\n# rect package\nput('magnitude', ['rect'], lambda xy: math.hypot(xy[0], xy[1]))\n\n# complex package (wrapper delegates to inner tagged value)\nput('magnitude', ['complex'], lambda inner_tagged: magnitude(inner_tagged))\n\nz = attach_tag('complex', attach_tag('rect', (3.0, 4.0)))\nprint(magnitude(z))\n```",
+      "starter_code": "import math\n\ndef attach_tag(tag, contents):\n    return (tag, contents)\n\ndef type_tag(d):\n    return d[0]\n\ndef contents(d):\n    return d[1]\n\n_op = {}\n\ndef put(op, tags, fn):\n    _op[(op, tuple(tags))] = fn\n\ndef get(op, tags):\n    return _op.get((op, tuple(tags)))\n\n# We'll use this list to observe the call sequence.\ntrace_log = []\n\ndef apply_generic(op, x):\n    trace_log.append((op, type_tag(x)))\n    fn = get(op, [type_tag(x)])\n    if fn is None:\n        raise TypeError(f\"no method for {op} on {type_tag(x)}\")\n    return fn(contents(x))\n\ndef magnitude(z):\n    return apply_generic('magnitude', z)\n\n# rect package\nput('magnitude', ['rect'], lambda xy: math.hypot(xy[0], xy[1]))\n\n# complex package (wrapper delegates to inner tagged value)\nput('magnitude', ['complex'], lambda inner_tagged: magnitude(inner_tagged))\n\n# Trace this:\nz = attach_tag('complex', attach_tag('rect', (3.0, 4.0)))\nans = magnitude(z)\nprint(ans)\nprint('trace_log =', trace_log)\n",
+      "tests": [
+        {
+          "name": "t1_answer",
+          "code": "assert ans == 5.0"
+        },
+        {
+          "name": "t2_two_dispatches",
+          "code": "assert trace_log == [('magnitude', 'complex'), ('magnitude', 'rect')], f'Got {trace_log}'"
+        }
+      ],
+      "hints": [
+        "The `'complex'` magnitude method calls `magnitude` again on the inner tagged value.",
+        "So you should see dispatch once for `'complex'`, then again for `'rect'`.",
+        "This is the key SICP idea: installing forwarding methods for the wrapper type makes generic selectors work at the wrapper level."
+      ],
+      "solution": "Trace:\n- First call: magnitude(z) -> apply_generic('magnitude', z) sees tag 'complex', dispatches to complex magnitude.\n- complex magnitude receives the *inner tagged value* ('rect', (3,4)) and calls magnitude(inner).\n- Second call: apply_generic('magnitude', inner) sees tag 'rect', dispatches to rect magnitude, returns 5.0.\nSo apply_generic is invoked 2 times, on tags: complex then rect.\n"
+    },
+    {
+      "exercise_id": "ex3_implement_extend_equ_generic",
+      "title": "Implement + Extend: Generic Equality equ? (SICP Ex 2.79 flavor)",
+      "slide_anchor": 10,
+      "prompt_md": "You are given a tiny generic-operation table and two complex representations: `'rect'` and `'polar'`.\n\nYour job:\n\n**Part A (implement):** Install generic equality `equ(z1, z2)` for same-type comparisons:\n- `('num','num')`\n- `('rect','rect')`\n- `('polar','polar')`\n\n**Part B (extend):** Without changing `equ` itself, add *cross-type* comparisons so these also work:\n- `('rect','polar')` and `('polar','rect')`\n\nRule: two complex numbers are equal if both their real parts and imaginary parts are close (use `math.isclose` with `abs_tol=1e-9`).\n\nBefore running, predict:\n- Should `equ(z_rect, z_polar)` be `True` for the two representations of 3+4i below?\n\nThen run the tests.\n",
+      "starter_code": "import math\n\n# --- tagging + table ---\ndef attach_tag(tag, contents):\n    return (tag, contents)\n\ndef type_tag(d):\n    return d[0]\n\ndef contents(d):\n    return d[1]\n\n_op = {}\n\ndef put(op, tags, fn):\n    _op[(op, tuple(tags))] = fn\n\ndef get(op, tags):\n    return _op.get((op, tuple(tags)))\n\ndef apply_generic(op, *args):\n    tags = [type_tag(a) for a in args]\n    fn = get(op, tags)\n    if fn is None:\n        raise TypeError(f\"No method for op={op} on types={tags}\")\n    raw = [contents(a) for a in args]\n    return fn(*raw)\n\n# --- generic selectors for complex ---\ndef real_part(z):\n    return apply_generic('real_part', z)\n\ndef imag_part(z):\n    return apply_generic('imag_part', z)\n\n# --- install representations ---\n# rect: (x, y)\nput('real_part', ['rect'], lambda xy: xy[0])\nput('imag_part', ['rect'], lambda xy: xy[1])\n\n# polar: (r, a)\nput('real_part', ['polar'], lambda ra: ra[0] * math.cos(ra[1]))\nput('imag_part', ['polar'], lambda ra: ra[0] * math.sin(ra[1]))\n\n# --- generic equality ---\ndef equ(x, y):\n    return apply_generic('equ', x, y)\n\ndef install_equ_package():\n    \"\"\"Install equ methods into the table.\"\"\"\n    # Part A: same-type equality\n    # Part B: cross-type equality\n    # YOUR CODE HERE\n    pass\n\ninstall_equ_package()\n\n# Some values\nz_rect = attach_tag('rect', (3.0, 4.0))\nz_polar = attach_tag('polar', (5.0, math.atan2(4.0, 3.0)))\n\nn1 = attach_tag('num', 10)\nn2 = attach_tag('num', 10)\n\n# Prediction (before running):\n# I predict equ(z_rect, z_polar) is ____\n\nprint(equ(n1, n2))\nprint(equ(z_rect, z_polar))\n",
+      "tests": [
+        {
+          "name": "t1_num_num",
+          "code": "assert equ(attach_tag('num', 10), attach_tag('num', 10)) is True"
+        },
+        {
+          "name": "t2_rect_rect",
+          "code": "assert equ(attach_tag('rect', (3.0, 4.0)), attach_tag('rect', (3.0, 4.0))) is True"
+        },
+        {
+          "name": "t3_polar_polar",
+          "code": "a = math.atan2(4.0, 3.0)\nassert equ(attach_tag('polar', (5.0, a)), attach_tag('polar', (5.0, a))) is True"
+        },
+        {
+          "name": "t4_rect_polar_cross",
+          "code": "a = math.atan2(4.0, 3.0)\nzr = attach_tag('rect', (3.0, 4.0))\nzp = attach_tag('polar', (5.0, a))\nassert equ(zr, zp) is True"
+        },
+        {
+          "name": "t5_polar_rect_cross",
+          "code": "a = math.atan2(4.0, 3.0)\nzr = attach_tag('rect', (3.0, 4.0))\nzp = attach_tag('polar', (5.0, a))\nassert equ(zp, zr) is True"
+        },
+        {
+          "name": "t6_not_equal",
+          "code": "zr = attach_tag('rect', (3.0, 4.0))\nzr2 = attach_tag('rect', (3.0, 4.1))\nassert equ(zr, zr2) is False"
+        }
+      ],
+      "hints": [
+        "You are *installing* behavior: use `put('equ', [...], fn)`.",
+        "For rect/rect you can compare coordinates directly (or compare via real_part/imag_part).",
+        "For cross-type equality, it’s easiest to compare via the generic selectors `real_part` and `imag_part` by re-tagging inside the method (or by closing over the outer `real_part`/`imag_part`).",
+        "Use `math.isclose(a, b, abs_tol=1e-9)` for floating comparisons."
+      ],
+      "solution": "import math\n\n# Same code as starter up to install_equ_package...\n\ndef install_equ_package():\n    tol = 1e-9\n\n    def close(a, b):\n        return math.isclose(a, b, abs_tol=tol)\n\n    # num\n    put('equ', ['num', 'num'], lambda a, b: a == b)\n\n    # rect-rect compares stored x,y\n    put('equ', ['rect', 'rect'], lambda z1, z2: close(z1[0], z2[0]) and close(z1[1], z2[1]))\n\n    # polar-polar compares via computed real/imag (angles can differ but represent same point)\n    put('equ', ['polar', 'polar'],\n        lambda ra1, ra2: close(ra1[0] * math.cos(ra1[1]), ra2[0] * math.cos(ra2[1]))\n                        and close(ra1[0] * math.sin(ra1[1]), ra2[0] * math.sin(ra2[1])))\n\n    # Cross-type: compare via generic selectors.\n    # Note: the installed functions receive *contents*, so we must re-attach tags.\n    put('equ', ['rect', 'polar'],\n        lambda xy, ra: close(real_part(attach_tag('rect', xy)), real_part(attach_tag('polar', ra)))\n                       and close(imag_part(attach_tag('rect', xy)), imag_part(attach_tag('polar', ra))))\n\n    put('equ', ['polar', 'rect'],\n        lambda ra, xy: close(real_part(attach_tag('polar', ra)), real_part(attach_tag('rect', xy)))\n                       and close(imag_part(attach_tag('polar', ra)), imag_part(attach_tag('rect', xy))))\n"
+    }
+  ]
+}

@@ -34,7 +34,8 @@ sicp-python/
 │   │   ├── module.json      # Module metadata (title, duration, prereqs)
 │   │   ├── topic.md         # Topic description for LLM context
 │   │   ├── outline.md       # Slide-by-slide outline
-│   │   └── lab.yaml         # Lab exercise definitions
+│   │   └── lab.json         # Full lab: prompts, starter code, tests,
+│   │                        # hints, solutions (see modules/LABS.md)
 │   └── ...
 │
 └── reference/               # LLM context materials (not user-facing)
@@ -95,8 +96,13 @@ LLM context describing the topic, key concepts, and examples to cover.
 ### outline.md
 Slide-by-slide outline with specific content for each slide.
 
-### lab.yaml
-Lab exercise definitions with starter code and test cases.
+### lab.json
+The full lab a learner works through: prompt, starter code, assert-based tests,
+hints and a reference solution, in the engine's `lab_v1` schema. Schema,
+provenance and known defects: [modules/LABS.md](modules/LABS.md).
+
+Note `module.json`'s `lab.exercises` is only a *hint* to the generator, not a
+description of this file — the two have drifted. `lab.json` is authoritative.
 
 ## Adding a New Module
 
@@ -104,7 +110,7 @@ Lab exercise definitions with starter code and test cases.
 2. Add `module.json` with metadata
 3. Add `topic.md` with topic description
 4. Add `outline.md` with slide outline
-5. (Optional) Add `lab.yaml` for exercises
+5. (Optional) Add `lab.json` for exercises
 6. Add reading material to `reading/<id>.html`
 7. Update `modules` array in `course.json`
 

@@ -1,0 +1,93 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "interpreters-lab",
+  "title": "Interpreters Lab: Predict, Trace, and Extend Eval/Apply",
+  "description": "Practice the core SICP idea of interpreters as a universal machine: parse/represent programs as data, evaluate with environments via the Eval/Apply cycle, and extend a language by adding derived expressions like `unless` (and `let`).",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 5000
+  },
+  "exercises": [
+    {
+      "exercise_id": "ex1_predict_unless_exit_ticket",
+      "title": "Predict: `unless` is Derived from `if` (Exit Ticket)",
+      "slide_anchor": 11,
+      "prompt_md": "**Predict what will happen BEFORE running.**\n\nThis tiny evaluator supports numbers, `+`, `if`, and a derived form `unless`.\n\n```python\n# Expression to evaluate:\nexpr = ['+', 1, ['unless', False, 10, ['boom']]]\n```\n\n1) What value should `eval_expr(expr)` return?\n2) Will it raise an error by evaluating `['boom']`?\n\nWrite your prediction as a comment, then run to check.",
+      "starter_code": "def eval_expr(exp):\n    \"\"\"Evaluate a tiny AST represented with Python lists.\"\"\"\n    # Atoms\n    if isinstance(exp, (int, float, bool)):\n        return exp\n\n    # Lists\n    if isinstance(exp, list):\n        op = exp[0]\n\n        # A special form that would error if evaluated\n        if op == 'boom':\n            raise RuntimeError('boom was evaluated!')\n\n        # Derived expression: (unless c a b) == (if c b a)\n        if op == 'unless':\n            _, c, a, b = exp\n            return eval_expr(['if', c, b, a])\n\n        # Special form: only evaluate one branch\n        if op == 'if':\n            _, c, t, f = exp\n            return eval_expr(t) if eval_expr(c) else eval_expr(f)\n\n        # Primitive call: '+'\n        if op == '+':\n            return sum(eval_expr(e) for e in exp[1:])\n\n    raise TypeError(f'unknown expression: {exp!r}')\n\nexpr = ['+', 1, ['unless', False, 10, ['boom']]]\n\n# Prediction (write before running):\n# I predict eval_expr(expr) returns _____ and boom (is / is not) evaluated.\n\n# Uncomment to check:\n# print(eval_expr(expr))\n",
+      "tests": [
+        {
+          "name": "t1_value",
+          "code": "assert eval_expr(['+', 1, ['unless', False, 10, 20]]) == 11"
+        },
+        {
+          "name": "t2_no_boom",
+          "code": "assert eval_expr(['+', 1, ['unless', False, 10, ['boom']]]) == 11"
+        },
+        {
+          "name": "t3_if_is_special",
+          "code": "assert eval_expr(['if', True, 99, ['boom']]) == 99"
+        }
+      ],
+      "hints": [
+        "`unless` rewrites into an `if` with swapped branches: (unless c a b) => (if c b a).",
+        "`if` is a special form because it must not evaluate both branches.",
+        "In this expression, `False` means the `unless` should pick its 'a' branch (10)."
+      ],
+      "solution": "def eval_expr(exp):\n    if isinstance(exp, (int, float, bool)):\n        return exp\n    if isinstance(exp, list):\n        op = exp[0]\n        if op == 'boom':\n            raise RuntimeError('boom was evaluated!')\n        if op == 'unless':\n            _, c, a, b = exp\n            return eval_expr(['if', c, b, a])\n        if op == 'if':\n            _, c, t, f = exp\n            return eval_expr(t) if eval_expr(c) else eval_expr(f)\n        if op == '+':\n            return sum(eval_expr(e) for e in exp[1:])\n    raise TypeError(f'unknown expression: {exp!r}')\n\nexpr = ['+', 1, ['unless', False, 10, ['boom']]]\nassert eval_expr(expr) == 11\n"
+    },
+    {
+      "exercise_id": "ex2_trace_eval_apply_square",
+      "title": "Trace: Eval/Apply Creates a New Frame for a Call",
+      "slide_anchor": 6,
+      "prompt_md": "Trace the **Eval/Apply cycle** for this tiny program (already parsed into ASTs).\n\nProgram:\n1. `['define', 'square', ['lambda', ['x'], ['*', 'x', 'x']]]`\n2. `['square', 5]`\n\nTasks:\n- Predict the final value of evaluating expression 2.\n- Then **trace** where the binding `x = 5` lives (which frame?), and why `square` can still find `*`.\n\nFill in the comments in `run_program()` with your trace before running.",
+      "starter_code": "class Frame:\n    def __init__(self, parent=None):\n        self.parent = parent\n        self.bindings = {}\n\n    def define(self, name, value):\n        self.bindings[name] = value\n\n    def lookup(self, name):\n        if name in self.bindings:\n            return self.bindings[name]\n        if self.parent is None:\n            raise NameError(name)\n        return self.parent.lookup(name)\n\nclass Procedure:\n    def __init__(self, params, body, env):\n        self.params, self.body, self.env = params, body, env  # env = defining env (closure)\n\ndef eval_expr(exp, env):\n    # Atoms\n    if isinstance(exp, (int, float, bool)):\n        return exp\n    if isinstance(exp, str):\n        return env.lookup(exp)\n\n    # Lists\n    op = exp[0]\n\n    if op == 'define':\n        _, name, expr = exp\n        env.define(name, eval_expr(expr, env))\n        return None\n\n    if op == 'lambda':\n        _, params, body = exp\n        return Procedure(params, body, env)\n\n    if op == 'if':\n        _, c, t, f = exp\n        return eval_expr(t, env) if eval_expr(c, env) else eval_expr(f, env)\n\n    # application\n    proc = eval_expr(op, env)\n    args = [eval_expr(arg, env) for arg in exp[1:]]\n    return apply(proc, args)\n\ndef apply(proc, args):\n    # primitive\n    if callable(proc):\n        return proc(*args)\n\n    # compound\n    call_env = Frame(proc.env)\n    for name, val in zip(proc.params, args):\n        call_env.define(name, val)\n    return eval_expr(proc.body, call_env)\n\ndef run_program():\n    global_env = Frame()\n    global_env.define('*', lambda a, b: a * b)\n\n    program = [\n        ['define', 'square', ['lambda', ['x'], ['*', 'x', 'x']]],\n        ['square', 5],\n    ]\n\n    # TRACE (write before running):\n    # 1) After the define, global_env has binding: square -> (Procedure with params ['x'], body ['*','x','x'], env=global_env)\n    # 2) To eval ['square', 5], eval finds the procedure for 'square' and the value 5.\n    # 3) apply makes a NEW frame whose parent is ________.\n    # 4) That new frame binds x -> ________.\n    # 5) When evaluating ['*','x','x'], lookup('*') succeeds because ________.\n\n    for expr in program[:-1]:\n        eval_expr(expr, global_env)\n    return eval_expr(program[-1], global_env), global_env\n\nresult, env = run_program()\nprint('result =', result)\nprint('global has square?', 'square' in env.bindings)\n",
+      "tests": [
+        {
+          "name": "t1_square_value",
+          "code": "result, env = run_program(); assert result == 25"
+        },
+        {
+          "name": "t2_square_is_closure",
+          "code": "result, env = run_program(); proc = env.lookup('square'); assert isinstance(proc, Procedure) and proc.env is env"
+        },
+        {
+          "name": "t3_primitive_accessible",
+          "code": "result, env = run_program(); assert env.lookup('*')(6, 7) == 42"
+        }
+      ],
+      "hints": [
+        "In `apply` for a compound procedure, the call frame’s parent is the procedure’s defining environment (`proc.env`).",
+        "`x` is bound in the call frame (not in the global frame).",
+        "Looking up `*` starts in the call frame, then proceeds to its parent (global)."
+      ],
+      "solution": "class Frame:\n    def __init__(self, parent=None):\n        self.parent = parent\n        self.bindings = {}\n\n    def define(self, name, value):\n        self.bindings[name] = value\n\n    def lookup(self, name):\n        if name in self.bindings:\n            return self.bindings[name]\n        if self.parent is None:\n            raise NameError(name)\n        return self.parent.lookup(name)\n\nclass Procedure:\n    def __init__(self, params, body, env):\n        self.params, self.body, self.env = params, body, env\n\ndef eval_expr(exp, env):\n    if isinstance(exp, (int, float, bool)):\n        return exp\n    if isinstance(exp, str):\n        return env.lookup(exp)\n\n    op = exp[0]\n    if op == 'define':\n        _, name, expr = exp\n        env.define(name, eval_expr(expr, env))\n        return None\n    if op == 'lambda':\n        _, params, body = exp\n        return Procedure(params, body, env)\n    if op == 'if':\n        _, c, t, f = exp\n        return eval_expr(t, env) if eval_expr(c, env) else eval_expr(f, env)\n\n    proc = eval_expr(op, env)\n    args = [eval_expr(arg, env) for arg in exp[1:]]\n    return apply(proc, args)\n\ndef apply(proc, args):\n    if callable(proc):\n        return proc(*args)\n    call_env = Frame(proc.env)\n    for name, val in zip(proc.params, args):\n        call_env.define(name, val)\n    return eval_expr(proc.body, call_env)\n\ndef run_program():\n    global_env = Frame()\n    global_env.define('*', lambda a, b: a * b)\n    program = [\n        ['define', 'square', ['lambda', ['x'], ['*', 'x', 'x']]],\n        ['square', 5],\n    ]\n    for expr in program[:-1]:\n        eval_expr(expr, global_env)\n    return eval_expr(program[-1], global_env), global_env\n\nresult, env = run_program()\nassert result == 25\nassert isinstance(env.lookup('square'), Procedure)\n"
+    },
+    {
+      "exercise_id": "ex3_extend_derived_let_unless",
+      "title": "Extend: Add Derived Expressions `unless` + `let` (SICP Ex 4.6-inspired)",
+      "slide_anchor": 10,
+      "prompt_md": "In this evaluator, `unless` and `let` are **not** primitive special forms. Instead, we will implement them as **derived expressions** (syntactic transformations).\n\nImplement `desugar(exp)` so that:\n\n- `['unless', c, a, b]` rewrites to `['if', c, b, a]`\n- `['let', [[v1, e1], [v2, e2], ...], body]` rewrites to a combination:\n  \n  `[[ 'lambda', [v1, v2, ...], body], e1, e2, ...]`\n\nThen the existing `eval_expr` will evaluate the rewritten form using its normal Eval/Apply rules.\n\nAfter writing `desugar`, predict the value of `prog2` before running.",
+      "starter_code": "class Frame:\n    def __init__(self, parent=None):\n        self.parent = parent\n        self.bindings = {}\n\n    def define(self, name, value):\n        self.bindings[name] = value\n\n    def lookup(self, name):\n        if name in self.bindings:\n            return self.bindings[name]\n        if self.parent is None:\n            raise NameError(name)\n        return self.parent.lookup(name)\n\nclass Procedure:\n    def __init__(self, params, body, env):\n        self.params, self.body, self.env = params, body, env\n\ndef desugar(exp):\n    \"\"\"Return an equivalent expression using only core forms.\n\n    Core forms supported by eval_expr: numbers/bools, names, define, lambda, if, begin, and application.\n    Derived forms to implement here: unless, let.\n    \"\"\"\n    # YOUR CODE HERE\n    # Hint: only desugar the OUTERMOST expression; you may assume the evaluator will keep desugaring as it evaluates.\n    return exp\n\ndef eval_expr(exp, env):\n    # Desugar one step if needed\n    if isinstance(exp, list) and exp and exp[0] in ('unless', 'let'):\n        exp = desugar(exp)\n\n    # Atoms\n    if isinstance(exp, (int, float, bool)):\n        return exp\n    if isinstance(exp, str):\n        return env.lookup(exp)\n\n    op = exp[0]\n\n    if op == 'define':\n        _, name, expr = exp\n        env.define(name, eval_expr(expr, env))\n        return None\n\n    if op == 'lambda':\n        _, params, body = exp\n        return Procedure(params, body, env)\n\n    if op == 'if':\n        _, c, t, f = exp\n        return eval_expr(t, env) if eval_expr(c, env) else eval_expr(f, env)\n\n    if op == 'begin':\n        val = None\n        for e in exp[1:]:\n            val = eval_expr(e, env)\n        return val\n\n    # application\n    proc = eval_expr(op, env)\n    args = [eval_expr(arg, env) for arg in exp[1:]]\n    return apply(proc, args)\n\ndef apply(proc, args):\n    if callable(proc):\n        return proc(*args)\n    call_env = Frame(proc.env)\n    for name, val in zip(proc.params, args):\n        call_env.define(name, val)\n    return eval_expr(proc.body, call_env)\n\n# --- Programs to test ---\n\ndef make_global_env():\n    env = Frame()\n    env.define('+', lambda a, b: a + b)\n    env.define('*', lambda a, b: a * b)\n    env.define('-', lambda a, b: a - b)\n    return env\n\n# Uses unless as derived from if\nprog1 = ['+', 1, ['unless', False, 10, 20]]\n\n# Uses let as derived into a lambda call\n# (let ((x 2) (y 3)) (+ (* x x) y))  => 7\nprog2 = ['let', [['x', 2], ['y', 3]], ['+', ['*', 'x', 'x'], 'y']]\n\n# Prediction (write before running):\n# I predict eval_expr(prog2, env) returns ______.\n\nenv = make_global_env()\n# Uncomment after implementing desugar:\n# print('prog1 =>', eval_expr(prog1, env))\n# print('prog2 =>', eval_expr(prog2, env))\n",
+      "tests": [
+        {
+          "name": "t1_unless",
+          "code": "env = make_global_env(); assert eval_expr(['+', 1, ['unless', False, 10, 20]], env) == 11"
+        },
+        {
+          "name": "t2_let_basic",
+          "code": "env = make_global_env(); assert eval_expr(['let', [['x', 2], ['y', 3]], ['+', ['*', 'x', 'x'], 'y']], env) == 7"
+        },
+        {
+          "name": "t3_let_evaluates_rhs_in_outer_env",
+          "code": "env = make_global_env(); eval_expr(['define','x',100], env); exp = ['let', [['x', 2], ['y', 'x']], ['+', 'x', 'y']]; assert eval_expr(exp, env) == 102"
+        }
+      ],
+      "hints": [
+        "`unless`: just swap the last two operands into an `if`.",
+        "`let`: collect variable names and value expressions separately; rewrite into a lambda call.",
+        "Test t3 checks a common misconception: the RHS expressions of `let` bindings are evaluated in the *outer* environment (so `y` should see the global `x = 100`, not the new `x = 2`)."
+      ],
+      "solution": "class Frame:\n    def __init__(self, parent=None):\n        self.parent = parent\n        self.bindings = {}\n\n    def define(self, name, value):\n        self.bindings[name] = value\n\n    def lookup(self, name):\n        if name in self.bindings:\n            return self.bindings[name]\n        if self.parent is None:\n            raise NameError(name)\n        return self.parent.lookup(name)\n\nclass Procedure:\n    def __init__(self, params, body, env):\n        self.params, self.body, self.env = params, body, env\n\ndef desugar(exp):\n    if not (isinstance(exp, list) and exp):\n        return exp\n\n    tag = exp[0]\n\n    if tag == 'unless':\n        _, c, a, b = exp\n        return ['if', c, b, a]\n\n    if tag == 'let':\n        _, bindings, body = exp\n        names = [name for (name, _rhs) in bindings]\n        rhss = [_rhs for (_name, _rhs) in bindings]\n        return [[ 'lambda', names, body], *rhss]\n\n    return exp\n\ndef eval_expr(exp, env):\n    if isinstance(exp, list) and exp and exp[0] in ('unless', 'let'):\n        exp = desugar(exp)\n\n    if isinstance(exp, (int, float, bool)):\n        return exp\n    if isinstance(exp, str):\n        return env.lookup(exp)\n\n    op = exp[0]\n\n    if op == 'define':\n        _, name, expr = exp\n        env.define(name, eval_expr(expr, env))\n        return None\n\n    if op == 'lambda':\n        _, params, body = exp\n        return Procedure(params, body, env)\n\n    if op == 'if':\n        _, c, t, f = exp\n        return eval_expr(t, env) if eval_expr(c, env) else eval_expr(f, env)\n\n    if op == 'begin':\n        val = None\n        for e in exp[1:]:\n            val = eval_expr(e, env)\n        return val\n\n    proc = eval_expr(op, env)\n    args = [eval_expr(arg, env) for arg in exp[1:]]\n    return apply(proc, args)\n\ndef apply(proc, args):\n    if callable(proc):\n        return proc(*args)\n    call_env = Frame(proc.env)\n    for name, val in zip(proc.params, args):\n        call_env.define(name, val)\n    return eval_expr(proc.body, call_env)\n\ndef make_global_env():\n    env = Frame()\n    env.define('+', lambda a, b: a + b)\n    env.define('*', lambda a, b: a * b)\n    env.define('-', lambda a, b: a - b)\n    return env\n\nenv = make_global_env()\nassert eval_expr(['+', 1, ['unless', False, 10, 20]], env) == 11\nassert eval_expr(['let', [['x', 2], ['y', 3]], ['+', ['*', 'x', 'x'], 'y']], make_global_env()) == 7\nenv = make_global_env(); eval_expr(['define','x',100], env)\nexp = ['let', [['x', 2], ['y', 'x']], ['+', 'x', 'y']]\nassert eval_expr(exp, env) == 102\n"
+    }
+  ]
+}
