@@ -24,9 +24,30 @@ exercises[]
                   Python for implement/extend ones
 ```
 
-Nine modules, 29 exercises: three per module, plus a fourth **Challenge**
+Nine modules, 31 exercises: three per module, plus a fourth **Challenge**
 exercise in 05 (a lazy pipeline over an infinite sequence) and 06 (every path,
-not just the first).
+not just the first), and a five-exercise capstone in 09.
+
+## The Module 9 capstone
+
+Module 9 promises a working interpreter in about 100 lines of Python, so its lab
+builds one. Four checkpoints grow one program, with a trace exercise before
+the learner writes `eval`/`apply`:
+
+1. **Read**: `tokenize`, `parse`, `read` (text to nested lists; `SyntaxError` on bad input)
+2. **Environments**: `Frame.define` / `lookup` over dicts, and the primitives
+3. *Trace a finished Eval/Apply through one call*
+4. **Eval/Apply**: numbers, names, `define`, `lambda`, `if`, calls, closures, recursion
+5. **Extend**: `unless` and `let` as derived expressions (SICP Ex 4.6)
+
+Each checkpoint's starter code includes the finished code of the ones before it,
+so a learner stuck on one checkpoint can still do the next. The last one ends
+by running `(let ((x 5)) (square (+ x 1)))` on the learner's own interpreter.
+
+The checks target the classic mistakes: `if` evaluating both branches,
+dynamic instead of lexical scope (the call frame's parent must be the
+procedure's environment, not the caller's), `let` evaluating its values inside
+the new scope, and `define` in a child frame changing the parent.
 
 ## Technique checks
 
@@ -71,7 +92,7 @@ Classifying by "does it compile" alone puts broken code in the prose bucket and
 calls the lab clean. That is exactly what happened: two solutions shipped
 unrunnable and the checker reported 0 failures for months.
 
-Current state: **18 solutions pass, 0 fail, 11 answered in prose.**
+Current state: **20 solutions pass, 0 fail, 11 answered in prose.**
 
 Separately, `01/ex3` and `08/ex3` ship starter code that raises until it is
 filled in — `pass` stubs plus demo calls at the bottom. Also by design.
@@ -151,6 +172,6 @@ that shipped:
 | 06 | 2.24, 2.25, 2.26 | 2.24, 2.26, 2.28 |
 | 07 | 3.1, 3.2, 3.3 | 3.3 |
 | 08 | 2.73, 2.74, 2.75 | none |
-| 09 | 4.1, 4.2, 4.3 | none |
+| 09 | 4.1, 4.2, 4.3 | 4.1 (the evaluator itself), 4.6 |
 
 Treat `lab.json` as the truth about what the course teaches.
