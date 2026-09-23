@@ -1,70 +1,77 @@
 {
   "schema_version": "lab_v1",
   "lab_spec_id": "trees-lab",
-  "title": "Trees (Nested Lists and Tree Recursion)",
-  "description": "Practice tree-shaped data using a simple Tree ADT. You will (1) predict results of tree recursion, (2) trace a recursive computation that builds a tree of calls, and (3) implement + extend classic tree-recursive functions (fringe, then a pipeline computation).",
+  "title": "Trees Lab: Nested Lists, Search, and Tree Recursion",
+  "description": "Read nested lists as trees (SICP Ex 2.24, 2.26), trace a left-to-right search that backtracks, flatten a tree into the conventional sequence interface (SICP Ex 2.28), and — as a challenge — generalize the search to find every path.",
   "runtime": {
     "engine": "pyodide",
     "timeout_ms": 5000
   },
   "exercises": [
     {
-      "exercise_id": "ex1_predict_paths_and_leaves",
-      "title": "Predict: First Match in Tree Search + Leaf Count",
-      "slide_anchor": 8,
-      "prompt_md": "**Predict the output (4 lines)** before running. Write your prediction as comments first.\n\n```python\n# Tree ADT + example tree\n\ndef tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nt = tree(3, [\n    tree(1),\n    tree(2, [tree(1), tree(1)])\n])\n\n# Two classic tree recursions\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef find_path(t, target):\n    if label(t) == target:\n        return [label(t)]\n    for b in branches(t):\n        subpath = find_path(b, target)\n        if subpath is not None:\n            return [label(t)] + subpath\n    return None\n\nprint(find_path(t, 2))\nprint(find_path(t, 1))\nprint(find_path(t, 99))\nprint(count_leaves(t))\n```\n\nQuestions:\n1) What does each `print` line output?\n2) Why does `find_path(t, 1)` return that particular path (hint: branch order)?",
-      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nt = tree(3, [\n    tree(1),\n    tree(2, [tree(1), tree(1)])\n])\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef find_path(t, target):\n    if label(t) == target:\n        return [label(t)]\n    for b in branches(t):\n        subpath = find_path(b, target)\n        if subpath is not None:\n            return [label(t)] + subpath\n    return None\n\n# Prediction (write answers BEFORE running):\n# Line 1 prints: \n# Line 2 prints: \n# Line 3 prints: \n# Line 4 prints: \n\n# Then run to check:\n# print(find_path(t, 2))\n# print(find_path(t, 1))\n# print(find_path(t, 99))\n# print(count_leaves(t))\n",
+      "exercise_id": "ex1_predict_nested_lists_and_trees",
+      "title": "Nested Lists as Trees (SICP Ex 2.24 and 2.26)",
+      "slide_anchor": 3,
+      "prompt_md": "**Predict the output before running.**\n\nThis exercise compares three views of nested data:\n\n1. A Python nested list, like SICP Exercise 2.24\n2. A tree built with the tree ADT\n3. Python versions of SICP Exercise 2.26's `append`, `cons`, and `list`\n\n```python\ndef tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\nnested = [1, [2, [3, 4]]]\nt = tree(1, [tree(2, [tree(3), tree(4)])])\n\nx = [1, 2, 3]\ny = [4, 5, 6]\n\nprint(nested)\nprint(t)\nprint(x + y)\nprint([x] + y)\nprint([x, y])\n```\n\nWhat are the five printed lines?",
+      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\nnested = [1, [2, [3, 4]]]\nt = tree(1, [tree(2, [tree(3), tree(4)])])\n\nx = [1, 2, 3]\ny = [4, 5, 6]\n\n# First, write your prediction as comments:\n# Line 1: ?\n# Line 2: ?\n# Line 3: ?\n# Line 4: ?\n# Line 5: ?\n\n# Then run to check:\nprint(nested)\nprint(t)\nprint(x + y)\nprint([x] + y)\nprint([x, y])",
       "tests": [
         {
           "name": "t1",
-          "code": "assert find_path(t, 2) == [3, 2]"
+          "code": "assert nested == [1, [2, [3, 4]]]"
         },
         {
           "name": "t2",
-          "code": "assert find_path(t, 1) == [3, 1]"
+          "code": "assert t == [1, [2, [3], [4]]]"
         },
         {
           "name": "t3",
-          "code": "assert find_path(t, 99) is None"
+          "code": "assert x + y == [1, 2, 3, 4, 5, 6]"
         },
         {
           "name": "t4",
-          "code": "assert count_leaves(t) == 3"
+          "code": "assert [x] + y == [[1, 2, 3], 4, 5, 6]"
+        },
+        {
+          "name": "t5",
+          "code": "assert [x, y] == [[1, 2, 3], [4, 5, 6]]"
         }
       ],
       "hints": [
-        "For find_path: the base case is when the current node label equals the target.",
-        "Branches are searched left-to-right, and the function returns as soon as it finds a successful subpath.",
-        "For count_leaves: every leaf contributes 1; internal nodes contribute the sum of their branches."
+        "`tree(3)` is the one-element list `[3]`.",
+        "`tree(2, [tree(3), tree(4)])` puts the label `2` first, followed by two branch trees.",
+        "`x + y` concatenates two lists.",
+        "`[x] + y` makes `x` one element of a new list, then appends the elements of `y`.",
+        "`[x, y]` is a two-element list whose elements are themselves lists."
       ],
-      "solution": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nt = tree(3, [\n    tree(1),\n    tree(2, [tree(1), tree(1)])\n])\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef find_path(t, target):\n    if label(t) == target:\n        return [label(t)]\n    for b in branches(t):\n        subpath = find_path(b, target)\n        if subpath is not None:\n            return [label(t)] + subpath\n    return None\n\n# Predicted outputs:\n# find_path(t, 2)  -> [3, 2]\n# find_path(t, 1)  -> [3, 1]   (first match is the left child)\n# find_path(t, 99) -> None\n# count_leaves(t)  -> 3"
+      "solution": "The five printed lines are:\n\n```python\n[1, [2, [3, 4]]]\n[1, [2, [3], [4]]]\n[1, 2, 3, 4, 5, 6]\n[[1, 2, 3], 4, 5, 6]\n[[1, 2, 3], [4, 5, 6]]\n```\n\nThe key difference is that the tree ADT represents every node as a list whose first element is the label and whose remaining elements are branch trees."
     },
     {
-      "exercise_id": "ex2_trace_fib_tree_calls",
-      "title": "Trace: Fibonacci Builds a Tree of Calls",
-      "slide_anchor": 9,
-      "prompt_md": "In this exercise, the **shape of the returned tree mirrors the recursion**.\n\n1) Trace the recursive calls for `fib_tree(4)`.\n   - List the calls in the order they are *initiated*.\n   - Then show the return value (the node label) for each call as it unwinds.\n\n2) Predict (then verify):\n   - `label(fib_tree(4))`\n   - `count_leaves(fib_tree(4))`\n\nCode:\n```python\ndef tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef fib_tree(n):\n    if n <= 1:\n        return tree(n)\n    left = fib_tree(n - 1)\n    right = fib_tree(n - 2)\n    return tree(label(left) + label(right), [left, right])\n\nft4 = fib_tree(4)\nprint(label(ft4))\nprint(count_leaves(ft4))\n```\n\nYour trace should explain where the **base case** happens and how results are **combined**.",
-      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef fib_tree(n):\n    if n <= 1:\n        return tree(n)\n    left = fib_tree(n - 1)\n    right = fib_tree(n - 2)\n    return tree(label(left) + label(right), [left, right])\n\n# TRACE (fill in with your own steps):\n# Calls initiated (top-down):\n# fib_tree(4)\n# fib_tree(3)\n# fib_tree(2)\n# fib_tree(1)\n# fib_tree(0)\n# ... continue until complete\n#\n# Unwinding (bottom-up):\n# fib_tree(0) returns tree(0)\n# fib_tree(1) returns tree(1)\n# fib_tree(2) returns label 1\n# fib_tree(3) returns label ?\n# fib_tree(4) returns label ?\n#\n# Prediction:\n# label(fib_tree(4)) = \n# count_leaves(fib_tree(4)) = \n\nft4 = fib_tree(4)\n# Uncomment to verify after predicting:\n# print(label(ft4))\n# print(count_leaves(ft4))\n",
+      "exercise_id": "ex2_trace_find_path_backtracking",
+      "title": "Trace Search with Backtracking",
+      "slide_anchor": 8,
+      "prompt_md": "Trace the calls made by `find_path`.\n\nUse this tree:\n\n```text\n        3\n      /   \\\n     1     2\n          / \\\n         4   1\n```\n\nFor `find_path(t, 4)`, write:\n\n1. Which labels are checked, in order?\n2. Which branch fails before the successful branch is tried?\n3. What path is returned?\n\nThen trace `find_path(t, 9)`. Why does it return `None`?",
+      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\n#        3\n#      /   \\\n#     1     2\n#          / \\\n#         4   1\nt = tree(3, [tree(1), tree(2, [tree(4), tree(1)])])\n\ndef find_path(t, target):\n    if label(t) == target:\n        return [label(t)]\n    for b in branches(t):\n        path = find_path(b, target)\n        if path:\n            return [label(t)] + path\n    return None\n\n# Trace find_path(t, 4):\n# Check label: 3 -> not 4\n# Try left branch: label 1 -> not 4, no branches, returns ???\n# Try right branch: label 2 -> not 4\n# Try its left branch: label 4 -> found, returns ???\n# Then 2 adds itself: ???\n# Then 3 adds itself: ???\n\nprint(find_path(t, 4))  # Expected after tracing: ?\nprint(find_path(t, 9))  # Expected after tracing: ?",
       "tests": [
         {
           "name": "t1",
-          "code": "ft4 = fib_tree(4)\nassert label(ft4) == 3"
+          "code": "assert find_path(t, 4) == [3, 2, 4]"
         },
         {
           "name": "t2",
-          "code": "ft4 = fib_tree(4)\nassert count_leaves(ft4) == 5"
+          "code": "assert find_path(t, 1) == [3, 1], 'Search is left-to-right, so the first 1 wins'"
         },
         {
           "name": "t3",
-          "code": "assert label(fib_tree(0)) == 0 and count_leaves(fib_tree(0)) == 1"
+          "code": "assert find_path(t, 9) is None"
         }
       ],
       "hints": [
-        "Base case: `n <= 1` returns a leaf tree with label `n`.",
-        "Recursive case: build left and right subtrees, then label = label(left) + label(right).",
-        "The leaf count equals the number of base-case hits (calls where n is 0 or 1). For n=4, there are 5 such calls."
+        "`find_path` checks the current node before checking any branches.",
+        "Branches are tried from left to right.",
+        "A failed branch returns `None`, and `if path:` skips it.",
+        "When a branch returns a real path, the current label is added to the front."
       ],
-      "solution": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef fib_tree(n):\n    if n <= 1:\n        return tree(n)\n    left = fib_tree(n - 1)\n    right = fib_tree(n - 2)\n    return tree(label(left) + label(right), [left, right])\n\n# One valid trace (calls initiated):\n# fib_tree(4)\n#   fib_tree(3)\n#     fib_tree(2)\n#       fib_tree(1)  -> returns 1\n#       fib_tree(0)  -> returns 0\n#     fib_tree(1)    -> returns 1\n#   fib_tree(2)\n#     fib_tree(1)    -> returns 1\n#     fib_tree(0)    -> returns 0\n# Unwinding labels:\n# fib_tree(2) label = 1+0 = 1\n# fib_tree(3) label = 1+1 = 2\n# fib_tree(4) label = 2+1 = 3\n# Leaves = base-case calls = 5\n\nft4 = fib_tree(4)\nassert label(ft4) == 3\nassert count_leaves(ft4) == 5"
+      "solution": "For `find_path(t, 4)`, the labels are checked in this order: `3`, `1`, `2`, `4`. The left branch labeled `1` fails first and returns `None`. Then the search tries the right branch labeled `2`, finds `4` in its left branch, and returns `[3, 2, 4]`.\n\nFor `find_path(t, 9)`, every node is checked and no label equals `9`, so every branch eventually returns `None`; the whole call returns `None`."
     },
     {
       "exercise_id": "ex3_extend_fringe_to_pipeline",
@@ -88,6 +95,10 @@
         {
           "name": "t4",
           "code": "assert sum_odd_squares(tree(7)) == 49"
+        },
+        {
+          "name": "t5_respects_the_abstraction_barrier",
+          "code": "# Same trees, a different representation. Code that goes through\n# label, branches and is_leaf keeps working; code that indexes the\n# list directly does not.\n_real = {n: globals().get(n) for n in ('tree', 'label', 'branches', 'is_leaf')}\ndef tree(lbl, branches=None):\n    return {'label': lbl, 'branches': list(branches or [])}\ndef label(t):\n    return t['label']\ndef branches(t):\n    return t['branches']\ndef is_leaf(t):\n    return not branches(t)\ntry:\n    y = tree(0, [tree(1), tree(2, [tree(3), tree(4)]), tree(5)])\n    try:\n        _ok = (fringe(y) == [1, 3, 4, 5]) and (sum_odd_squares(y) == 35)\n    except (KeyError, IndexError, TypeError) as _e:\n        raise AssertionError('use label, branches and is_leaf only: this broke when trees stopped being lists' + f' ({type(_e).__name__}: {_e})') from None\n    assert _ok, 'use label, branches and is_leaf only: this broke when trees stopped being lists'\nfinally:\n    for _n, _v in _real.items():\n        if _v is None:\n            globals().pop(_n, None)\n        else:\n            globals()[_n] = _v"
         }
       ],
       "hints": [
@@ -96,6 +107,47 @@
         "For sum_odd_squares: start from `leaves = fringe(t)`, then use a comprehension to filter odds, square, and sum."
       ],
       "solution": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nx = tree(0, [\n    tree(1),\n    tree(2, [tree(3), tree(4)]),\n    tree(5)\n])\n\nxx = tree(99, [x, x])\n\ndef fringe(t):\n    if is_leaf(t):\n        return [label(t)]\n    out = []\n    for b in branches(t):\n        out += fringe(b)\n    return out\n\ndef sum_odd_squares(t):\n    leaves = fringe(t)\n    return sum(v * v for v in leaves if v % 2 == 1)\n\nassert fringe(x) == [1, 3, 4, 5]\nassert fringe(xx) == [1, 3, 4, 5, 1, 3, 4, 5]\nassert sum_odd_squares(x) == 35\nassert sum_odd_squares(tree(7)) == 49"
+    },
+    {
+      "exercise_id": "ex4_challenge_all_paths",
+      "title": "Challenge: Find Every Path, Not Just the First",
+      "slide_anchor": 8,
+      "prompt_md": "`find_path` returns the **first** path to a target label. Now extend the idea: implement `all_paths(t, target)`, which returns a list of **every** path to a matching label.\n\nUse the same tree ADT and stay behind the abstraction barrier: use `label(t)` and `branches(t)`.\n\nExample:\n\n```python\nt = tree(3, [tree(1), tree(2, [tree(4), tree(1)])])\nall_paths(t, 1)  # [[3, 1], [3, 2, 1]]\nall_paths(t, 4)  # [[3, 2, 4]]\nall_paths(t, 9)  # []\n```\n\nThis is an extension of the search pattern: instead of stopping at the first hit, keep searching every branch.",
+      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\n#        3\n#      /   \\\n#     1     2\n#          / \\\n#         4   1\nt = tree(3, [tree(1), tree(2, [tree(4), tree(1)])])\n\ndef all_paths(t, target):\n    \"\"\"\n    Return a list of all paths from the root of t to a node labeled target.\n\n    >>> all_paths(t, 1)\n    [[3, 1], [3, 2, 1]]\n    >>> all_paths(t, 4)\n    [[3, 2, 4]]\n    >>> all_paths(t, 9)\n    []\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\nprint(all_paths(t, 1))  # Expected: [[3, 1], [3, 2, 1]]\nprint(all_paths(t, 4))  # Expected: [[3, 2, 4]]\nprint(all_paths(t, 9))  # Expected: []",
+      "tests": [
+        {
+          "name": "t1",
+          "code": "assert all_paths(t, 1) == [[3, 1], [3, 2, 1]]"
+        },
+        {
+          "name": "t2",
+          "code": "assert all_paths(t, 4) == [[3, 2, 4]]"
+        },
+        {
+          "name": "t3",
+          "code": "assert all_paths(t, 9) == []"
+        },
+        {
+          "name": "t4",
+          "code": "assert all_paths(t, 3) == [[3]]"
+        },
+        {
+          "name": "t5",
+          "code": "v = tree(1, [tree(1), tree(2, [tree(1)])]); assert all_paths(v, 1) == [[1], [1, 1], [1, 2, 1]]"
+        },
+        {
+          "name": "t6_respects_the_abstraction_barrier",
+          "code": "# Same trees, a different representation. Code that goes through\n# label, branches and is_leaf keeps working; code that indexes the\n# list directly does not.\n_real = {n: globals().get(n) for n in ('tree', 'label', 'branches', 'is_leaf')}\ndef tree(lbl, branches=None):\n    return {'label': lbl, 'branches': list(branches or [])}\ndef label(t):\n    return t['label']\ndef branches(t):\n    return t['branches']\ndef is_leaf(t):\n    return not branches(t)\ntry:\n    u = tree(3, [tree(1), tree(2, [tree(4), tree(1)])])\n    try:\n        _ok = (all_paths(u, 1) == [[3, 1], [3, 2, 1]])\n    except (KeyError, IndexError, TypeError) as _e:\n        raise AssertionError('all_paths should use label and branches only: it broke when trees stopped being lists' + f' ({type(_e).__name__}: {_e})') from None\n    assert _ok, 'all_paths should use label and branches only: it broke when trees stopped being lists'\nfinally:\n    for _n, _v in _real.items():\n        if _v is None:\n            globals().pop(_n, None)\n        else:\n            globals()[_n] = _v"
+        }
+      ],
+      "hints": [
+        "Start with an empty list of paths.",
+        "If the current label is the target, include the one-node path `[label(t)]`.",
+        "For each branch path, add the current label to the front.",
+        "Unlike `find_path`, do not return as soon as you find one path.",
+        "If nothing is found, return the empty list `[]`, not `None`."
+      ],
+      "solution": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\n#        3\n#      /   \\\n#     1     2\n#          / \\\n#         4   1\nt = tree(3, [tree(1), tree(2, [tree(4), tree(1)])])\n\n\ndef all_paths(t, target):\n    \"\"\"Return every path from the root of t to a node labeled target.\n\n    The same walk as find_path, with one change: find_path returns the\n    first path it finds and stops, so it returns a path or None. This\n    collects instead, so it returns a list and an empty list is the\n    \"not found\" answer rather than a special case.\n\n    A node can match and still have matching descendants, so the match\n    and the recursion both run — they are not alternatives.\n    \"\"\"\n    paths = []\n    if label(t) == target:\n        paths.append([label(t)])\n    for b in branches(t):\n        for path in all_paths(b, target):\n            paths.append([label(t)] + path)\n    return paths\n\n\nprint(all_paths(t, 1))  # [[3, 1], [3, 2, 1]]\nprint(all_paths(t, 4))  # [[3, 2, 4]]\nprint(all_paths(t, 9))  # []\n"
     }
   ]
 }

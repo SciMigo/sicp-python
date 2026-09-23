@@ -80,6 +80,10 @@
         {
           "name": "t5_exit_ticket_small",
           "code": "assert sum_cubes_div_by_3(2) == 0"
+        },
+        {
+          "name": "t6_map_and_filter_are_built_from_accumulate",
+          "code": "_real_accumulate = accumulate\n_calls = []\ndef accumulate(op, z, seq):\n    _calls.append(1)\n    return _real_accumulate(op, z, seq)\ntry:\n    assert my_map(lambda x: x + 1, [1, 2]) == [2, 3]\n    assert _calls, 'my_map should be built from accumulate, not a loop or comprehension'\n    _calls.clear()\n    assert my_filter(lambda x: x > 1, [1, 2]) == [2]\n    assert _calls, 'my_filter should be built from accumulate, not a loop or comprehension'\nfinally:\n    accumulate = _real_accumulate"
         }
       ],
       "hints": [
@@ -89,6 +93,42 @@
         "For sum_cubes_div_by_3: think stages: enumerate → filter → map (cube) → combine (sum)."
       ],
       "solution": "def accumulate(op, z, seq):\n    if seq == []:\n        return z\n    return op(seq[0], accumulate(op, z, seq[1:]))\n\n\ndef my_map(f, seq):\n    return accumulate(lambda x, xs: [f(x)] + xs, [], list(seq))\n\n\ndef my_filter(pred, seq):\n    return accumulate(lambda x, xs: ([x] + xs) if pred(x) else xs, [], list(seq))\n\n\ndef sum_cubes_div_by_3(n):\n    cubes = my_map(lambda k: k * k * k,\n                   my_filter(lambda k: k % 3 == 0, range(1, n + 1)))\n    return accumulate(lambda x, y: x + y, 0, cubes)\n"
+    },
+    {
+      "exercise_id": "ex4_challenge_lazy_pipeline_over_infinite_source",
+      "title": "Challenge: Write Your Own Lazy Pipeline over an Infinite Sequence",
+      "slide_anchor": 8,
+      "prompt_md": "Exercise 2 showed that `map` and `filter` pull one item at a time. Now **write** that machinery yourself with `yield`, and use it on a sequence that never ends.\n\n1. `naturals()` yields `1, 2, 3, ...` forever.\n2. `map_lazy(f, iterable)` and `filter_lazy(pred, iterable)` are generator versions of `map` and `filter` — use `yield`, and never turn the input into a list.\n3. `take(n, iterable)` returns a list of the first `n` items and pulls **no more** than `n`.\n4. `first_odd_squares(k)` chains them: naturals → keep odd → square → take `k`.\n\n```python\nfirst_odd_squares(5)  # [1, 9, 25, 49, 81]\n```\n\n`naturals()` is infinite, so an eager step anywhere in the chain never returns. The pipeline finishes only because each stage asks for exactly what the next one needs — the same demand you traced in exercise 2.\n\n**Predict before running:** how many numbers does `first_odd_squares(2)` pull out of `naturals()`?",
+      "starter_code": "def naturals():\n    \"\"\"Yield 1, 2, 3, ... forever.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef map_lazy(f, iterable):\n    \"\"\"Yield f(x) for each x, one at a time, only when asked.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef filter_lazy(pred, iterable):\n    \"\"\"Yield the x for which pred(x) is true, one at a time, only when asked.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef take(n, iterable):\n    \"\"\"Return a list of the first n items, pulling no more than n.\n\n    >>> take(3, naturals())\n    [1, 2, 3]\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef first_odd_squares(k):\n    \"\"\"The squares of the first k odd naturals, as one lazy pipeline.\n\n    >>> first_odd_squares(5)\n    [1, 9, 25, 49, 81]\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\n# Predict first: how many items does take(2, ...) pull out of naturals()\n# in first_odd_squares(2)? Then uncomment to check:\n# print(first_odd_squares(5))\n",
+      "tests": [
+        {
+          "name": "t1_naturals_is_an_endless_generator",
+          "code": "import types\ng = naturals()\nassert isinstance(g, types.GeneratorType), 'naturals() should be a generator: use yield'\nassert [next(g) for _ in range(5)] == [1, 2, 3, 4, 5]\nassert [next(g) for _ in range(1000)][-1] == 1005, 'naturals() should keep going'"
+        },
+        {
+          "name": "t2_map_and_filter_are_generators",
+          "code": "import types\nm = map_lazy(lambda x: x * 10, naturals())\nassert isinstance(m, types.GeneratorType), 'map_lazy should be written with yield (the built-in map is lazy too, but the point is to build it)'\nassert (next(m), next(m)) == (10, 20)\nf = filter_lazy(lambda x: x % 3 == 0, naturals())\nassert isinstance(f, types.GeneratorType), 'filter_lazy should be written with yield'\nassert (next(f), next(f)) == (3, 6)"
+        },
+        {
+          "name": "t3_take_pulls_exactly_n",
+          "code": "assert take(3, naturals()) == [1, 2, 3]\nassert take(0, naturals()) == []\nassert take(5, [1, 2]) == [1, 2], 'a source shorter than n just ends early'\npulled = []\ndef source():\n    for x in [1, 2, 3, 4, 5]:\n        pulled.append(x)\n        yield x\nassert take(2, source()) == [1, 2]\nassert pulled == [1, 2], f'take(2, ...) pulled {pulled}: stop as soon as the 2nd item arrives'"
+        },
+        {
+          "name": "t4_pipeline_over_infinite_source",
+          "code": "assert first_odd_squares(5) == [1, 9, 25, 49, 81]\nassert first_odd_squares(1) == [1]"
+        },
+        {
+          "name": "t5_demand_flows_back_to_the_source",
+          "code": "pulled = []\ndef counted_naturals():\n    for n in naturals():\n        pulled.append(n)\n        yield n\nodd_squares = map_lazy(lambda x: x * x,\n                       filter_lazy(lambda x: x % 2 == 1, counted_naturals()))\nassert take(2, odd_squares) == [1, 9]\nassert pulled == [1, 2, 3], f'two odd squares should pull 1, 2 and 3 from the source, not {pulled}'"
+        }
+      ],
+      "hints": [
+        "`naturals` is a `while True:` loop that yields a counter and then increases it.",
+        "A generator version of `map` is a `for` loop over the input with `yield f(x)` in the body — no list anywhere.",
+        "In `take`, check whether you already have `n` items right after appending, not before pulling the next one — otherwise you pull one extra item.",
+        "`first_odd_squares(2)` pulls three numbers: 1 is kept, 2 is dropped, 3 is kept, and then `take` stops asking."
+      ],
+      "solution": "def naturals():\n    n = 1\n    while True:\n        yield n\n        n += 1\n\n\ndef map_lazy(f, iterable):\n    for x in iterable:\n        yield f(x)\n\n\ndef filter_lazy(pred, iterable):\n    for x in iterable:\n        if pred(x):\n            yield x\n\n\ndef take(n, iterable):\n    # Stop as soon as the n-th item arrives: asking for one more would pull\n    # from the source again, and from naturals() that never has to end.\n    out = []\n    if n <= 0:\n        return out\n    for x in iterable:\n        out.append(x)\n        if len(out) == n:\n            break\n    return out\n\n\ndef first_odd_squares(k):\n    return take(k, map_lazy(lambda x: x * x,\n                            filter_lazy(lambda x: x % 2 == 1, naturals())))\n\n\n# first_odd_squares(2) pulls 1 (kept), 2 (dropped), 3 (kept), then stops:\n# three items from an infinite source.\nprint(first_odd_squares(5))  # [1, 9, 25, 49, 81]\n"
     }
   ]
 }

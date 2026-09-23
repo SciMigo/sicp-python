@@ -24,7 +24,28 @@ exercises[]
                   Python for implement/extend ones
 ```
 
-Nine modules, three exercises each, 27 total.
+Nine modules, 29 exercises: three per module, plus a fourth **Challenge**
+exercise in 05 (a lazy pipeline over an infinite sequence) and 06 (every path,
+not just the first).
+
+## Technique checks
+
+Some tests check *how* an answer computes, because an exercise that exists to
+practise a technique can otherwise be passed without it. Each is an ordinary,
+visible test, named for what it checks:
+
+| Exercise | Check | How |
+|---|---|---|
+| 03 ex3 | `f_rec` follows the definition | it must call itself |
+| 03 ex3 | `f_iter` is an iterative process | `f_rec` is replaced by one that raises, and `f_iter(3000)` must not exhaust the stack |
+| 05 ex3 | `my_map` / `my_filter` are built from `accumulate` | `accumulate` is wrapped to count calls |
+| 05 ex4 | `naturals`, `map_lazy`, `filter_lazy` are generators; `take` pulls exactly `n` | type check, and a source that records what was pulled |
+| 06 ex3, ex4 | the tree abstraction barrier holds | the tree ADT is swapped for a dict representation and the answer must still work |
+
+A test that rebinds a name (the wrapper, the swapped ADT) restores it in a
+`finally`. The browser gives every test a fresh namespace, but
+`check_labs.py` and the publish-time check share one across a lab's tests, and a
+test must not change what the next one sees.
 
 ## Checking the labs
 
@@ -50,7 +71,7 @@ Classifying by "does it compile" alone puts broken code in the prose bucket and
 calls the lab clean. That is exactly what happened: two solutions shipped
 unrunnable and the checker reported 0 failures for months.
 
-Current state: **19 solutions pass, 0 fail, 11 answered in prose.**
+Current state: **18 solutions pass, 0 fail, 11 answered in prose.**
 
 Separately, `01/ex3` and `08/ex3` ship starter code that raises until it is
 filled in — `pass` stubs plus demo calls at the bottom. Also by design.
@@ -95,7 +116,7 @@ Two more did not parse at all, and the checker had been calling them prose:
 | Module | Exercise | Was |
 |---|---|---|
 | 02-environment-diagrams | `ex3_extend_accumulator_closure` | working code with an explanatory sentence on the last line and no `#` |
-| 06-trees (the unpublished rewrite) | `ex3_extend_all_paths` | a markdown answer — prose, then the code inside a fence |
+| 06-trees (then an unpublished rewrite; now `ex4_challenge_all_paths`) | `ex3_extend_all_paths` | a markdown answer — prose, then the code inside a fence |
 
 In every case `prompt_md`, `starter_code` and `tests` were left alone, so
 nothing changed about what the learner is asked or graded on.
@@ -106,10 +127,10 @@ Historically the pipeline published the lab it generated into its own build
 output, and nothing read this file except a check for whether it exists — so an
 edit here reached nobody until someone copied it back by hand.
 
-A pipeline change now in review makes publication read `lab.json` directly,
-validated, with the lab page re-rendered from it. Once that lands these files
-are the source of truth and an edit here ships on the next deploy. Until it
-does, a fix here still needs that manual step.
+Since 2026-09-22 publication reads `lab.json` directly, validated, with the
+lab page re-rendered from it, so these files are the source of truth and an
+edit here ships on the next deploy. A lab that fails that validation is not
+published and the live copy stays.
 
 Either way, **a change in this repo does not reach learners until someone runs
 a deploy.** Merging is not publishing.
@@ -127,7 +148,7 @@ that shipped:
 | 03 | 1.11, 1.12, 1.13 | 1.11, 1.12 |
 | 04 | 2.1, 2.2, 2.3 | 2.1 |
 | 05 | 2.17, 2.18, 2.19 | none |
-| 06 | 2.24, 2.25, 2.26 | 2.28 (the unpublished rewrite covers all three) |
+| 06 | 2.24, 2.25, 2.26 | 2.24, 2.26, 2.28 |
 | 07 | 3.1, 3.2, 3.3 | 3.3 |
 | 08 | 2.73, 2.74, 2.75 | none |
 | 09 | 4.1, 4.2, 4.3 | none |
