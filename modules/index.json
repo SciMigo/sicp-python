@@ -3,28 +3,28 @@
     "id": "01-higher-order-functions",
     "label": "1 · Higher-Order Functions",
     "eyebrow": "MODULE 01 · HIGHER-ORDER FUNCTIONS",
-    "heading": "Pass behavior, return configured functions, and count actual calls",
-    "subtitle": "Separate a reusable process from its rule; trace ordered calls, construct independent behavior, and distinguish setup from execution costs."
+    "heading": "Pass a function, return a function, and count the calls",
+    "subtitle": "Turn three near-identical sums into one function that takes its rule as an argument, then build fixed-point search, average damping and Newton's method from functions that take and return functions."
   },
   {
     "id": "02-environment-diagrams",
     "label": "2 · Environment Diagrams",
     "eyebrow": "MODULE 02 · ENVIRONMENT DIAGRAMS",
-    "heading": "Trace name ownership, call environments, and shared state",
-    "subtitle": "Find the binding a name refers to, distinguish definition scope from caller scope, build independent shared-state services, and count lookup probes in an explicit model."
+    "heading": "SICP's environment model in Python: frames, parents, and local state",
+    "subtitle": "Trace the frames a call creates, find the binding a name refers to, see why a function resolves free names where it was defined, and explain how make_withdraw keeps private state. Then build definition, assignment and call frames in a small frame model."
   },
   {
     "id": "03-recursive-functions",
     "label": "3 · Recursive Functions",
     "eyebrow": "MODULE 03 · RECURSIVE FUNCTIONS",
-    "heading": "Prove termination, trace pending work, and avoid repeated subproblems",
-    "subtitle": "Distinguish recursive definitions from iterative processes, trace call occurrences, reuse solved subproblems, and handle large recurrences without deep Python call chains."
+    "heading": "Linear and tree recursion, the processes they generate, and how to avoid repeated work",
+    "subtitle": "Follow SICP 1.2 in Python: factorial as a recursive and an iterative process, Fibonacci and counting change as tree recursion, orders of growth, exponentiation by squaring and Euclid's algorithm. Then trace waiting calls, compute each state once, and handle inputs too deep to recurse on."
   },
   {
     "id": "06-trees",
     "label": "6 · Trees",
     "eyebrow": "MODULE 06 · TREES",
-    "heading": "Follow structure, specify answers, and count traversal work",
-    "subtitle": "Separate labels from structure; justify aggregation, transformation, and search contracts; measure node visits and reuse completed answers."
+    "heading": "Follow structure, specify answers, map and search, and count traversal work",
+    "subtitle": "Separate labels from structure; count leaves and map over trees as SICP does; justify aggregation, transformation and first-match search contracts; measure node visits and reuse completed answers."
   }
 ]
