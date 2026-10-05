@@ -1,0 +1,23 @@
+{
+  "title": "Round 2: combine nested children",
+  "checklist": [
+    {
+      "step": "Visit nested and empty containers without mutation",
+      "checks": [
+        "nested_values"
+      ]
+    },
+    {
+      "step": "Complete children before their parent",
+      "checks": [
+        "nested_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "A child may be an integer, an empty list, or another nonempty list.",
+    "Each call owns its own answer. Wait for all child answers before drawing the parent.",
+    "Start this list\u2019s answer at zero; add one recursive child answer at a time, extending the path with its index."
+  ],
+  "questions": []
+}

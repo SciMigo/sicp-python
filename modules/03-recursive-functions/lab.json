@@ -1,8 +1,8 @@
 {
  "schema_version": "lab_v1",
  "lab_spec_id": "sicp-python-03-recursive-functions",
- "title": "Calls, states, and repeated work",
- "description": "Draw pending recursive work, trace branching calls, reuse solved states, measure expansions, and handle large ordered packing plans.",
+ "title": "Recursion in three rounds",
+ "description": "Round 1: see calls descend and return. Round 2: write shrinking-window and nested-container recursions. Round 3: trace branches, reuse states, measure work, and transfer the idea.",
  "runtime": {
   "engine": "pyodide",
   "timeout_ms": 15000
@@ -62,6 +62,80 @@
     "Combine n with the returned recursive answer; draw before popping its stack entry."
    ],
    "solution": "def recursive_sum(n,stack=None):\n    if stack is None:stack=[]\n    stack.append(n)\n    show_stack(\"enter\",stack,n)\n    result=0 if n==0 else n+recursive_sum(n-1,stack)\n    show_stack(\"leave\",stack,result)\n    stack.pop()\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_stack(stage,stack,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=240,\n           values=list(stack),indices=False)\n    text(12,275,stage+\": \"+str(result),size=18)\n    frame()\n\nprint(recursive_sum(3))\n"
+  },
+  {
+   "exercise_id": "mirrored",
+   "title": "Round 2: move two boundaries",
+   "prompt_md": "Implement mirrored(items, left=0, right=None) for lists of integers with at most 20 elements. Compare the current outside pair; if it matches, recursively check only the inside window. An empty or one-element window is mirrored. Do not slice or mutate the input. Call show_window on entry with answer None and before return with the Boolean answer. Use the same original list in every frame. Defaults select the whole list; explicit boundaries select an inclusive valid subwindow.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Check the inside and preserve the input",
+     "checks": [
+      "mirror_values"
+     ]
+    },
+    {
+     "step": "Show each shrinking window and returning answer",
+     "checks": [
+      "mirror_frames"
+     ]
+    }
+   ],
+   "starter_code": "def mirrored(items,left=0,right=None):\n    if right is None:right=len(items)-1\n    show_window(items,left,right,\"enter\",None)\n    answer=True if left>=right else items[left]==items[right]\n    # Matching outside values are not enough: check the inside too.\n    show_window(items,left,right,\"leave\",answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_window(items,left,right,stage,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=list(items),indices=True,\n           highlights={str(i):\"current\" for i in range(max(0,left),min(len(items),right+1))},\n           pointers=[{\"index\":left,\"label\":\"left\",\"position\":\"above\"},\n                     {\"index\":right,\"label\":\"right\",\"position\":\"below\"}])\n    text(12,250,\"left=\"+str(left)+\"  right=\"+str(right)+\"  \"+stage,size=18)\n    text(12,280,\"answer=\"+str(answer),size=18)\n    frame()\n\nprint(mirrored([4,7,2,7,4]))\n",
+   "tests": [
+    {
+     "name": "mirror_values",
+     "code": "saved=show_window;show_window=lambda *args:None\ntry:\n    cases=[[],[5],[2,2],[2,3],[1,2,3,1],[4,7,2,7,4],[1,2,2,1],[1,2,3,2,9]]\n    import random\n    rng=random.Random(31)\n    cases += [[rng.randrange(4) for _ in range(rng.randrange(12))] for _ in range(35)]\n    for items in cases:\n        before=list(items)\n        assert mirrored(items)==(items==items[::-1]),\"Compare all matching positions, including inside the outside pair.\"\n        assert items==before,\"Do not mutate the supplied sequence.\"\n    assert mirrored([9,1,2,1,8],1,3) is True\n    assert mirrored([9,1,2,3,8],1,3) is False\nfinally:show_window=saved\n"
+    },
+    {
+     "name": "mirror_frames",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert mirrored([4,7,2,7,4]) is True\nexpected=[(0,4,'enter',None),(1,3,'enter',None),(2,2,'enter',None),(2,2,'leave',True),(1,3,'leave',True),(0,4,'leave',True)]\nassert _frame_count()-before==len(expected),\"Record entry and return for every window.\"\nfor j,(left,right,stage,answer) in enumerate(expected):\n    objects=_frame(before+j)\n    fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==[4,7,2,7,4]\n    assert fig['params']['highlights']=={str(i):'current' for i in range(left,right+1)}\n    assert [p['index'] for p in fig['params']['pointers']]==[left,right]\n    words=[o['value'] for o in objects if o['kind']=='text']\n    assert 'left='+str(left)+'  right='+str(right)+'  '+stage in words\n    assert 'answer='+str(answer) in words\n"
+    }
+   ],
+   "hints": [
+    "What remains unproved when the outside pair matches?",
+    "Move both boundaries inward, so the remaining window loses two elements.",
+    "An empty or single-element window needs no further comparison. Return the inside answer when the outside values match."
+   ],
+   "solution": "def mirrored(items,left=0,right=None):\n    if right is None:right=len(items)-1\n    show_window(items,left,right,\"enter\",None)\n    if left>=right:\n        answer=True\n    elif items[left]!=items[right]:\n        answer=False\n    else:\n        answer=mirrored(items,left+1,right-1)\n    show_window(items,left,right,\"leave\",answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_window(items,left,right,stage,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=list(items),indices=True,\n           highlights={str(i):\"current\" for i in range(max(0,left),min(len(items),right+1))},\n           pointers=[{\"index\":left,\"label\":\"left\",\"position\":\"above\"},\n                     {\"index\":right,\"label\":\"right\",\"position\":\"below\"}])\n    text(12,250,\"left=\"+str(left)+\"  right=\"+str(right)+\"  \"+stage,size=18)\n    text(12,280,\"answer=\"+str(answer),size=18)\n    frame()\n\nprint(mirrored([4,7,2,7,4]))\n"
+  },
+  {
+   "exercise_id": "nested_total",
+   "title": "Round 2: combine nested children",
+   "prompt_md": "Implement nested_total(node, path=()) for finite acyclic lists containing integers or more lists, with nesting depth at most 10. Integers return themselves; an empty list returns zero; other lists combine the answers from all children. Recursively visit children left to right. Append each child index to its tuple path. Call show_node(path, node, answer) once after this node is complete, including leaves and empty lists. Do not mutate input or keep an accumulator between calls.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Visit nested and empty containers without mutation",
+     "checks": [
+      "nested_values"
+     ]
+    },
+    {
+     "step": "Complete children before their parent",
+     "checks": [
+      "nested_frames"
+     ]
+    }
+   ],
+   "starter_code": "def nested_total(node,path=()):\n    if isinstance(node,int):\n        answer=node\n    else:\n        answer=sum(child for child in node if isinstance(child,int))\n        # Nested children contribute too; visit each one separately.\n    show_node(path,node,answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_node(path,node,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[\"integer\" if isinstance(node,int) else \"list\",answer],\n           cell_width=110,indices=False)\n    text(12,260,\"completed path=\"+str(path),size=18)\n    frame()\n\nprint(nested_total([3,[2,[],[5]],1]))\n",
+   "tests": [
+    {
+     "name": "nested_values",
+     "code": "import copy,random\nsaved=show_node;show_node=lambda *args:None\ntry:\n    def oracle(node):\n        pending=[node];total=0\n        while pending:\n            item=pending.pop()\n            if isinstance(item,int):total+=item\n            else:pending.extend(item)\n        return total\n    rng=random.Random(41)\n    def sample(depth):\n        if depth==0 or rng.random()<0.4:return rng.randrange(-8,9)\n        return [sample(depth-1) for _ in range(rng.randrange(4))]\n    cases=[[],3,[3,[2,[],[5]],1],[[-4],[2,[-3]]],[[[]]]]+[sample(4) for _ in range(30)]\n    for node in cases:\n        before=copy.deepcopy(node)\n        assert nested_total(node)==oracle(node),\"Combine the answers from every nested child.\"\n        assert node==before,\"Leave the input unchanged.\"\nfinally:show_node=saved\n"
+    },
+    {
+     "name": "nested_frames",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert nested_total([3,[2,[],[5]],1])==11\nexpected=[((0,),3,3),((1,0),2,2),((1,1),[],0),((1,2,0),5,5),((1,2),[5],5),((1,),[2,[],[5]],7),((2,),1,1),((),[3,[2,[],[5]],1],11)]\nassert _frame_count()-before==len(expected),\"Draw every leaf and container, including empty containers.\"\nfor j,(path,node,answer) in enumerate(expected):\n    objects=_frame(before+j);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==['integer' if isinstance(node,int) else 'list',answer],\"Draw this node and its own completed answer.\"\n    assert any(o['kind']=='text' and o['value']=='completed path='+str(path) for o in objects)\n"
+    }
+   ],
+   "hints": [
+    "A child may be an integer, an empty list, or another nonempty list.",
+    "Each call owns its own answer. Wait for all child answers before drawing the parent.",
+    "Start this list’s answer at zero; add one recursive child answer at a time, extending the path with its index."
+   ],
+   "solution": "def nested_total(node,path=()):\n    if isinstance(node,int):\n        answer=node\n    else:\n        answer=0\n        for i,child in enumerate(node):\n            answer+=nested_total(child,path+(i,))\n    show_node(path,node,answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_node(path,node,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[\"integer\" if isinstance(node,int) else \"list\",answer],\n           cell_width=110,indices=False)\n    text(12,260,\"completed path=\"+str(path),size=18)\n    frame()\n\nprint(nested_total([3,[2,[],[5]],1]))\n"
   },
   {
    "exercise_id": "route_trace",

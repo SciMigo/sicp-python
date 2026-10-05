@@ -1,8 +1,8 @@
 {
   "schema_version": "lab_v1",
   "lab_spec_id": "sicp-python-03-recursive-functions",
-  "title": "Calls, states, and repeated work",
-  "description": "Draw pending recursive work, trace branching calls, reuse solved states, measure expansions, and handle large ordered packing plans.",
+  "title": "Recursion in three rounds",
+  "description": "Round 1: see calls descend and return. Round 2: write shrinking-window and nested-container recursions. Round 3: trace branches, reuse states, measure work, and transfer the idea.",
   "runtime": {
     "engine": "pyodide",
     "timeout_ms": 15000

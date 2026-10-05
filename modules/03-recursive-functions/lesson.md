@@ -4,7 +4,13 @@ A recursive function can be short and still generate a large process. A few line
 
 This module assumes that you can follow function calls, loops, and dictionaries, and that you understand separate call contexts from module 2. We will start with a small sum, then count ways of filling a strip. The goal is to justify termination, identify repeated work, and choose an evaluation order that fits Python's runtime. Our drawings expose semantic state; they do not show the interpreter's literal memory layout.
 
-## The problem: what is still waiting?
+## Learn recursion in three rounds
+
+Take this module in three sessions if recursion is new. Repetition helps when each pass asks a different question. In the first round, ask **what is waiting?** Follow a single chain down to its base case, then follow the answers back up. In the second, ask **what smaller input can I trust?** Write functions over different shapes of data. In the third, ask **which work repeats?** Compare a branching call tree with the distinct states it computes.
+
+After each round, close the code and explain one trace aloud. If you cannot say what one call returns, revisit that round before adding another feature. Getting an answer from Run is useful feedback; predicting a return before pressing Run is stronger evidence of understanding.
+
+## Round 1: what is still waiting?
 
 Suppose a workshop numbers its trays from 1 through n and wants the total of their numbers. One definition says that the total through n is n plus the total through n minus one. The total through zero is zero. This description gives both a base case and a dependency on a smaller instance.
 
@@ -63,7 +69,29 @@ When the loop ends, next_tray is n plus one, so the invariant says that total co
 
 An accumulator written with a recursive tail call can describe similarly compact logical state. In a language implementation with suitable tail-call optimization, that need not create a growing stack. CPython and the Python runtime used in these labs do not provide that optimization for these functions. A tail-position call still consumes recursive depth here. Use a loop when you need the corresponding large-input process in Python; raising the recursion limit does not remove the underlying stack growth.
 
-## A branching problem: fill a strip
+## Round 2: the input can shrink in different ways
+
+The sum example decreases a number by one. That is only one way to make progress. Consider a sequence whose outside values match: the remaining question concerns its inside window. Two indices can move toward each other while the original sequence stays unchanged. An empty window or a one-element window needs no pair comparison. A mismatching pair settles the whole answer immediately.
+
+For a mirrored sequence, trusting the smaller call means trusting its Boolean answer, not assuming it returns True. Matching outside values establish only part of the claim. The inside might still disagree. Separate those responsibilities: the current call checks its pair; a smaller call checks all pairs inside it. On a matching input, the distance between the boundaries decreases by two until no pair remains. On a mismatch, the call returns without another descent. A returned False must travel back through every waiting caller.
+
+Here is the shape of that descent for a lesson example. Each box records the boundaries belonging to one call; the earlier boxes still wait for an inside answer.
+
+```figure
+{"type": "environment_diagram", "params": {"frames": [{"bindings": [{"name": "left", "value": "0"}, {"name": "right", "value": "5"}, {"name": "waiting", "value": "inside answer"}], "id": "0", "label": "outside call"}, {"bindings": [{"name": "left", "value": "1"}, {"name": "right", "value": "4"}, {"name": "waiting", "value": "inside answer"}], "id": "1", "label": "inside call"}, {"bindings": [{"name": "left", "value": "2"}, {"name": "right", "value": "3"}, {"name": "waiting", "value": "inside answer"}], "id": "2", "label": "smaller call"}, {"bindings": [{"name": "left", "value": "3"}, {"name": "right", "value": "2"}, {"name": "returns", "value": "True"}], "id": "3", "label": "base call"}]}, "caption": "Matching pairs shrink the inclusive window until left exceeds right. These are active calls, not lexical-parent links. The base answer returns through the waiting calls."}
+```
+
+A container gives a different smaller input: one child. Imagine a package holding numbers or other packages. A number already has its answer. An empty package contributes zero. A nonempty package asks each child for its answer and adds those answers. The current call need not understand the entire descendant structure at once. Its job is to combine correct child answers into its own correct answer.
+
+```figure
+{"type":"tree","params":{"node_radius":32,"node_spacing_x":115,"node_spacing_y":95,"root":{"value":"total 12","children":[{"value":"4"},{"value":"total 6","children":[{"value":"1"},{"value":"5"}]},{"value":"2"}]}},"caption":"A container holding 4, a nested container holding 1 and 5, and 2 totals 12. The nested container completes its answer 6 before its parent can finish."}
+```
+
+Do not mistake several children for repeated work. A nested container can have many recursive calls because it contains many different children. Reusing an answer is warranted only when two calls ask the same question under the same rules. Ordinary structural recursion visits each child occurrence; a recurrence may request the same state repeatedly. The next round will make that distinction visible.
+
+For each new function, write three sentences before code: what one call promises to return, which inputs need no recursive call, and why every recursive input is smaller. Then trace the smallest nontrivial example. Include an empty input and a failure case, rather than testing only the pleasant example. In the lab, record completed child answers before the parent answer so playback exposes a missing contribution instead of merely displaying a final total.
+
+## Round 3: a branching problem — fill a strip
 
 Now fill a strip of length n with pieces of length 1 or 2. The order of pieces matters: a short piece followed by a long one is a different arrangement from the reverse. There is one arrangement for an empty strip, because choosing no pieces is a valid completed arrangement. Length one also has one arrangement.
 

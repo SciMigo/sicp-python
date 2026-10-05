@@ -1,0 +1,23 @@
+{
+  "title": "Round 2: move two boundaries",
+  "checklist": [
+    {
+      "step": "Check the inside and preserve the input",
+      "checks": [
+        "mirror_values"
+      ]
+    },
+    {
+      "step": "Show each shrinking window and returning answer",
+      "checks": [
+        "mirror_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "What remains unproved when the outside pair matches?",
+    "Move both boundaries inward, so the remaining window loses two elements.",
+    "An empty or single-element window needs no further comparison. Return the inside answer when the outside values match."
+  ],
+  "questions": []
+}
