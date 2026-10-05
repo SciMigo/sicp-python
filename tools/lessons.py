@@ -17,7 +17,7 @@ On top of plain markdown, a lesson may use:
 The page is plain HTML with one <h1> and an <h2> per section, so the course site can render it on
 the module page with its outline beside it.
 
-Needs .venv (markdown, pymdown-extensions, latex2mathml, straightedge); see README.
+Needs .venv (markdown, pymdown-extensions, latex2mathml, Pygments, straightedge); see README.
 """
 
 from __future__ import annotations
@@ -98,6 +98,11 @@ h2 {{ font-size: 1.3rem; margin: 2.2rem 0 .6rem; }}
 code {{ font: .9em ui-monospace, SFMono-Regular, Menlo, monospace; background: #f3f0fa; border-radius: 4px; padding: .1em .3em; }}
 pre {{ background: #1e1733; color: #f1edfb; border-radius: 10px; padding: 1rem 1.1rem; overflow-x: auto; line-height: 1.5; }}
 pre code {{ background: none; padding: 0; color: inherit; }}
+.codehilite .k, .codehilite .kn, .codehilite .ow {{ color: #d8b4fe; }}
+.codehilite .nf, .codehilite .nb {{ color: #93c5fd; }}
+.codehilite .s, .codehilite .s1, .codehilite .s2, .codehilite .sd {{ color: #bef264; }}
+.codehilite .mi, .codehilite .mf {{ color: #fdba74; }}
+.codehilite .c, .codehilite .c1, .codehilite .cm {{ color: #b8b4ca; font-style: italic; }}
 table {{ border-collapse: collapse; width: 100%; font-size: .92em; margin: 1rem 0; }}
 th, td {{ border: 1px solid #e3def0; padding: .45rem .6rem; text-align: left; vertical-align: top; }}
 th {{ background: #f6f4fb; }}
@@ -144,7 +149,8 @@ def to_html(source: str) -> str:
     parts = CODE.split(source)
     parts[::2] = [MATH.sub(keep, part) for part in parts[::2]]      # never inside code
     body = markdown.markdown("".join(parts), extensions=[
-        "fenced_code", "tables", "admonition", "md_in_html", "pymdownx.details"],
+        "fenced_code", "codehilite", "tables", "admonition", "md_in_html", "pymdownx.details"],
+        extension_configs={"codehilite": {"guess_lang": False}},
         output_format="html")
     return re.sub(r"\x00M(\d+)\x00", lambda m: maths[int(m.group(1))], body)
 

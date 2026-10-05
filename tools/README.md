@@ -4,7 +4,7 @@ Modules 01 and 06 are converted to lesson + visual lab. Other modules retain the
 
 The browser runtime and check/build tools were copied from the sibling algorithm-design course on 2026-10-04 and adapted to SICP. Vendored runtime notices are in preview/THIRD_PARTY_NOTICES.txt. Author lab files in lab_src; pack with ~/.codex/skills/scimigo-course-module/scripts/lab_src.py.
 
-Python dependencies: straightedge 0.8.0, markdown, pymdown-extensions, latex2mathml (currently available in ../algorithm-design/.venv). Browser smoke: Playwright from ../scimigo-learn/node_modules.
+Python dependencies: straightedge 0.8.0, markdown, pymdown-extensions, latex2mathml, Pygments (currently available in ../algorithm-design/.venv). Browser smoke: Playwright from ../scimigo-learn/node_modules.
 
 ```
 ../algorithm-design/.venv/bin/python tools/lessons.py check 06
