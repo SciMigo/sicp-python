@@ -1,0 +1,522 @@
+{
+  "schema_version": "v3",
+  "id": "sicp_ch2-2_trees_python_en_v1",
+  "title": "Trees",
+  "topic": "Hierarchical data from the closure property",
+  "description": "We build a tree abstraction in Python and practice the three classic tree-recursion tasks: aggregating values, transforming structure, and searching for a path. The key idea is that trees are recursive data: branches contain smaller trees.",
+  "speakers": {
+    "student": {
+      "display_name": "Sofia",
+      "style": "Makes predictions and asks about the return value of each recursive call.",
+      "notes": "Thinks out loud and makes concrete predictions about what code returns."
+    },
+    "teacher": {
+      "display_name": "Prof. David",
+      "style": "Explains recursive structure with a concrete trace; distinguishes node labels from branching structure.",
+      "notes": "Emphasizes recursion plans and abstraction barriers; asks for predictions before evaluating code."
+    }
+  },
+  "context": {
+    "SeriesPlan": {
+      "series_id": "sicp_ch2_python_en",
+      "sequence_index": 2,
+      "unit": "Chapter 2: Data Abstraction",
+      "lesson_sequence": [
+        {
+          "id": "sicp_ch2-1_lists_python_en_v1",
+          "title": "Lists",
+          "topic": "Sequences and list processing"
+        },
+        {
+          "id": "sicp_ch2-2_trees_python_en_v1",
+          "title": "Trees",
+          "topic": "Hierarchical data from the closure property"
+        }
+      ],
+      "prerequisites": [
+        "Python lists and list slicing",
+        "Writing recursive functions with base cases",
+        "Higher-order functions (passing functions as values)"
+      ],
+      "learning_goals": [
+        "Represent trees as recursive data using nested lists",
+        "Use a tree abstraction barrier with constructors and selectors",
+        "Write tree recursion for aggregation, transformation, and search"
+      ]
+    }
+  },
+  "slides": [
+    {
+      "num": 1,
+      "headline": "From flat lists to branching structure",
+      "role": "bridge",
+      "blocks": [
+        {
+          "type": "text",
+          "text": "When your data has 'parts of parts', a single list level is not enough."
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Last time: lists as universal sequences",
+            "Today: trees as nested lists (closure property)",
+            "Goal: recursive processing plans (count, map, search)"
+          ]
+        }
+      ]
+    },
+    {
+      "num": 2,
+      "headline": "Closure property: lists can contain lists",
+      "role": "hook",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "python",
+          "code": "x = [[1, 2], 3, 4]\nprint(x)\n\n# Closure: we can put the whole structure inside another list\nxx = [x, x]\nprint(xx)\n",
+          "narration": []
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "In this nested-list example, non-list values are leaves",
+            "The tree ADT on the next slide labels every node",
+            "These are two representations; do not mix their selectors"
+          ]
+        }
+      ]
+    },
+    {
+      "num": 3,
+      "headline": "A simple Tree ADT in Python",
+      "role": "example",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "python",
+          "code": "def tree(node_label, branches=None):\n    if branches is None:\n        branches = []\n    # A tree is a list: [label, branch1, branch2, ...]\n    return [node_label] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\n# Example tree from the prompt\n\nt = tree(3, [\n    tree(1),\n    tree(2, [tree(1), tree(1)])\n])\n\nprint(t)\nprint(label(t))\nprint([label(b) for b in branches(t)])\nprint(is_leaf(t), is_leaf(branches(t)[0]))\n",
+          "narration": [],
+          "code_layout": "columns"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Every tree has a label and zero or more branches",
+            "A leaf is a tree with no branches, whatever its label",
+            "Use label, branches and is_leaf; an empty list is not a tree"
+          ]
+        }
+      ]
+    },
+    {
+      "num": 4,
+      "headline": "Visualize the example tree",
+      "role": "intuition",
+      "blocks": [
+        {
+          "type": "bullet_list",
+          "items": [
+            "Root label: $3$",
+            "Two children: $1$ and $2$",
+            "Under $2$: two leaves, both $1$"
+          ]
+        }
+      ],
+      "image_hint": "\\{\"type\":\"binary_tree\",\"params\":\\{\"root\":\\{\"value\":3,\"left\":\\{\"value\":1\\},\"right\":\\{\"value\":2,\"left\":\\{\"value\":1\\},\"right\":\\{\"value\":1\\}\\}\\},\"caption\":\"Tree $t$: root 3, children 1 and 2; node 2 has two leaf children\"\\}\\}"
+    },
+    {
+      "num": 5,
+      "headline": "Counting leaves: the first classic tree recursion",
+      "role": "example",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "python",
+          "code": "def count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\nprint(count_leaves(t))\n",
+          "narration": []
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Base case: leaf $\\Rightarrow 1$",
+            "Recursive case: sum over branches",
+            "Predict: `count_leaves(t)`"
+          ]
+        }
+      ]
+    },
+    {
+      "num": 6,
+      "headline": "Tree map: transform every label, keep the shape",
+      "role": "example",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "python",
+          "code": "def tree_map(f, t):\n    return tree(\n        f(label(t)),\n        [tree_map(f, b) for b in branches(t)]\n    )\n\nsquared = tree_map(lambda x: x * x, t)\nplus_one = tree_map(lambda x: x + 1, t)\n\nprint(label(plus_one))\nprint(squared)\nprint(plus_one)\n",
+          "narration": []
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Apply f to every label; preserve the branching structure",
+            "At a leaf, the empty branch list makes zero recursive calls",
+            "Predict the transformed root label and leaf count before running"
+          ]
+        }
+      ]
+    },
+    {
+      "num": 7,
+      "headline": "One recipe, three goals",
+      "role": "formal_statement",
+      "blocks": [
+        {
+          "type": "equation",
+          "tex": "F(t)\\;=\\;\\text{combine}\\Big(\\text{label}(t),\\;[\\,F(b)\\;\\text{for}\\;b\\in\\text{branches}(t)\\,]\\Big)",
+          "narration": [],
+          "id": "eq_recipe"
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Aggregate: return a value (e.g., leaf count)",
+            "Transform: return a new tree (e.g., map)",
+            "Search: return evidence (e.g., a path) or $\\text\\{None\\}$",
+            "Always ask: base case for a leaf?"
+          ]
+        }
+      ]
+    },
+    {
+      "num": 8,
+      "headline": "Searching a tree: find a path to a label",
+      "role": "example",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "python",
+          "code": "def find_path(t, target):\n    \"\"\"Return a list of labels from the root to target, or None.\"\"\"\n    if label(t) == target:\n        return [label(t)]\n\n    for b in branches(t):\n        subpath = find_path(b, target)\n        if subpath is not None:\n            return [label(t)] + subpath\n\n    return None\n\n# Predict before you run:\n# What do you think find_path(t, 2) returns?\nprint(find_path(t, 2))\n\n# What do you think find_path(t, 1) returns?\nprint(find_path(t, 1))\n\n# And what about a missing label?\nprint(find_path(t, 99))\n",
+          "narration": []
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Root match: return [label(t)]",
+            "Descendant match: prepend the current label to its path",
+            "No match: return None; try the next branch",
+            "Search branches left to right and return the first match"
+          ]
+        }
+      ]
+    },
+    {
+      "num": 9,
+      "headline": "The Fibonacci tree: recursion makes a tree of calls",
+      "role": "example",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "python",
+          "code": "def fib_tree(n):\n    if n <= 1:\n        return tree(n)\n    left = fib_tree(n - 1)\n    right = fib_tree(n - 2)\n    return tree(label(left) + label(right), [left, right])\n\nft5 = fib_tree(5)\nprint(label(ft5))\nprint(count_leaves(ft5))\n",
+          "narration": []
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Node label: Fibonacci value at that call",
+            "Shape: two branches ($n-1$ and $n-2$)",
+            "Leaf count for $n=5$: $8$ base cases"
+          ]
+        }
+      ],
+      "image_hint": "\\{\"type\":\"binary_tree\",\"params\":\\{\"root\":\\{\"value\":5,\"left\":\\{\"value\":3,\"left\":\\{\"value\":2,\"left\":\\{\"value\":1,\"left\":\\{\"value\":1\\},\"right\":\\{\"value\":0\\}\\},\"right\":\\{\"value\":1\\}\\},\"right\":\\{\"value\":1,\"left\":\\{\"value\":1\\},\"right\":\\{\"value\":0\\}\\}\\},\"right\":\\{\"value\":2,\"left\":\\{\"value\":1,\"left\":\\{\"value\":1\\},\"right\":\\{\"value\":0\\}\\},\"right\":\\{\"value\":1\\}\\}\\},\"caption\":\"Fibonacci call tree for $n=5$ (values shown at nodes)\"\\}\\}"
+    },
+    {
+      "num": 10,
+      "headline": "Exit ticket: predict, then justify",
+      "role": "exit_ticket",
+      "blocks": [
+        {
+          "type": "code",
+          "language": "python",
+          "code": "# Reminder setup for this exit ticket:\n# t = ...   (the same tree used earlier in the lesson)\n# def find_path(t, target): ...\n\nprint(find_path(t, 1))\n",
+          "narration": []
+        },
+        {
+          "type": "bullet_list",
+          "items": [
+            "Predict find_path(t, 1), find_path(t, 3), and find_path(t, 99)",
+            "Explain why a root match is a one-element path",
+            "Explain how None lets the caller try another branch"
+          ]
+        }
+      ]
+    }
+  ],
+  "slide_narrations": [
+    {
+      "slide_num": 1,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "A directory contains files and other directories. A flat list can list the names, but it does not tell us which items belong inside which directory. A tree records that branching structure.",
+          "spoken_text": "A directory contains files and other directories. A flat list can list the names, but it does not tell us which items belong inside which directory. A tree records that branching structure."
+        },
+        {
+          "speaker": "student",
+          "text": "So the important part is not just the values. We need to keep the relationship between a parent and its children.",
+          "spoken_text": "So the important part is not just the values. We need to keep the relationship between a parent and its children."
+        },
+        {
+          "speaker": "teacher",
+          "text": "Exactly. We will first distinguish nested lists from a labeled tree abstraction. Then we will count leaves, transform every label, and search for a path. Each operation follows the branches, but it returns a different kind of result.",
+          "spoken_text": "Exactly. We will first distinguish nested lists from a labeled tree abstraction. Then we will count leaves, transform every label, and search for a path. Each operation follows the branches, but it returns a different kind of result."
+        },
+        {
+          "speaker": "student",
+          "text": "A count, a new tree, or a path. I will track what each recursive call promises to return.",
+          "spoken_text": "A count, a new tree, or a path. I will track what each recursive call promises to return."
+        }
+      ]
+    },
+    {
+      "slide_num": 2,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "Here is a nested list. In this representation, the plain values are leaves and a list groups smaller pieces. Another list can contain the whole structure as one element. That is the closure property: the result of combining values can itself be combined.",
+          "spoken_text": "Here is a nested list. In this representation, the plain values are leaves and a list groups smaller pieces. Another list can contain the whole structure as one element. That is the closure property: the result of combining values can itself be combined."
+        },
+        {
+          "speaker": "student",
+          "text": "In the first example, one and two are inside the first sublist, while three and four are direct elements of the outer list.",
+          "spoken_text": "In the first example, one and two are inside the first sublist, while three and four are direct elements of the outer list."
+        },
+        {
+          "speaker": "teacher",
+          "text": "Yes. But nested lists are only one way to represent branching data. On the next slide we use a different convention: every node, including a leaf, has a label and a list of child trees.",
+          "spoken_text": "Yes. But nested lists are only one way to represent branching data. On the next slide we use a different convention: every node, including a leaf, has a label and a list of child trees."
+        },
+        {
+          "speaker": "student",
+          "text": "Then I should not apply the nested-list leaf rule to that new representation. I need its selectors.",
+          "spoken_text": "Then I should not apply the nested-list leaf rule to that new representation. I need its selectors."
+        }
+      ]
+    },
+    {
+      "slide_num": 3,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "The constructor makes a node from a label and an optional list of branches. A branch must itself be a tree. The selectors return the label and the child trees. We use those selectors rather than depending on the internal list layout.",
+          "spoken_text": "The constructor makes a node from a label and an optional list of branches. A branch must itself be a tree. The selectors return the label and the child trees. We use those selectors rather than depending on the internal list layout."
+        },
+        {
+          "speaker": "student",
+          "text": "A leaf is still a tree with a label. It just has no branches. So a node labeled one could have children, and a node labeled two could be a leaf.",
+          "spoken_text": "A leaf is still a tree with a label. It just has no branches. So a node labeled one could have children, and a node labeled two could be a leaf."
+        },
+        {
+          "speaker": "teacher",
+          "text": "Correct. The structure decides whether a node is a leaf, not the label. Every tree in this abstraction is nonempty. An empty branch list is valid, but an empty list by itself is not a tree because there is no label to select.",
+          "spoken_text": "Correct. The structure decides whether a node is a leaf, not the label. Every tree in this abstraction is nonempty. An empty branch list is valid, but an empty list by itself is not a tree because there is no label to select."
+        },
+        {
+          "speaker": "student",
+          "text": "For this example, the root is three. Its children are one and two, and the node labeled two has two leaf children labeled one.",
+          "spoken_text": "For this example, the root is three. Its children are one and two, and the node labeled two has two leaf children labeled one."
+        }
+      ]
+    },
+    {
+      "slide_num": 4,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "Read the diagram from the root. Three has two branches: a leaf labeled one on the left and a node labeled two on the right. Two has two children, both leaves labeled one.",
+          "spoken_text": "Read the diagram from the root. Three has two branches: a leaf labeled one on the left and a node labeled two on the right. Two has two children, both leaves labeled one."
+        },
+        {
+          "speaker": "student",
+          "text": "There are five nodes and three leaves. The repeated label one does not merge those leaves into one node.",
+          "spoken_text": "There are five nodes and three leaves. The repeated label one does not merge those leaves into one node."
+        },
+        {
+          "speaker": "teacher",
+          "text": "Exactly. Labels may repeat. There is one root-to-node path to each occurrence, and our search will visit branches from left to right. Predict the label of the second branch of the root.",
+          "spoken_text": "Exactly. Labels may repeat. There is one root-to-node path to each occurrence, and our search will visit branches from left to right. Predict the label of the second branch of the root."
+        },
+        {
+          "speaker": "student",
+          "text": "Two. Selecting the branches and then the second branch gets that node; selecting its label gives two.",
+          "spoken_text": "Two. Selecting the branches and then the second branch gets that node; selecting its label gives two."
+        }
+      ]
+    },
+    {
+      "slide_num": 5,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "The contract of count leaves is to return the number of leaves in the given tree. At a leaf the answer is one. At an internal node, each leaf belongs to exactly one child branch, so adding the branch counts gives the total.",
+          "spoken_text": "The contract of count leaves is to return the number of leaves in the given tree. At a leaf the answer is one. At an internal node, each leaf belongs to exactly one child branch, so adding the branch counts gives the total."
+        },
+        {
+          "speaker": "student",
+          "text": "The left branch contributes one. The right branch has two leaf children, so it contributes two. The total is three.",
+          "spoken_text": "The left branch contributes one. The right branch has two leaf children, so it contributes two. The total is three."
+        },
+        {
+          "speaker": "teacher",
+          "text": "That is the correctness argument too: if the recursive calls count the leaves of their branches correctly, their sum counts every leaf once. The finite tree gets smaller at each call, and a leaf stops the descent.",
+          "spoken_text": "That is the correctness argument too: if the recursive calls count the leaves of their branches correctly, their sum counts every leaf once. The finite tree gets smaller at each call, and a leaf stops the descent."
+        },
+        {
+          "speaker": "student",
+          "text": "So the base case explains termination, while the way we combine the branch answers explains why the count is correct.",
+          "spoken_text": "So the base case explains termination, while the way we combine the branch answers explains why the count is correct."
+        }
+      ]
+    },
+    {
+      "slide_num": 6,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "Tree map has a different contract: make a new tree with the same branching structure and apply the function to every node label. The constructor rebuilds the current node using its transformed label and the transformed child trees.",
+          "spoken_text": "Tree map has a different contract: make a new tree with the same branching structure and apply the function to every node label. The constructor rebuilds the current node using its transformed label and the transformed child trees."
+        },
+        {
+          "speaker": "student",
+          "text": "There is no explicit leaf check in the code. What stops it from calling itself again at a leaf?",
+          "spoken_text": "There is no explicit leaf check in the code. What stops it from calling itself again at a leaf?"
+        },
+        {
+          "speaker": "teacher",
+          "text": "A leaf has an empty branch list. The comprehension over that list produces an empty list and makes zero recursive calls. The constructor still rebuilds the leaf with its transformed label. We are not mapping an empty tree; this abstraction has no empty-tree value.",
+          "spoken_text": "A leaf has an empty branch list. The comprehension over that list produces an empty list and makes zero recursive calls. The constructor still rebuilds the leaf with its transformed label. We are not mapping an empty tree; this abstraction has no empty-tree value."
+        },
+        {
+          "speaker": "student",
+          "text": "Adding one makes the root four, the left leaf two, the right internal node three, and its two leaves two. The shape stays the same, so there are still three leaves.",
+          "spoken_text": "Adding one makes the root four, the left leaf two, the right internal node three, and its two leaves two. The shape stays the same, so there are still three leaves."
+        }
+      ]
+    },
+    {
+      "slide_num": 7,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "The three operations share the structure of the traversal, but not their return contracts. Aggregation returns a value such as a leaf count. Transformation returns a new tree. Search returns evidence such as a path, or a failure signal.",
+          "spoken_text": "The three operations share the structure of the traversal, but not their return contracts. Aggregation returns a value such as a leaf count. Transformation returns a new tree. Search returns evidence such as a path, or a failure signal."
+        },
+        {
+          "speaker": "student",
+          "text": "So I cannot choose one universal leaf answer. One is right for counting leaves, but tree map needs to return a rebuilt leaf.",
+          "spoken_text": "So I cannot choose one universal leaf answer. One is right for counting leaves, but tree map needs to return a rebuilt leaf."
+        },
+        {
+          "speaker": "teacher",
+          "text": "Exactly. First state what a call must return for any subtree. Then decide how the current label and the child results contribute. For finite acyclic trees, recursion follows smaller subtrees; the combining rule must still satisfy the contract.",
+          "spoken_text": "Exactly. First state what a call must return for any subtree. Then decide how the current label and the child results contribute. For finite acyclic trees, recursion follows smaller subtrees; the combining rule must still satisfy the contract."
+        },
+        {
+          "speaker": "student",
+          "text": "The data gives us the recursive structure. The operation determines the result and how we combine it.",
+          "spoken_text": "The data gives us the recursive structure. The operation determines the result and how we combine it."
+        }
+      ]
+    },
+    {
+      "slide_num": 8,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "Find path returns a list of labels from the root of this subtree to the first matching node, or None when no node matches. If the current root matches, the path is a one-element list containing its label. It is not an empty list.",
+          "spoken_text": "Find path returns a list of labels from the root of this subtree to the first matching node, or None when no node matches. If the current root matches, the path is a one-element list containing its label. It is not an empty list."
+        },
+        {
+          "speaker": "student",
+          "text": "For target three, the answer is the list containing three. For target two, we first try the left leaf one, which returns None. Then the right branch matches and returns the list containing two.",
+          "spoken_text": "For target three, the answer is the list containing three. For target two, we first try the left leaf one, which returns None. Then the right branch matches and returns the list containing two."
+        },
+        {
+          "speaker": "teacher",
+          "text": "The caller prepends its own label, three, to that returned path, giving three followed by two. A None result means try the next branch. If every branch fails, return None. We test explicitly for None rather than confusing failure with a path.",
+          "spoken_text": "The caller prepends its own label, three, to that returned path, giving three followed by two. A None result means try the next branch. If every branch fails, return None. We test explicitly for None rather than confusing failure with a path."
+        },
+        {
+          "speaker": "student",
+          "text": "For target one, the first match is the left leaf, so the result is three followed by one. Target ninety-nine is missing: every branch fails and the whole search returns None.",
+          "spoken_text": "For target one, the first match is the left leaf, so the result is three followed by one. Target ninety-nine is missing: every branch fails and the whole search returns None."
+        }
+      ]
+    },
+    {
+      "slide_num": 9,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "A Fibonacci call can also be represented as a tree. The code labels each node with the value returned by that call. Above the base cases, its children are the trees for the two smaller arguments.",
+          "spoken_text": "A Fibonacci call can also be represented as a tree. The code labels each node with the value returned by that call. Above the base cases, its children are the trees for the two smaller arguments."
+        },
+        {
+          "speaker": "student",
+          "text": "For argument five, the root label is five. Its two children have labels three and two. Those labels are Fibonacci values, not necessarily the arguments of the calls.",
+          "spoken_text": "For argument five, the root label is five. Its two children have labels three and two. Those labels are Fibonacci values, not necessarily the arguments of the calls."
+        },
+        {
+          "speaker": "teacher",
+          "text": "Correct. Base-case calls with arguments zero and one are leaves. The tree for argument five has eight leaves: five return one and three return zero. Adding leaf values gives five, but counting leaves gives eight. Those are different quantities.",
+          "spoken_text": "Correct. Base-case calls with arguments zero and one are leaves. The tree for argument five has eight leaves: five return one and three return zero. Adding leaf values gives five, but counting leaves gives eight. Those are different quantities."
+        },
+        {
+          "speaker": "student",
+          "text": "Repeated subtrees show the duplicated work of naive Fibonacci. Keeping a table of previous answers can avoid recomputing those values, as we saw in the recursion module.",
+          "spoken_text": "Repeated subtrees show the duplicated work of naive Fibonacci. Keeping a table of previous answers can avoid recomputing those values, as we saw in the recursion module."
+        }
+      ]
+    },
+    {
+      "slide_num": 10,
+      "turns": [
+        {
+          "speaker": "teacher",
+          "text": "Pause and predict three searches on our original example: target one, target three, and missing target ninety-nine. For each, say whether the result is a path or None. Explain the return at the first call that decides the result.",
+          "spoken_text": "Pause and predict three searches on our original example: target one, target three, and missing target ninety-nine. For each, say whether the result is a path or None. Explain the return at the first call that decides the result."
+        },
+        {
+          "speaker": "student",
+          "text": "Target one returns three followed by one because the left branch wins. Target three returns a one-element path containing three because the root matches. Target ninety-nine returns None.",
+          "spoken_text": "Target one returns three followed by one because the left branch wins. Target three returns a one-element path containing three because the root matches. Target ninety-nine returns None."
+        },
+        {
+          "speaker": "teacher",
+          "text": "Now explain the return back to a caller. A successful child path gets the current label prepended. None tells the caller to try another branch. Once a path is found, this function stops, so it does not return every occurrence of a repeated label.",
+          "spoken_text": "Now explain the return back to a caller. A successful child path gets the current label prepended. None tells the caller to try another branch. Once a path is found, this function stops, so it does not return every occurrence of a repeated label."
+        },
+        {
+          "speaker": "student",
+          "text": "I can check my explanation against the code: match the root, otherwise try the branches, then return None if none succeeds. The lab extends this idea to collecting all paths instead of stopping at the first.",
+          "spoken_text": "I can check my explanation against the code: match the root, otherwise try the branches, then return None if none succeeds. The lab extends this idea to collecting all paths instead of stopping at the first."
+        }
+      ]
+    }
+  ],
+  "exercises": [
+    {
+      "id": "ex1_predict_find_path_first_match",
+      "type": "prediction",
+      "slide_anchor": 9,
+      "prompt": "Predict the output of print(find_path(t, 1)). Which path is returned, and why does the search stop there?",
+      "expected_answer": "[3, 1]",
+      "rubric": [
+        "Correctly predicts the returned path is the root followed by the left child: [3, 1].",
+        "Explains that the search checks branches from left to right and returns immediately on the first successful match."
+      ]
+    }
+  ]
+}

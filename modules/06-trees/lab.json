@@ -1,101 +1,339 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "trees-lab",
-  "title": "Trees (Nested Lists and Tree Recursion)",
-  "description": "Practice tree-shaped data using a simple Tree ADT. You will (1) predict results of tree recursion, (2) trace a recursive computation that builds a tree of calls, and (3) implement + extend classic tree-recursive functions (fringe, then a pipeline computation).",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 5000
-  },
-  "exercises": [
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-06-trees",
+ "title": "Trees: structure, answers, and work",
+ "description": "Build and trace a traversal, preserve shape while transforming labels, count work, then produce a shipment report.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "Identify leaves by their children, regardless of their labels.",
+   "Explain what a completed recursive call returns.",
+   "Construct a new tree without changing the original.",
+   "Count work and transfer a combining rule to a new task."
+  ],
+  "invariant": "Each completed call returns a correct answer for exactly its own subtree.",
+  "complexity": "Whole-tree aggregation: Θ(n) time and O(h) recursive stack space with constant-time selectors and bounded-size arithmetic; drawing is excluded.",
+  "common_mistake": "Testing label == 1 instead of checking for an empty child sequence.",
+  "in_real_programs": [
+   "Python ast.iter_child_nodes exposes immediate child nodes for syntax-tree traversal."
+  ],
+  "retrieval": {
+   "question": "Module 4: what does using selectors protect?",
+   "answer": "Clients depend on the interface instead of the concrete representation."
+  }
+ },
+ "exercises": [
+  {
+   "exercise_id": "leaf_count",
+   "title": "Build: leaves are structural",
+   "prompt_md": "Repair `count_leaves` so it returns the number of nodes with no children. Use the supplied selectors. After each call has its answer, call `show(whole, path, result)` once. Keep the original hierarchy in `whole` and extend the child-index `path` when descending. The helper highlights the completed node and records a frame. A node labelled 1 may contain children; a node labelled 0 may be a leaf.\n",
+   "checklist": [
     {
-      "exercise_id": "ex1_predict_paths_and_leaves",
-      "title": "Predict: First Match in Tree Search + Leaf Count",
-      "slide_anchor": 8,
-      "prompt_md": "**Predict the output (4 lines)** before running. Write your prediction as comments first.\n\n```python\n# Tree ADT + example tree\n\ndef tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nt = tree(3, [\n    tree(1),\n    tree(2, [tree(1), tree(1)])\n])\n\n# Two classic tree recursions\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef find_path(t, target):\n    if label(t) == target:\n        return [label(t)]\n    for b in branches(t):\n        subpath = find_path(b, target)\n        if subpath is not None:\n            return [label(t)] + subpath\n    return None\n\nprint(find_path(t, 2))\nprint(find_path(t, 1))\nprint(find_path(t, 99))\nprint(count_leaves(t))\n```\n\nQuestions:\n1) What does each `print` line output?\n2) Why does `find_path(t, 1)` return that particular path (hint: branch order)?",
-      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nt = tree(3, [\n    tree(1),\n    tree(2, [tree(1), tree(1)])\n])\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef find_path(t, target):\n    if label(t) == target:\n        return [label(t)]\n    for b in branches(t):\n        subpath = find_path(b, target)\n        if subpath is not None:\n            return [label(t)] + subpath\n    return None\n\n# Prediction (write answers BEFORE running):\n# Line 1 prints: \n# Line 2 prints: \n# Line 3 prints: \n# Line 4 prints: \n\n# Then run to check:\n# print(find_path(t, 2))\n# print(find_path(t, 1))\n# print(find_path(t, 99))\n# print(count_leaves(t))\n",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "assert find_path(t, 2) == [3, 2]"
-        },
-        {
-          "name": "t2",
-          "code": "assert find_path(t, 1) == [3, 1]"
-        },
-        {
-          "name": "t3",
-          "code": "assert find_path(t, 99) is None"
-        },
-        {
-          "name": "t4",
-          "code": "assert count_leaves(t) == 3"
-        }
-      ],
-      "hints": [
-        "For find_path: the base case is when the current node label equals the target.",
-        "Branches are searched left-to-right, and the function returns as soon as it finds a successful subpath.",
-        "For count_leaves: every leaf contributes 1; internal nodes contribute the sum of their branches."
-      ],
-      "solution": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nt = tree(3, [\n    tree(1),\n    tree(2, [tree(1), tree(1)])\n])\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef find_path(t, target):\n    if label(t) == target:\n        return [label(t)]\n    for b in branches(t):\n        subpath = find_path(b, target)\n        if subpath is not None:\n            return [label(t)] + subpath\n    return None\n\n# Predicted outputs:\n# find_path(t, 2)  -> [3, 2]\n# find_path(t, 1)  -> [3, 1]   (first match is the left child)\n# find_path(t, 99) -> None\n# count_leaves(t)  -> 3"
+     "step": "Count leaves on varied shapes and labels",
+     "checks": [
+      "structural_leaves"
+     ]
     },
     {
-      "exercise_id": "ex2_trace_fib_tree_calls",
-      "title": "Trace: Fibonacci Builds a Tree of Calls",
-      "slide_anchor": 9,
-      "prompt_md": "In this exercise, the **shape of the returned tree mirrors the recursion**.\n\n1) Trace the recursive calls for `fib_tree(4)`.\n   - List the calls in the order they are *initiated*.\n   - Then show the return value (the node label) for each call as it unwinds.\n\n2) Predict (then verify):\n   - `label(fib_tree(4))`\n   - `count_leaves(fib_tree(4))`\n\nCode:\n```python\ndef tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef fib_tree(n):\n    if n <= 1:\n        return tree(n)\n    left = fib_tree(n - 1)\n    right = fib_tree(n - 2)\n    return tree(label(left) + label(right), [left, right])\n\nft4 = fib_tree(4)\nprint(label(ft4))\nprint(count_leaves(ft4))\n```\n\nYour trace should explain where the **base case** happens and how results are **combined**.",
-      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef fib_tree(n):\n    if n <= 1:\n        return tree(n)\n    left = fib_tree(n - 1)\n    right = fib_tree(n - 2)\n    return tree(label(left) + label(right), [left, right])\n\n# TRACE (fill in with your own steps):\n# Calls initiated (top-down):\n# fib_tree(4)\n# fib_tree(3)\n# fib_tree(2)\n# fib_tree(1)\n# fib_tree(0)\n# ... continue until complete\n#\n# Unwinding (bottom-up):\n# fib_tree(0) returns tree(0)\n# fib_tree(1) returns tree(1)\n# fib_tree(2) returns label 1\n# fib_tree(3) returns label ?\n# fib_tree(4) returns label ?\n#\n# Prediction:\n# label(fib_tree(4)) = \n# count_leaves(fib_tree(4)) = \n\nft4 = fib_tree(4)\n# Uncomment to verify after predicting:\n# print(label(ft4))\n# print(count_leaves(ft4))\n",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "ft4 = fib_tree(4)\nassert label(ft4) == 3"
-        },
-        {
-          "name": "t2",
-          "code": "ft4 = fib_tree(4)\nassert count_leaves(ft4) == 5"
-        },
-        {
-          "name": "t3",
-          "code": "assert label(fib_tree(0)) == 0 and count_leaves(fib_tree(0)) == 1"
-        }
-      ],
-      "hints": [
-        "Base case: `n <= 1` returns a leaf tree with label `n`.",
-        "Recursive case: build left and right subtrees, then label = label(left) + label(right).",
-        "The leaf count equals the number of base-case hits (calls where n is 0 or 1). For n=4, there are 5 such calls."
-      ],
-      "solution": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\ndef count_leaves(t):\n    if is_leaf(t):\n        return 1\n    return sum(count_leaves(b) for b in branches(t))\n\ndef fib_tree(n):\n    if n <= 1:\n        return tree(n)\n    left = fib_tree(n - 1)\n    right = fib_tree(n - 2)\n    return tree(label(left) + label(right), [left, right])\n\n# One valid trace (calls initiated):\n# fib_tree(4)\n#   fib_tree(3)\n#     fib_tree(2)\n#       fib_tree(1)  -> returns 1\n#       fib_tree(0)  -> returns 0\n#     fib_tree(1)    -> returns 1\n#   fib_tree(2)\n#     fib_tree(1)    -> returns 1\n#     fib_tree(0)    -> returns 0\n# Unwinding labels:\n# fib_tree(2) label = 1+0 = 1\n# fib_tree(3) label = 1+1 = 2\n# fib_tree(4) label = 2+1 = 3\n# Leaves = base-case calls = 5\n\nft4 = fib_tree(4)\nassert label(ft4) == 3\nassert count_leaves(ft4) == 5"
-    },
-    {
-      "exercise_id": "ex3_extend_fringe_to_pipeline",
-      "title": "Implement + Extend: Fringe (SICP Ex 2.28) → Sum of Odd Squares",
-      "slide_anchor": 7,
-      "prompt_md": "This exercise has two parts.\n\n**Part A (Implement)**: Implement `fringe(t)`, which returns a Python list of the **leaf labels** of a tree from left to right.\n\n**Part B (Extend)**: Using `fringe(t)` as a *conventional interface* (a flat list of leaves), implement `sum_odd_squares(t)`:\n- take the leaf labels\n- keep only the odd ones\n- square them\n- sum the squares\n\nExample goal:\n- If the leaf labels are `[1, 2, 3, 4]`, then `sum_odd_squares` should return `1^2 + 3^2 = 10`.\n\nStarter setup (Tree ADT + example trees):\n```python\ndef tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nx = tree(0, [\n    tree(1),\n    tree(2, [tree(3), tree(4)]),\n    tree(5)\n])\n\nxx = tree(99, [x, x])\n```\n\nKeep your solutions short and respect the abstraction barrier (use `label`, `branches`, `is_leaf`).",
-      "starter_code": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nx = tree(0, [\n    tree(1),\n    tree(2, [tree(3), tree(4)]),\n    tree(5)\n])\n\nxx = tree(99, [x, x])\n\ndef fringe(t):\n    \"\"\"Return a list of leaf labels, left-to-right.\n\n    >>> fringe(x)\n    [1, 3, 4, 5]\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\ndef sum_odd_squares(t):\n    \"\"\"Sum of squares of odd leaf labels.\n\n    >>> sum_odd_squares(x)  # odd leaves are 1,3,5\n    35\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n# Optional quick checks (predict first, then run):\n# print(fringe(x))\n# print(fringe(xx))\n# print(sum_odd_squares(x))\n",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "assert fringe(x) == [1, 3, 4, 5]"
-        },
-        {
-          "name": "t2",
-          "code": "assert fringe(xx) == [1, 3, 4, 5, 1, 3, 4, 5]"
-        },
-        {
-          "name": "t3",
-          "code": "assert sum_odd_squares(x) == 35  # 1^2 + 3^2 + 5^2"
-        },
-        {
-          "name": "t4",
-          "code": "assert sum_odd_squares(tree(7)) == 49"
-        }
-      ],
-      "hints": [
-        "For fringe: base case is a leaf; return a one-element list containing its label.",
-        "For fringe: recursive case should combine (concatenate) the fringes of each branch from left to right.",
-        "For sum_odd_squares: start from `leaves = fringe(t)`, then use a comprehension to filter odds, square, and sum."
-      ],
-      "solution": "def tree(lbl, branches=None):\n    if branches is None:\n        branches = []\n    return [lbl] + list(branches)\n\ndef label(t):\n    return t[0]\n\ndef branches(t):\n    return t[1:]\n\ndef is_leaf(t):\n    return len(branches(t)) == 0\n\nx = tree(0, [\n    tree(1),\n    tree(2, [tree(3), tree(4)]),\n    tree(5)\n])\n\nxx = tree(99, [x, x])\n\ndef fringe(t):\n    if is_leaf(t):\n        return [label(t)]\n    out = []\n    for b in branches(t):\n        out += fringe(b)\n    return out\n\ndef sum_odd_squares(t):\n    leaves = fringe(t)\n    return sum(v * v for v in leaves if v % 2 == 1)\n\nassert fringe(x) == [1, 3, 4, 5]\nassert fringe(xx) == [1, 3, 4, 5, 1, 3, 4, 5]\nassert sum_odd_squares(x) == 35\nassert sum_odd_squares(tree(7)) == 49"
+     "step": "Record correct subtree answers in every completion frame",
+     "checks": [
+      "completion_frames"
+     ]
     }
-  ]
+   ],
+   "starter_code": "def count_leaves(t, path=(), whole=None):\n    whole = t if whole is None else whole\n    result = 1 if label(t) == 1 else 0  # replace this label-based rule\n    show(whole, path, result)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\nprint(count_leaves(sample))\n",
+   "tests": [
+    {
+     "name": "structural_leaves",
+     "code": "show = lambda *args: None\nassert count_leaves(tree(1, [tree(0), tree(-9)])) == 2, \"Internal label 1 is not a leaf; labels 0 and -9 are.\"\nassert count_leaves(tree(77)) == 1, \"A single node is one leaf, whatever its label.\"\nimport random\nrng = random.Random(206)\ndef generate(depth):\n    return tree(rng.randrange(-2, 3), [generate(depth-1) for _ in range(rng.randrange(4))] if depth else [])\ndef oracle(t):\n    pending=[t]; total=0\n    while pending:\n        node=pending.pop()\n        if not node['children']: total+=1\n        pending.extend(node['children'])\n    return total\nfor _ in range(40):\n    t=generate(4)\n    assert count_leaves(t)==oracle(t), \"Leaf count must depend on shape, including repeated labels.\"\n\n"
+    },
+    {
+     "name": "completion_frames",
+     "code": "from scimigo import _frame_count, _frame\nbefore = _frame_count()\nassert count_leaves(sample) == 4, \"This hierarchy has four terminal nodes.\"\nexpected=[((0,),1),((1,0),1),((1,1),1),((1,),2),((2,),1),((),4)]\nassert _frame_count()-before == len(expected), \"Record one completion frame for each node.\"\nfor offset,(path,value) in enumerate(expected):\n    objects=_frame(before+offset)\n    f=[o for o in objects if o['kind']=='figure'][0]\n    assert f['type']=='tree', \"Draw the hierarchy in each completion frame.\"\n    node=sample\n    for i in path: node=branches(node)[i]\n    name='root' if not path else '.'.join(map(str,path))\n    assert f['params']['highlights']=={name+':'+str(label(node)):'current'}, \"Highlight the completed node, using its position.\"\n    assert any(o['kind']=='text' and o['value']=='Completed '+name+': '+str(value) for o in objects), \"Show the true leaf count for this completed subtree.\"\n\n"
+    }
+   ],
+   "hints": [
+    "Write down what one completed call must return.",
+    "Check the leaf case independently of its label.",
+    "Use child answers to establish the contract at their parent."
+   ],
+   "solution": "def count_leaves(t, path=(), whole=None):\n    whole = t if whole is None else whole\n    result = 1 if is_leaf(t) else sum(count_leaves(b, path + (i,), whole) for i, b in enumerate(branches(t)))\n    show(whole, path, result)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\nprint(count_leaves(sample))\n"
+  },
+  {
+   "exercise_id": "trace_totals",
+   "title": "Trace: when answers become available",
+   "prompt_md": "Predict the final label sum and the completion order before running. Repair `totals`: it currently adds only immediate child labels. Record one frame per completed node using `show`, including leaves. The picture shows completion, rather than entry into a call.\n",
+   "questions": [
+    {
+     "step": "Predict the final sum",
+     "prompt": "What does the root return?",
+     "choices": [
+      {
+       "text": "14",
+       "why": "This excludes the internal label 1."
+      },
+      {
+       "text": "5",
+       "why": "This adds only root and immediate child labels."
+      },
+      {
+       "text": "15",
+       "why": "Add all six labels, including internal labels."
+      }
+     ],
+     "answer": 2
+    },
+    {
+     "step": "Predict completion order",
+     "prompt": "Which node completes immediately before the root?",
+     "choices": [
+      {
+       "text": "Child 0, labelled 0",
+       "why": "This is the first child to finish."
+      },
+      {
+       "text": "Child 2, labelled -2",
+       "why": "All earlier child subtrees finish before the final child."
+      },
+      {
+       "text": "Child 1, labelled 1",
+       "why": "Its subtree finishes before child 2 starts."
+      }
+     ],
+     "answer": 1
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Match every completion frame to its subtree sum",
+     "checks": [
+      "trace_answers"
+     ]
+    },
+    {
+     "step": "Handle a deeper hierarchy and a single node",
+     "checks": [
+      "other_totals"
+     ]
+    }
+   ],
+   "starter_code": "def totals(t, path=(), whole=None):\n    whole = t if whole is None else whole\n    result = label(t)\n    for i, child in enumerate(branches(t)):\n        result += label(child)  # currently ignores deeper descendants\n    show(whole, path, result)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\nprint(totals(sample))\n",
+   "tests": [
+    {
+     "name": "trace_answers",
+     "code": "from scimigo import _frame_count, _frame\nbefore = _frame_count()\nassert totals(sample) == 15, \"This hierarchy has a label sum of 15.\"\nexpected=[((0,),0),((1,0),5),((1,1),5),((1,),11),((2,),-2),((),15)]\nassert _frame_count()-before == len(expected), \"Record one completion frame for each node.\"\nfor offset,(path,value) in enumerate(expected):\n    objects=_frame(before+offset)\n    f=[o for o in objects if o['kind']=='figure'][0]\n    assert f['type']=='tree', \"Draw the hierarchy in each completion frame.\"\n    node=sample\n    for i in path: node=branches(node)[i]\n    name='root' if not path else '.'.join(map(str,path))\n    assert f['params']['highlights']=={name+':'+str(label(node)):'current'}, \"Highlight the completed node, using its position.\"\n    assert any(o['kind']=='text' and o['value']=='Completed '+name+': '+str(value) for o in objects), \"Show the true label sum for this completed subtree.\"\n\n"
+    },
+    {
+     "name": "other_totals",
+     "code": "show=lambda *args: None\nassert totals(tree(3,[tree(4,[tree(-10)])])) == -3, \"Include descendants at every depth.\"\nassert totals(tree(0)) == 0, \"Zero is a valid label.\"\n"
+    }
+   ],
+   "hints": [
+    "Write down what one completed call must return.",
+    "Check the leaf case independently of its label.",
+    "Use child answers to establish the contract at their parent."
+   ],
+   "solution": "def totals(t, path=(), whole=None):\n    whole = t if whole is None else whole\n    result = label(t)\n    for i, child in enumerate(branches(t)):\n        result += totals(child, path + (i,), whole)\n    show(whole, path, result)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\nprint(totals(sample))\n"
+  },
+  {
+   "exercise_id": "transform",
+   "title": "Implement: new labels, same structure",
+   "prompt_md": "Implement `transform(t, f)`. Return a new hierarchy with `f` applied exactly once to each label. Preserve the ordered children and leave the input unchanged. The demo draws the returned hierarchy; inspect it before checking.\n",
+   "checklist": [
+    {
+     "step": "Preserve shape, transform every label, and allocate fresh nodes",
+     "checks": [
+      "shape_and_labels"
+     ]
+    }
+   ],
+   "starter_code": "def transform(t, f):\n    return tree(f(label(t)))  # preserve descendants as well\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\nresult=transform(sample, lambda v:v+10)\nshow(result, (), label(result))\n",
+   "tests": [
+    {
+     "name": "shape_and_labels",
+     "code": "show=lambda *args: None\nimport copy, random\nrng=random.Random(603)\ndef make(depth):\n    return tree(rng.randrange(-4,5), [make(depth-1) for _ in range(rng.randrange(4))] if depth else [])\ndef verify(a,b,f):\n    assert a is not b and branches(a) is not branches(b), \"Construct fresh nodes and child lists.\"\n    assert label(b)==f(label(a)), \"Transform every label, including leaves and the root.\"\n    assert len(branches(a))==len(branches(b)), \"Preserve every ordered child position.\"\n    for x,y in zip(branches(a),branches(b)): verify(x,y,f)\nfor _ in range(30):\n    a=make(4); original=copy.deepcopy(a); calls=[]\n    f=lambda v: calls.append(v) or (v*v+2)\n    b=transform(a,f)\n    assert a==original, \"Leave the original hierarchy unchanged.\"\n    def size(t): return 1+sum(size(c) for c in branches(t))\n    assert len(calls)==size(a), \"Apply f exactly once per node.\"\n    verify(a,b,lambda v:v*v+2)\n\n"
+    }
+   ],
+   "hints": [
+    "Write down what one completed call must return.",
+    "Check the leaf case independently of its label.",
+    "Use child answers to establish the contract at their parent."
+   ],
+   "solution": "def transform(t, f):\n    return tree(f(label(t)), [transform(child, f) for child in branches(t)])\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\nresult=transform(sample, lambda v:v+10)\nshow(result, (), label(result))\n"
+  },
+  {
+   "exercise_id": "measure",
+   "title": "Measure: reads per node",
+   "prompt_md": "Implement `profile(t)`: inspect every node label once with `label(node)`, and return the number of label reads your traversal actually makes. Use `branches` to descend. Run the three-size demo and compare reads per node. Drawing happens after measurement, so drawing work is excluded from this model.\n",
+   "questions": [
+    {
+     "step": "Derive the ratio",
+     "prompt": "If each node supplies one label read, what is reads divided by n?",
+     "choices": [
+      {
+       "text": "The depth",
+       "why": "Depth bounds a path, not all visited nodes."
+      },
+      {
+       "text": "The leaf count",
+       "why": "Internal nodes also supply label reads."
+      },
+      {
+       "text": "1",
+       "why": "n reads divided by n nodes equals 1."
+      }
+     ],
+     "answer": 2
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Recompute actual reads on unfamiliar sizes and shapes",
+     "checks": [
+      "fresh_measurements"
+     ]
+    },
+    {
+     "step": "Draw the measured sizes and counts",
+     "checks": [
+      "measured_bars"
+     ]
+    }
+   ],
+   "starter_code": "def profile(t):\n    label(t)\n    return 1  # count all label reads made by a full traversal\n\nfrom scimigo import canvas, rectangle, text, frame\n\ndef make_star(n):\n    assert n >= 1\n    return {\"value\": 0, \"children\": [{\"value\": i, \"children\": []} for i in range(n-1)]}\n\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\n\ndef show_measure(rows):\n    canvas(600, 300)\n    largest=max(c for n,c in rows) or 1\n    for i,(n,c) in enumerate(rows):\n        rectangle(120, 25+75*i, 430*c/largest, 35, color=\"#276bb0\")\n        text(12, 48+75*i, \"n=\"+str(n), size=17)\n        text(125, 85+75*i, \"reads=\"+str(c)+\", ratio=\"+str(round(c/n,2)), size=17)\n    frame()\nrows=[(n,profile(make_star(n))) for n in (11,44,176)]\nshow_measure(rows)\n",
+   "tests": [
+    {
+     "name": "fresh_measurements",
+     "code": "show_measure=lambda *args: None\noriginal_label=label\nobserved=[0]\ndef counted(node):\n    observed[0]+=1\n    return original_label(node)\nlabel=counted\nfor n in [7,19,53,211]:\n    observed[0]=0\n    value=profile(make_star(n))\n    assert value==observed[0], \"Report the reads actually made, not a stored expected number.\"\n    assert value==n, \"Inspect each of the n node labels once.\"\n# Also test a non-star, unpublished shape.\nt={'value':4,'children':[make_star(9),make_star(12)]}\nobserved[0]=0\nassert profile(t)==22 and observed[0]==22, \"Count actual reads on a different shape.\"\n\n"
+    },
+    {
+     "name": "measured_bars",
+     "code": "from scimigo import _frame_count, _frame\nbefore=_frame_count()\nrows=[(n,profile(make_star(n))) for n in (9,27,81)]\nshow_measure(rows)\nobjects=_frame(before)\nfor n,c in rows:\n    assert any(o['kind']=='text' and ('n='+str(n))==o['value'] for o in objects), \"Label each measured input size.\"\n    assert any(o['kind']=='text' and o['value'].startswith('reads='+str(c)+',') for o in objects), \"Draw your actual measured count.\"\nassert len([o for o in objects if o['kind']=='rectangle'])==3, \"Draw a bar for each measured row.\"\n\n"
+    }
+   ],
+   "hints": [
+    "Write down what one completed call must return.",
+    "Check the leaf case independently of its label.",
+    "Use child answers to establish the contract at their parent."
+   ],
+   "solution": "def profile(t):\n    reads=0\n    def visit(node):\n        nonlocal reads\n        label(node)\n        reads+=1\n        for child in branches(node):\n            visit(child)\n    visit(t)\n    return reads\n\nfrom scimigo import canvas, rectangle, text, frame\n\ndef make_star(n):\n    assert n >= 1\n    return {\"value\": 0, \"children\": [{\"value\": i, \"children\": []} for i in range(n-1)]}\n\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\n\ndef show_measure(rows):\n    canvas(600, 300)\n    largest=max(c for n,c in rows) or 1\n    for i,(n,c) in enumerate(rows):\n        rectangle(120, 25+75*i, 430*c/largest, 35, color=\"#276bb0\")\n        text(12, 48+75*i, \"n=\"+str(n), size=17)\n        text(125, 85+75*i, \"reads=\"+str(c)+\", ratio=\"+str(round(c/n,2)), size=17)\n    frame()\nrows=[(n,profile(make_star(n))) for n in (11,44,176)]\nshow_measure(rows)\n"
+  },
+  {
+   "exercise_id": "shipment_report",
+   "title": "Mastery challenge: charges for nested shipments",
+   "prompt_md": "A shipping manifest contains packages inside packages. A terminal record stores its charge in its numeric label (negative values represent credits); a containing record has a label but no additional charge. Produce a dictionary from each child-index position to the total terminal charge enclosed there. The outer position is `()`; its second child is `(1,)`. Include every record, even when labels repeat or charges are zero. The supplied version is correct but repeatedly inspects the same records. For manifests with 127 records in a long nesting chain, use no more than six child-list inspections per record. The demo draws the outer charge. Explain your reasoning after your first attempt.\n\nThe inspection budget measures traversal work only. Constructing and storing child-index paths also costs space and time proportional to the total length of the reported paths.\n",
+   "questions": [
+    {
+     "step": "Name the plan",
+     "prompt": "What must an efficient report preserve?",
+     "choices": [
+      {
+       "text": "Equal labels become one entry",
+       "why": "Positions distinguish records with equal labels."
+      },
+      {
+       "text": "Container labels become fees",
+       "why": "Only terminal labels are charges."
+      },
+      {
+       "text": "Completed amounts remain usable",
+       "why": "Discarding completed amounts forces repeated work."
+      }
+     ],
+     "answer": 2
+    },
+    {
+     "step": "State the invariant",
+     "prompt": "What does a completed amount represent?",
+     "choices": [
+      {
+       "text": "Only the immediate child labels",
+       "why": "A child may itself contain packages."
+      },
+      {
+       "text": "All terminal charges enclosed there",
+       "why": "It includes each terminal record in that region once."
+      },
+      {
+       "text": "All labels enclosed there",
+       "why": "Containing records have no additional charge."
+      }
+     ],
+     "answer": 1
+    },
+    {
+     "step": "Predict the cost",
+     "prompt": "What growth should record inspections have?",
+     "choices": [
+      {
+       "text": "Proportional to record count",
+       "why": "Reusing completed information avoids depth-dependent repeated scans."
+      },
+      {
+       "text": "Proportional to count squared",
+       "why": "This matches repeated scans of a long chain."
+      },
+      {
+       "text": "Independent of record count",
+       "why": "Every terminal charge may affect the result."
+      }
+     ],
+     "answer": 0
+    },
+    {
+     "step": "Why not rescan?",
+     "prompt": "What happens when each enclosing package scans everything it contains?",
+     "choices": [
+      {
+       "text": "A chain removes most inspections",
+       "why": "The same inner records remain enclosed by many packages."
+      },
+      {
+       "text": "A chain changes terminal charges",
+       "why": "The charges stay the same; the repeated work changes."
+      },
+      {
+       "text": "A chain repeats most inspections",
+       "why": "With 5 nested records, full scans inspect 5+4+3+2+1=15 records instead of 5."
+      }
+     ],
+     "answer": 2
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Produce the charge for every record position",
+     "checks": [
+      "all_positions"
+     ]
+    },
+    {
+     "step": "Avoid repeated inspection of completed records",
+     "checks": [
+      "inspection_budget"
+     ]
+    }
+   ],
+   "starter_code": "def charges(t):\n    result={}\n    def visit(node,path):\n        result[path]=terminal_charge(node)\n        for i,c in enumerate(branches(node)):\n            visit(c,path+(i,))\n    visit(t,())\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\ndef terminal_charge(t):\n    if not branches(t):\n        return label(t)\n    return sum(terminal_charge(c) for c in branches(t))\nreport=charges(sample)\nshow(sample, (), report[()])\n",
+   "tests": [
+    {
+     "name": "all_positions",
+     "code": "show=lambda *args: None\nimport random\nrng=random.Random(760)\ndef make(depth):\n    return tree(rng.randrange(-3,15),[make(depth-1) for _ in range(rng.randrange(4))] if depth else [])\ndef expected(t,path=(),out=None):\n    out={} if out is None else out\n    children=t['children']\n    value=t['value'] if not children else sum(expected(c,path+(i,),out)[path+(i,)] for i,c in enumerate(children))\n    out[path]=value\n    return out\nfor _ in range(35):\n    t=make(4)\n    assert charges(t)==expected(t), \"Include every position, charge only terminal records, and preserve equal-labelled positions.\"\nassert charges(tree(90,[tree(2),tree(3)]))[()]==5, \"Container labels are not additional charges.\"\n\n"
+    },
+    {
+     "name": "inspection_budget",
+     "code": "show=lambda *args: None\noriginal_branches=branches\nreads=[0]\nclass BudgetExceeded(BaseException): pass\ndef metered(node):\n    reads[0]+=1\n    if reads[0]>6*127: raise BudgetExceeded()\n    return original_branches(node)\nt=tree(2)\nfor _ in range(126): t=tree(99,[t])\nbranches=metered\ntry:\n    result=charges(t)\nexcept BudgetExceeded:\n    raise AssertionError(\"Too many record inspections: avoid recomputing a completed descendant's charge.\")\nassert len(result)==127 and all(v==2 for v in result.values()), \"Every enclosing position must include the terminal fee.\"\nassert reads[0]<=6*127, \"Stay within six child-list inspections per record.\"\n\n"
+    }
+   ],
+   "hints": [
+    "Which information must remain available after you finish a package?",
+    "A containing package depends on the amounts inside it, not on its own numeric label.",
+    "Compute and keep a package amount when its enclosed amounts are available."
+   ],
+   "solution": "def charges(t):\n    result={}\n    def visit(node,path):\n        children=branches(node)\n        amount=label(node) if not children else sum(visit(c,path+(i,)) for i,c in enumerate(children))\n        result[path]=amount\n        return amount\n    visit(t,())\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef tree(value, children=None):\n    return {\"value\": value, \"children\": list(children or [])}\ndef label(t):\n    return t[\"value\"]\ndef branches(t):\n    return t[\"children\"]\ndef is_leaf(t):\n    return not branches(t)\n\ndef drawing(t, path=()):\n    name = \"root\" if not path else \".\".join(map(str, path))\n    return {\"value\": name + \":\" + str(label(t)),\n            \"children\": [drawing(b, path + (i,)) for i, b in enumerate(branches(t))]}\n\ndef show(t, path, answer):\n    canvas(600, 360)\n    view = drawing(t)\n    node = t\n    for i in path:\n        node = branches(node)[i]\n    name = \"root\" if not path else \".\".join(map(str, path))\n    figure(\"tree\", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,\n           highlights={name + \":\" + str(label(node)): \"current\"})\n    text(15, 325, \"Completed \" + name + \": \" + str(answer), size=18)\n    frame()\n\nsample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])\ndef terminal_charge(t):\n    if not branches(t):\n        return label(t)\n    return sum(terminal_charge(c) for c in branches(t))\nreport=charges(sample)\nshow(sample, (), report[()])\n"
+  }
+ ]
 }

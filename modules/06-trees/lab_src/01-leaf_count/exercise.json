@@ -1,0 +1,22 @@
+{
+  "title": "Build: leaves are structural",
+  "checklist": [
+    {
+      "step": "Count leaves on varied shapes and labels",
+      "checks": [
+        "structural_leaves"
+      ]
+    },
+    {
+      "step": "Record correct subtree answers in every completion frame",
+      "checks": [
+        "completion_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "Write down what one completed call must return.",
+    "Check the leaf case independently of its label.",
+    "Use child answers to establish the contract at their parent."
+  ]
+}

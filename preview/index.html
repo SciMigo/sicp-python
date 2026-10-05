@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SICP · Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css?v=1">
+  <script type="module" src="./app.js?v=1"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="identity"><span class="mark">∑</span><span>SICP in Python</span><span class="tag">LAB</span></div>
+    <span class="top-note">Python runs in your browser</span>
+  </header>
+  <main>
+    <div class="intro">
+      <div><p id="module-eyebrow" class="eyebrow">ALGORITHM DESIGN AND ANALYSIS</p><h1 id="module-heading">Loading the lab…</h1><p id="module-subtitle" class="subtitle"></p></div>
+      <span id="runtime" class="runtime">Loading Python…</span>
+    </div>
+    <nav id="modules" class="modules" aria-label="Modules"></nav>
+    <nav id="exercises" class="exercises" aria-label="Exercises"></nav>
+    <section class="workspace" aria-label="Python lab">
+      <div class="panel lesson-panel">
+        <div class="panel-heading"><div><span class="panel-kicker">EXERCISE</span><h2 id="title">Loading…</h2></div></div>
+        <p id="prompt" class="prompt"></p>
+        <button id="show-reasoning" type="button" hidden>Show the reasoning questions</button>
+        <section id="questions" class="lesson-guide questions" aria-label="Before you code" hidden>
+          <strong id="questions-title">Predict before running</strong>
+          <p>Choose an answer; each choice explains itself, and the next question appears once this one is right.</p>
+          <div id="question-list"></div>
+        </section>
+        <section id="task" class="task" aria-label="Your task" hidden>
+          <div class="task-heading"><strong>YOUR TASK</strong><span id="task-progress"></span></div>
+          <ol id="task-steps" class="task-steps"></ol>
+        </section>
+        <div id="module-guides"></div>
+        <details class="api-reference">
+          <summary>Lab API <span>canvas · figure · frame · events</span></summary>
+          <dl>
+            <dt><code>canvas(width, height)</code></dt><dd>Start a blank picture (600 × 400 unless you call it). (0, 0) is the top-left; y grows downwards.</dd>
+            <dt><code>rectangle(x, y, w, h, color=)</code> · <code>circle(x, y, r, color=)</code> · <code>text(x, y, value, size=)</code></dt><dd>Primitive shapes, drawn in call order.</dd>
+            <dt><code>figure(kind, x=0, y=0, width=None, height=None, **params)</code></dt><dd>A diagram such as <code>array_state</code>, <code>binary_tree</code>, <code>matrix_state</code> or <code>network_flow</code>, fitted into its box (the whole canvas by default). At most four per picture.</dd>
+            <dt><code>frame()</code></dt><dd>Record the picture as it is now. After a run, a slider steps through the frames your code recorded.</dd>
+            <dt><code>on_click(f)</code> · <code>on_key(f)</code> · <code>on_tick(f, ms)</code></dt><dd>Call <code>f(x, y)</code>, <code>f(key)</code> or <code>f()</code> on clicks, arrow keys or a clock (press Play).</dd>
+            <dt><code>state = {...}</code></dt><dd>A top-level dictionary named <code>state</code> is shown live under the picture.</dd>
+          </dl>
+        </details>
+      </div>
+      <div class="panel editor-panel">
+        <div class="panel-heading"><div><span class="panel-kicker">YOUR PYTHON</span><h2>Code</h2></div><div class="toolbar run-toolbar"><button id="run" class="primary" disabled>▶ Run</button><button id="tests" disabled>Check my work</button><button id="stop" disabled>■ Stop</button></div></div>
+        <div id="code" class="code-editor"></div>
+        <div class="toolbar">
+          <button id="hint-button" type="button">Hint</button>
+          <button id="sample" title="Replaces your code with a working example. You can restore your code afterwards.">Replace with example</button>
+          <button id="reset">Start over</button>
+        </div>
+        <div id="undo" class="undo" role="status" hidden><span id="undo-message"></span><button id="undo-restore" type="button">Restore my code</button><button id="undo-dismiss" type="button" aria-label="Keep the new code">Keep this</button></div>
+        <div id="hints" class="hints" aria-live="polite" hidden></div>
+        <div class="tip"><kbd>⌘</kbd> / <kbd>Ctrl</kbd> + <kbd>Enter</kbd> runs your code.</div>
+      </div>
+      <div class="panel result-panel">
+        <div class="panel-heading"><div><span class="panel-kicker">OUTPUT</span><h2>Picture</h2></div><span id="canvas-status" class="canvas-status">Not run yet</span></div>
+        <div class="canvas-wrap">
+          <canvas id="picture" width="600" height="400" tabindex="0" aria-label="Picture drawn by your Python code"></canvas>
+        </div>
+        <div id="frame-controls" class="frame-controls" hidden>
+          <button id="frame-prev" type="button" aria-label="Previous frame">◀</button>
+          <input id="frame-slider" type="range" min="1" value="1" aria-label="Frame">
+          <button id="frame-next" type="button" aria-label="Next frame">▶</button>
+          <span id="frame-label" class="frame-label" role="status"></span>
+        </div>
+        <div id="game-controls" class="game-controls" hidden>
+          <button id="play" type="button" class="play">▶ Play</button>
+          <span id="tick-rate" class="tick-rate"></span>
+          <div id="arrow-pad" class="arrow-pad" aria-label="Arrow keys">
+            <button type="button" data-key="up" aria-label="Up">▲</button>
+            <button type="button" data-key="left" aria-label="Left">◀</button>
+            <button type="button" data-key="down" aria-label="Down">▼</button>
+            <button type="button" data-key="right" aria-label="Right">▶</button>
+          </div>
+        </div>
+        <p id="canvas-hint" class="canvas-hint">Press Run to draw the picture.</p>
+        <section id="state-panel" class="state-panel" aria-label="Program state" hidden>
+          <strong>STATE</strong>
+          <dl id="state-values"></dl>
+        </section>
+        <div id="module-panels"></div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite">Python is loading. The editor is ready in a moment.</div>
+        <details id="recap" class="recap" hidden>
+          <summary>Module complete · recap</summary>
+          <strong>WHAT YOU LEARNED</strong>
+          <ul id="recap-learned"></ul>
+          <div id="recap-facts"></div>
+          <strong>WHERE IT IS USED</strong>
+          <ul id="recap-real"></ul>
+          <details id="recap-retrieval" class="recap-retrieval" hidden><summary></summary><p></p></details>
+          <a id="recap-next" hidden></a>
+        </details>
+        <pre id="console" class="console" hidden></pre>
+      </div>
+    </section>
+    <p class="footer-note">Your code stays in this browser; nothing is installed and no account is needed. <a href="./THIRD_PARTY_NOTICES.txt">Open source notices</a></p>
+  </main>
+</body>
+</html>
