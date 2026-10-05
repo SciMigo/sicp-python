@@ -1,0 +1,3 @@
+Implement `find_path(t, target)`. Search left to right and depth first, and return the list of labels from the root down to the **first** node whose label equals `target`. If the root itself matches, the answer is a one-element list. If no node matches, return `None`.
+
+The starter already calls `show_try(whole, path, target)` when a call begins, so each frame shows one node being examined. Keep that call first, and pass `path + (i,)` and `whole` when you descend. Stop as soon as a match is found: a correct search for 9 in the demo examines four nodes and never looks at the second 9 or at -3. Predict the returned list before you press Run.

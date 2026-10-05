@@ -1,0 +1,3 @@
+Implement `height(t)`: the number of nodes on the longest path from this node down to a leaf. A single node has height 1 whatever its label; the hierarchy in the demo has height 3. Use the selectors `label`, `branches` and `is_leaf`, never the dictionary keys.
+
+The function also receives `path` and `whole` so that it can draw. When you descend into child number `i`, pass `path + (i,)` and the same `whole`. Call `show(whole, path, result)` exactly once per call, after that call knows its answer. Each frame then shows one completed subtree and its height. Before you press Run, decide which node completes first and which completes last.

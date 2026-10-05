@@ -1,1 +1,0 @@
-Implement `profile(t)`: inspect every node label once with `label(node)`, and return the number of label reads your traversal actually makes. Use `branches` to descend. Run the three-size demo and compare reads per node. Drawing happens after measurement, so drawing work is excluded from this model.

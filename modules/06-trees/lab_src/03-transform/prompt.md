@@ -1,1 +1,0 @@
-Implement `transform(t, f)`. Return a new hierarchy with `f` applied exactly once to each label. Preserve the ordered children and leave the input unchanged. The demo draws the returned hierarchy; inspect it before checking.

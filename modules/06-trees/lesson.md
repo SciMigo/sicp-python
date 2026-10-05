@@ -50,6 +50,30 @@ The functions below will use these selectors. That separation matters even for a
 
 The default is `None`, rather than a mutable list shared by calls. There is a second subtlety: `branches` exposes the actual child list. That is acceptable under our no-mutation contract, but a production interface might return a tuple or an iterator. An abstraction barrier is an agreement about which operations clients use, not a guarantee that Python prevents every possible violation.
 
+## The book's trees: sequences inside sequences
+
+SICP reaches trees from the other direction. It has no labelled nodes. A tree there is a sequence whose items may themselves be sequences, and the leaves are the items that are not sequences. In Python that is a list containing numbers and lists. The book's first example is the structure `((1 2) 3 4)`: three items at the top level, four leaves in all.
+
+Its `count-leaves` procedure states the plan in three cases: an empty list has no leaves, anything that is not a list is one leaf, and a list has the leaves of its first item plus the leaves of the rest. A Python loop over the items covers the first and third cases together.
+
+```python
+def count_leaves(x):
+    if not isinstance(x, list):
+        return 1
+    return sum(count_leaves(item) for item in x)
+
+x = [[1, 2], 3, 4]
+assert len(x) == 3
+assert count_leaves(x) == 4
+assert len([x, x]) == 2
+assert count_leaves([x, x]) == 8
+assert count_leaves([]) == 0
+```
+
+`len` answers a question about one level. `count_leaves` answers a question about the whole structure, and it can do so only because it asks the same question of every item. Putting two copies of `x` in a list doubles the leaves and leaves the length at 2.
+
+The two representations differ in one way that matters for base cases. A nested list can be empty, and an empty list has zero leaves. Our labelled trees always have a root, so the smallest one is a single node, which is one leaf. Most wrong base cases come from mixing up those two conventions. For the rest of this lesson, "tree" means the labelled kind unless nested lists are named.
+
 ## Give the recursive answer a meaning
 
 Consider a summary function that returns two numbers: the number of nodes and the number of leaves in its input. A leaf returns `(1, 1)`. An internal node counts itself as one node, then adds the node counts of its children. Its leaf count is the sum of their leaf counts; the internal node itself contributes no leaf.
@@ -108,7 +132,44 @@ Notice which assumptions the proof uses. A cycle destroys the shrinking-input ar
 
 An aggregation returns a number or a small summary. A transformation returns a new tree. To change every label, reconstruct a node with the transformed label and transformed children. The shape should survive even when labels repeat or transform to equal values.
 
-The lab asks you to implement that reconstruction. Here is a separate, iterative operation that visits labels in root-first order. It lets us check the effect of a transformation without presenting the lab's reconstruction code.
+The book's example is `scale-tree`, which multiplies every leaf of a nested list by a factor. It gives two versions. The first follows the same cases as `count-leaves`. The second treats the tree as a sequence of subtrees and maps over it, scaling each subtree in turn and multiplying when it reaches a leaf. Here is the second, with the book's own data.
+
+```python
+def scale_tree(x, factor):
+    if not isinstance(x, list):
+        return x * factor
+    return [scale_tree(item, factor) for item in x]
+
+nested = [1, [2, [3, 4], 5], [6, 7]]
+assert scale_tree(nested, 10) == [10, [20, [30, 40], 50], [60, 70]]
+assert nested == [1, [2, [3, 4], 5], [6, 7]]
+```
+
+Nothing in that function is about multiplying except one expression. Pull that expression out as a parameter and you have the book's `tree-map`: one traversal, any per-leaf rule. This is the step from module 1 again, where a shared process took its rule as an argument.
+
+```python
+def tree_map(f, x):
+    if not isinstance(x, list):
+        return f(x)
+    return [tree_map(f, item) for item in x]
+
+assert tree_map(lambda v: v * v, [1, [2, 3], [4, [5]]]) == [1, [4, 9], [16, [25]]]
+assert tree_map(lambda v: v * 10, nested) == scale_tree(nested, 10)
+```
+
+The labelled version has the same shape. Every node has a label, so the rule applies at every node, and the children are rebuilt by the same function.
+
+```python
+def map_labels(f, t):
+    return tree(f(label(t)), [map_labels(f, b) for b in branches(t)])
+
+doubled = map_labels(lambda v: 2 * v, museum)
+assert label(doubled) == 24
+assert summary(doubled) == summary(museum)
+assert label(museum) == 12
+```
+
+To check a transformed tree we need to see all its labels. Here is a separate, iterative operation that visits labels in root-first order.
 
 ```python
 def preorder_labels(t):
@@ -121,11 +182,12 @@ def preorder_labels(t):
     return result
 
 assert preorder_labels(museum) == [12, 4, 7, 4, 0, 9]
+assert preorder_labels(doubled) == [24, 8, 14, 8, 0, 18]
 ```
 
-An empty child sequence is helpful here. Mapping an operation over zero children produces zero transformed children. Constructing a new node with that result creates a leaf. There need not be a separate `if is_leaf` branch in the implementation, even though the mathematical definition still has a leaf case. An implicit stopping case is not the absence of a stopping case.
+An empty child sequence is helpful in `map_labels`. Mapping over zero children produces zero transformed children, and constructing a node with that result creates a leaf. There is no separate `if is_leaf` branch in the code, even though the mathematical definition still has a leaf case. An implicit stopping case is not the absence of a stopping case.
 
-Preserving shape is stronger than preserving leaf count. Two different shapes can have four leaves. To verify a transformation, compare each node's ordered children and label with the corresponding original node, and also verify that the original input has not changed.
+Preserving shape is stronger than preserving leaf count. Two different shapes can have four leaves. To verify a transformation, compare each node's ordered children and label with the corresponding original node, and also verify that the original input has not changed. The same pattern builds results that are not label-for-label copies: a new node can also receive its children in a different order, or only some of them.
 
 ## Search has a different stopping rule
 
@@ -135,6 +197,29 @@ For the museum tree, a target of 4 first reaches B, producing `[12, 4]`. D has t
 
 ??? predict "Does a path of labels uniquely identify a node?"
     Not always. Equal labels under equal-labelled ancestors can yield equal label paths. Use child-index paths or unique node identifiers if identity matters.
+
+The following helper lists every root-to-node label path in root-first, left-to-right order. It examines the whole tree, so it is not a search that stops early, but the first matching entry in its list is the path the contract asks for.
+
+```python
+def all_paths(t):
+    pending = [(t, [label(t)])]
+    result = []
+    while pending:
+        current, path = pending.pop()
+        result.append(path)
+        for b in reversed(branches(current)):
+            pending.append((b, path + [label(b)]))
+    return result
+
+def first_path(t, target):
+    return next((p for p in all_paths(t) if p[-1] == target), None)
+
+assert first_path(museum, 4) == [12, 4]
+assert first_path(museum, 0) == [12, 7, 0]
+assert first_path(museum, 12) == [12]
+assert first_path(museum, 99) is None
+assert [p for p in all_paths(museum) if p[-1] == 4] == [[12, 4], [12, 7, 4]]
+```
 
 This distinguishes existence, first match, and all matches. They are separate output contracts. A function that returns one path cannot be judged against an expectation of every path unless the task explicitly changes. Also check the result with `is not None`, which tests the failure sentinel directly. Truthiness can hide errors when a future contract allows a valid empty result.
 
@@ -151,9 +236,23 @@ def star(n):
     assert n >= 1
     return tree("root", [tree(i) for i in range(n - 1)])
 
+calls = 0
+plain_summary = summary
+
+def summary(t):
+    global calls
+    calls += 1
+    return plain_summary(t)
+
 for n in (8, 32, 128):
+    calls = 0
     assert summary(star(n)) == (n, n - 1)
+    assert calls == n
+calls = 0
+assert summary(museum) == (6, 4) and calls == 6
 ```
+
+The second definition wraps the first and counts each entry. The recursive calls inside `plain_summary` look up the name `summary` when they run, so they go through the counter too. Every call except the first was made across one child edge, which gives the edge column: calls minus one.
 
 | Star size | Calls | Child edges | Leaves |
 |---:|---:|---:|---:|
@@ -180,12 +279,15 @@ assert label(ft) == 5
 assert summary(ft) == (15, 8)
 assert preorder_labels(ft).count(1) == 8  # includes internal nodes labelled 1
 
-def leaf_labels(t):
-    return [label(t)] if is_leaf(t) else [v for b in branches(t) for v in leaf_labels(b)]
+def fringe(t):
+    return [label(t)] if is_leaf(t) else [v for b in branches(t) for v in fringe(b)]
 
-assert leaf_labels(ft).count(1) == 5
-assert leaf_labels(ft).count(0) == 3
+assert fringe(ft).count(1) == 5
+assert fringe(ft).count(0) == 3
+assert fringe(museum) == [4, 4, 0, 9]
 ```
+
+`fringe` is the book's name (exercise 2.28) for the leaves of a tree listed left to right. It is an aggregation whose combined answer is a list, where `summary` combined numbers.
 
 Repeated subproblems explain why constructing this expanded computation tree grows quickly. Processing a tree already given as input is linear in its number of nodes; generating that input can have a very different cost. Always name the input size used by a complexity claim.
 
@@ -195,11 +297,11 @@ An arithmetic expression contains a constant, or an operator with smaller expres
 
 ## Practise
 
-The lab uses a different hierarchy. You will make structural decisions visible, predict the order in which answers become available, construct a transformed result, and measure work on unfamiliar sizes. Its final challenge asks for a useful report without identifying the method for you. Run a small example first, inspect its frames, then use the checks to investigate missing cases.
+The lab uses a different hierarchy and asks for functions this lesson has not written. You will compute a subtree answer that combines children with a rule other than addition, predict the order in which answers become available, build a mirrored tree (the book's exercise 2.27, `deep-reverse`), write a search that stops at the first match, and measure work on unfamiliar sizes. Its final challenge asks for a useful report without identifying the method for you. Run a small example first, inspect its frames, then use the checks to investigate missing cases.
 
 ## Recap
 
-**You can now:** Distinguish labels from structure, specify a recursive return contract, and justify a traversal with structural induction.
+**You can now:** Distinguish labels from structure, specify a recursive return contract, count leaves and map over a tree as the book does, and justify a traversal with structural induction.
 
 **Invariant:** A completed call summarizes exactly its own subtree according to the chosen contract.
 
@@ -219,4 +321,4 @@ The lab uses a different hierarchy. You will make structural decisions visible, 
 
 ## Optional background
 
-The [existing SICP-derived reading](../../reading/06-trees.html) is retained separately. It covers a broader collection of hierarchical-data ideas and is not required to complete this lesson. This is an independent Python learning module, not an endorsed university offering.
+The [SICP reading for this module](../../reading/06-trees.html) is the book's own section 2.2, kept as a reference. This lesson does not depend on it.

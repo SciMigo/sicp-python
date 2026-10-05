@@ -1,0 +1,100 @@
+{
+ "title": "Mastery challenge: charges for nested shipments",
+ "checklist": [
+  {
+   "step": "Produce the charge for every record position",
+   "checks": [
+    "all_positions"
+   ]
+  },
+  {
+   "step": "Avoid repeated inspection of completed records",
+   "checks": [
+    "inspection_budget"
+   ]
+  }
+ ],
+ "hints": [
+  "Which information must remain available after you finish a package?",
+  "A containing package depends on the amounts inside it, not on its own numeric label.",
+  "Compute and keep a package amount when its enclosed amounts are available."
+ ],
+ "questions": [
+  {
+   "step": "Name the plan",
+   "prompt": "What must an efficient report preserve?",
+   "choices": [
+    {
+     "text": "Equal labels become one entry",
+     "why": "Positions distinguish records with equal labels."
+    },
+    {
+     "text": "Container labels become fees",
+     "why": "Only terminal labels are charges."
+    },
+    {
+     "text": "Completed amounts remain usable",
+     "why": "Discarding completed amounts forces repeated work."
+    }
+   ],
+   "answer": 2
+  },
+  {
+   "step": "State the invariant",
+   "prompt": "What does a completed amount represent?",
+   "choices": [
+    {
+     "text": "Only the immediate child labels",
+     "why": "A child may itself contain packages."
+    },
+    {
+     "text": "All terminal charges enclosed there",
+     "why": "It includes each terminal record in that region once."
+    },
+    {
+     "text": "All labels enclosed there",
+     "why": "Containing records have no additional charge."
+    }
+   ],
+   "answer": 1
+  },
+  {
+   "step": "Predict the cost",
+   "prompt": "What growth should record inspections have?",
+   "choices": [
+    {
+     "text": "Proportional to record count",
+     "why": "Reusing completed information avoids depth-dependent repeated scans."
+    },
+    {
+     "text": "Proportional to count squared",
+     "why": "This matches repeated scans of a long chain."
+    },
+    {
+     "text": "Independent of record count",
+     "why": "Every terminal charge may affect the result."
+    }
+   ],
+   "answer": 0
+  },
+  {
+   "step": "Why not rescan?",
+   "prompt": "What happens when each enclosing package scans everything it contains?",
+   "choices": [
+    {
+     "text": "A chain removes most inspections",
+     "why": "The same inner records remain enclosed by many packages."
+    },
+    {
+     "text": "A chain changes terminal charges",
+     "why": "The charges stay the same; the repeated work changes."
+    },
+    {
+     "text": "A chain repeats most inspections",
+     "why": "With 5 nested records, full scans inspect 5+4+3+2+1=15 records instead of 5."
+    }
+   ],
+   "answer": 2
+  }
+ ]
+}

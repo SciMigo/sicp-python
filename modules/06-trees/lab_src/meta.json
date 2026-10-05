@@ -2,21 +2,21 @@
   "schema_version": "lab_v1",
   "lab_spec_id": "sicp-python-06-trees",
   "title": "Trees: structure, answers, and work",
-  "description": "Build and trace a traversal, preserve shape while transforming labels, count work, then produce a shipment report.",
+  "description": "Build and trace subtree answers, mirror a hierarchy at every level, search for the first matching path, count traversal work, then produce a shipment report.",
   "runtime": {
     "engine": "pyodide",
     "timeout_ms": 15000
   },
   "recap": {
     "learned": [
-      "Identify leaves by their children, regardless of their labels.",
-      "Explain what a completed recursive call returns.",
-      "Construct a new tree without changing the original.",
-      "Count work and transfer a combining rule to a new task."
+      "State what a completed recursive call returns for its own subtree.",
+      "Tell structure from labels: a leaf is a node with no children.",
+      "Build a new tree from child results without changing the original.",
+      "Stop a search at the first match, and count the work a traversal really does."
     ],
     "invariant": "Each completed call returns a correct answer for exactly its own subtree.",
-    "complexity": "Whole-tree aggregation: \u0398(n) time and O(h) recursive stack space with constant-time selectors and bounded-size arithmetic; drawing is excluded.",
-    "common_mistake": "Testing label == 1 instead of checking for an empty child sequence.",
+    "complexity": "Whole-tree aggregation: Θ(n) time and O(h) recursive stack space with constant-time selectors and bounded-size arithmetic; drawing is excluded.",
+    "common_mistake": "Deciding the base case from a label (such as label == 1 or a falsy label) instead of from an empty child sequence.",
     "in_real_programs": [
       "Python ast.iter_child_nodes exposes immediate child nodes for syntax-tree traversal."
     ],

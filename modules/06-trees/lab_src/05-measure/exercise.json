@@ -1,0 +1,43 @@
+{
+ "title": "Measure: reads per node",
+ "checklist": [
+  {
+   "step": "Count the label reads that actually happen",
+   "checks": [
+    "fresh_measurements"
+   ]
+  },
+  {
+   "step": "Measure three sizes and draw the counts",
+   "checks": [
+    "measured_bars"
+   ]
+  }
+ ],
+ "hints": [
+  "A measurement counts events while the traversal runs; it is not computed from the input size.",
+  "Find the one place where your traversal reads a label, and make sure every node passes through it once.",
+  "Keep a counter outside the recursive helper, add one beside each label read, visit each child, and return the counter."
+ ],
+ "questions": [
+  {
+   "step": "Derive the ratio",
+   "prompt": "If each node supplies one label read, what is reads divided by n?",
+   "choices": [
+    {
+     "text": "The depth",
+     "why": "Depth bounds a path, not all visited nodes."
+    },
+    {
+     "text": "The leaf count",
+     "why": "Internal nodes also supply label reads."
+    },
+    {
+     "text": "1",
+     "why": "n reads divided by n nodes equals 1."
+    }
+   ],
+   "answer": 2
+  }
+ ]
+}

@@ -1,8 +1,6 @@
-def totals(t, path=(), whole=None):
+def height(t, path=(), whole=None):
     whole = t if whole is None else whole
-    result = label(t)
-    for i, child in enumerate(branches(t)):
-        result += totals(child, path + (i,), whole)
+    result = 1 + max((height(b, path + (i,), whole) for i, b in enumerate(branches(t))), default=0)
     show(whole, path, result)
     return result
 
@@ -35,4 +33,4 @@ def show(t, path, answer):
     frame()
 
 sample = tree(4, [tree(7), tree(0, [tree(9), tree(9)]), tree(-3)])
-print(totals(sample))
+print(height(sample))

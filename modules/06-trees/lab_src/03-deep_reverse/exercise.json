@@ -1,0 +1,22 @@
+{
+ "title": "Implement: mirror every level",
+ "checklist": [
+  {
+   "step": "Reverse the children at every level",
+   "checks": [
+    "mirrored_everywhere"
+   ]
+  },
+  {
+   "step": "Return fresh nodes and leave the input unchanged",
+   "checks": [
+    "fresh_structure"
+   ]
+  }
+ ],
+ "hints": [
+  "The answer for a node is a new node, so decide what the answer for each child is before combining them.",
+  "Compare the two pictures level by level. Which nodes moved, and which nodes had their own children reordered?",
+  "Build a new node with the same label whose children are the mirrored children, taken from last to first."
+ ]
+}

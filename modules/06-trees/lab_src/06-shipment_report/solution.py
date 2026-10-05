@@ -1,9 +1,11 @@
-def totals(t, path=(), whole=None):
-    whole = t if whole is None else whole
-    result = label(t)
-    for i, child in enumerate(branches(t)):
-        result += totals(child, path + (i,), whole)
-    show(whole, path, result)
+def charges(t):
+    result={}
+    def visit(node,path):
+        children=branches(node)
+        amount=label(node) if not children else sum(visit(c,path+(i,)) for i,c in enumerate(children))
+        result[path]=amount
+        return amount
+    visit(t,())
     return result
 
 from scimigo import canvas, figure, frame, text
@@ -35,4 +37,9 @@ def show(t, path, answer):
     frame()
 
 sample = tree(4, [tree(7), tree(0, [tree(9), tree(9)]), tree(-3)])
-print(totals(sample))
+def terminal_charge(t):
+    if not branches(t):
+        return label(t)
+    return sum(terminal_charge(c) for c in branches(t))
+report=charges(sample)
+show(sample, (), report[()])
