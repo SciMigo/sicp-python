@@ -1,0 +1,43 @@
+{
+ "title": "Measure: what does a fixed point cost?",
+ "questions": [
+  {
+   "step": "Explain the growth",
+   "prompt": "The tolerance shrank ten-thousand-fold between your first and last bar, yet the calls only about tripled. Why?",
+   "choices": [
+    {
+     "text": "fixed_point reuses its earlier values",
+     "why": "It keeps only the latest guess; every step is a fresh call to f."
+    },
+    {
+     "text": "Each call shrinks the gap by a steady factor",
+     "why": "So every further factor of ten in accuracy costs about the same handful of extra calls."
+    },
+    {
+     "text": "Python evaluates cos in constant time",
+     "why": "True, but the bars count calls, not seconds, so the speed of one call cannot explain them."
+    }
+   ],
+   "answer": 1
+  }
+ ],
+ "checklist": [
+  {
+   "step": "Count the calls that really happen, on any search",
+   "checks": [
+    "actual_calls"
+   ]
+  },
+  {
+   "step": "Draw your measured counts",
+   "checks": [
+    "measured_bars"
+   ]
+  }
+ ],
+ "hints": [
+  "You can watch calls to a function by handing over a different function that makes a note and then passes the work on.",
+  "fixed_point only ever sees the function you give it; it cannot tell f from a stand-in that behaves the same.",
+  "Inside measure define a function that adds one to a counter and returns f(x). Pass that to fixed_point, and return its answer together with the counter."
+ ]
+}

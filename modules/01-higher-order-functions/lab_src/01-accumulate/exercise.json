@@ -1,0 +1,22 @@
+{
+ "title": "Build: one fold for sums and products",
+ "checklist": [
+  {
+   "step": "Fold every term in, once each, in order",
+   "checks": [
+    "fold_contract"
+   ]
+  },
+  {
+   "step": "Show the running result after every point",
+   "checks": [
+    "running_frames"
+   ]
+  }
+ ],
+ "hints": [
+  "A sum and a product differ in two places only: the value they start from and how one term is folded in.",
+  "Look at what result must be before any point is visited, and what visiting one point does to it.",
+  "Loop while the point is at most b: compute the term once, combine it with result on the left, record the point and the term, show, then step with next."
+ ]
+}

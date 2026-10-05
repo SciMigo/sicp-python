@@ -1,0 +1,43 @@
+{
+ "title": "Trace: which function runs first?",
+ "questions": [
+  {
+   "step": "Predict the output",
+   "prompt": "square multiplies a number by itself and inc adds one. What is compose(square, inc)(6)?",
+   "choices": [
+    {
+     "text": "37",
+     "why": "That squares first and then adds one, which is inc(square(6)): the order is reversed."
+    },
+    {
+     "text": "7",
+     "why": "That stops after the inner function. Its result still has to go through square."
+    },
+    {
+     "text": "49",
+     "why": "inc runs first and gives 7; square then gives 49."
+    }
+   ],
+   "answer": 2
+  }
+ ],
+ "checklist": [
+  {
+   "step": "Return a function; call g, then f, only when it runs",
+   "checks": [
+    "ordered_calls"
+   ]
+  },
+  {
+   "step": "Show each stage with its real input and output",
+   "checks": [
+    "stage_frames"
+   ]
+  }
+ ],
+ "hints": [
+  "In f(g(x)) the function written last is the one called first.",
+  "Look at what runs while compose itself is running: it should only define a function and return it.",
+  "Inside the returned function: call g on x and keep the result, show that stage, call f on the kept result, show that stage, return it."
+ ]
+}

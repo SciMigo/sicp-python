@@ -1,0 +1,22 @@
+{
+ "title": "Implement: apply a function n times",
+ "checklist": [
+  {
+   "step": "Apply f exactly n times, afresh on every call, even for n = 3000",
+   "checks": [
+    "repeat_contract"
+   ]
+  },
+  {
+   "step": "Show the value after every application",
+   "checks": [
+    "repetition_frames"
+   ]
+  }
+ ],
+ "hints": [
+  "Applying f several times means the output of one application is the input of the next.",
+  "The count n belongs to repeated; the value that changes belongs to one call of the function it returns.",
+  "Inside the returned function start from x and loop n times, replacing the value with f(value). A loop, not n functions nested inside one another."
+ ]
+}

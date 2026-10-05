@@ -1,0 +1,3 @@
+The supplied `fixed_point(f, guess, tolerance)` applies `f` again and again until two successive values differ by less than `tolerance`. Nothing in its code says how many calls that takes. Implement `measure(f, guess, tolerance)`: run the supplied `fixed_point` and return `(answer, calls)`, where `calls` is the number of times `f` was really called during that run.
+
+Do not rewrite the search and do not work the count out from the tolerance: the checks swap in a different `fixed_point` that wastes calls, and your count has to follow it. The demo measures the fixed point of cosine at three tolerances and draws your counts as bars.

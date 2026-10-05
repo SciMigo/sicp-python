@@ -1,0 +1,3 @@
+This is SICP's exercise 1.42. Before you write anything, answer the question below: what should `compose(square, inc)(6)` return?
+
+Then implement `compose(f, g)`. It returns a function of one argument that computes `f(g(x))`. Building that function must call neither `f` nor `g`; they run only when the returned function is called. Inside the returned function, call `show_stage("g", input, output)` after `g` has run and `show_stage("f", input, output)` after `f` has run, so the frames show which ran first and what it was given.

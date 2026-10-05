@@ -1,0 +1,3 @@
+This is SICP's exercise 1.32. A sum starts at 0 and adds each term; a product starts at 1 and multiplies. Implement `accumulate(combiner, null_value, term, a, next, b)`, which does either. Start `result` at `null_value`. Visit the points `a`, `next(a)`, and so on while the point is at most `b`; at each one compute `term(point)` once and set `result = combiner(result, that_term)`. An empty range returns `null_value` and calls none of the three functions.
+
+Keep the visited points in `xs` and their terms in `terms`, and call `show(xs, terms, result)` after each point. The starter already shows the state before the first point. The demo multiplies 1 to 5; predict the last frame before you press Run.
