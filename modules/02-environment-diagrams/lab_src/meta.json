@@ -1,28 +1,29 @@
 {
   "schema_version": "lab_v1",
   "lab_spec_id": "sicp-python-02-environment-diagrams",
-  "title": "Names, owners, and remembered state",
-  "description": "Trace lexical ownership, create call frames, share state within services, measure lookup, and prepare distinct deferred callbacks.",
+  "title": "Frames, parents, and remembered state",
+  "description": "Build definition and assignment in the frame model, create the frame for a call, write an account whose two operations share one binding, count lookup probes, then diagnose a dashboard whose panels misreport.",
   "runtime": {
     "engine": "pyodide",
     "timeout_ms": 15000
   },
   "recap": {
     "learned": [
-      "Find the nearest owner rather than the most recently assigned value.",
-      "Use definition scope, not caller scope, for a function's free names.",
-      "Share one binding within a service while keeping factory instances independent.",
-      "Measure actual membership probes in an explicit frame model."
+      "Define in the current frame; assign to the nearest frame that already binds the name.",
+      "Give a call's frame the function's defining environment as parent, never the caller's.",
+      "Let two functions share one binding in the frame that created them, and keep separate factory calls independent.",
+      "Measure a lookup by counting its membership tests."
     ],
-    "invariant": "Every frame already passed lacks the requested name; the first hit owns that lookup.",
-    "complexity": "Depth d requires at most d membership probes in the explicit finite acyclic frame model. Drawing is excluded; this is not CPython variable-access cost.",
-    "common_mistake": "Confusing caller scope with lexical scope or sharing one loop binding among all deferred callbacks.",
+    "invariant": "During a lookup or an assignment, every frame already passed lacks the name; the first hit is the nearest binding.",
+    "complexity": "A chain of depth d costs at most d probes, and exactly d on a miss, in the dictionary-chain model. Drawing is excluded, and this is not CPython's variable-access cost.",
+    "common_mistake": "Hanging a call's frame on the caller, or letting several saved functions read one binding that keeps changing.",
     "in_real_programs": [
-      "Python nonlocal rebinds an existing enclosing function variable."
+      "Python's nonlocal statement rebinds a variable of the nearest enclosing function.",
+      "A Python function's __closure__ holds one cell per captured variable."
     ],
     "retrieval": {
       "question": "Module 1: what distinguishes returning a function from returning its current result?",
-      "answer": "A function can be invoked later with new inputs; its current result is just the value from one invocation."
+      "answer": "A function can be called later with new inputs; its current result is only the value of one call."
     }
   }
 }

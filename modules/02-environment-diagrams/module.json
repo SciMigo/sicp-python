@@ -1,19 +1,19 @@
 {
   "id": "02-environment-diagrams",
   "title": "Environment Diagrams",
-  "subtitle": "Trace name ownership, call environments, and shared state",
-  "chapter": "1.7",
-  "description": "Find the binding a name refers to, distinguish definition scope from caller scope, build independent shared-state services, and count lookup probes in an explicit model.",
-  "estimatedMinutes": 105,
+  "subtitle": "SICP's environment model in Python: frames, parents, and local state",
+  "chapter": "SICP §3.2",
+  "description": "Trace the frames a call creates, find the binding a name refers to, see why a function resolves free names where it was defined, and explain how make_withdraw keeps private state. Then build definition, assignment and call frames in a small frame model.",
+  "estimatedMinutes": 70,
   "prerequisites": [
     "01-higher-order-functions"
   ],
   "lab": {
-    "title": "Names, owners, and remembered state",
+    "title": "Frames, parents, and remembered state",
     "exercises": [
-      "locate",
+      "define_assign",
       "call_frame",
-      "box",
+      "account",
       "probe_count",
       "badges"
     ],
@@ -23,6 +23,6 @@
   "backgroundReading": "reading/02-environment-diagrams.html",
   "format": "lesson-visual-lab",
   "publicationStatus": "draft",
-  "estimateNote": "Author estimate, not learner-measured: lesson 25\u201335 minutes; lab 60\u201385 minutes. Optional original reading excluded.",
-  "sourceAttribution": "Original Python lesson informed by SICP ideas by Harold Abelson, Gerald Jay Sussman, and Julie Sussman. Independent course; not endorsed by MIT or UC Berkeley."
+  "estimateNote": "Author estimate, not learner-measured: lesson 20-25 minutes (about 2,400 words of prose, eight code blocks, three figures); lab 40-55 minutes (five exercises written from stubs, about 6-15 minutes each). Reference reading excluded.",
+  "sourceAttribution": "Follows section 3.2 (The Environment Model of Evaluation) of Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman with Julie Sussman, using the book's examples (sum-of-squares, make-withdraw, sqrt with internal definitions) translated to Python; prose, figures and exercises are original. Independent course; not endorsed by MIT or UC Berkeley."
 }

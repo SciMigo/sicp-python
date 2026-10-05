@@ -2,22 +2,22 @@
   "title": "Mastery challenge: prepare panel badges",
   "checklist": [
     {
-      "step": "Preserve each panel after setup and input changes",
+      "step": "Each panel keeps its own prefix after setup and after the input list changes",
       "checks": [
         "deferred_behavior"
       ]
     },
     {
-      "step": "Draw prefixes actually returned by distinct callbacks",
+      "step": "The picture shows the prefixes your callables return",
       "checks": [
         "badge_picture"
       ]
     }
   ],
   "hints": [
-    "What information distinguishes the panels after setup has returned?",
-    "Ask whether the saved functions all read one binding that the loop keeps changing.",
-    "A separate small factory call can give each saved function its own prefix binding."
+    "What has to tell one panel from another once setup has returned and the loop is over?",
+    "Run the demo and compare what it draws with the prefixes you passed in. Then ask, for each saved function, which frame its prefix is found in at the moment it is finally called.",
+    "Each saved function needs a binding for its own prefix that nothing rebinds after that function is created. Think about which events in the model create a new frame."
   ],
   "questions": [
     {
@@ -78,23 +78,23 @@
       "answer": 0
     },
     {
-      "step": "Why not shared loop state?",
-      "prompt": "What goes wrong when two callbacks read one loop binding over prefixes 4 and 9?",
+      "step": "Why not the supplied version?",
+      "prompt": "The supplied version is set up with prefixes 4 and 9. What do its two callables return for reading 7?",
       "choices": [
         {
-          "text": "Both callbacks report 9",
-          "why": "After the loop the shared binding holds 9, so the first panel loses its 4."
+          "text": "(4, 7) and (9, 7)",
+          "why": "That is the required behaviour. Run the supplied version: it does not do this."
         },
         {
-          "text": "Both callbacks report 4",
-          "why": "The loop does not stop after assigning its first value."
+          "text": "(9, 7) and (9, 7)",
+          "why": "Both find their prefix in the same frame, and by the time either is called that binding holds the last value, 9. The first panel has lost its 4."
         },
         {
-          "text": "The callbacks run during setup",
-          "why": "Defining a function does not run its body."
+          "text": "(4, 7) and (4, 7)",
+          "why": "The binding they share is not frozen at its first value; it holds whatever was bound last, which is 9."
         }
       ],
-      "answer": 0
+      "answer": 1
     }
   ]
 }

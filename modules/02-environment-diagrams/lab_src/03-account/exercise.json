@@ -1,0 +1,23 @@
+{
+  "title": "Implement: one balance, two operations",
+  "checklist": [
+    {
+      "step": "Both operations share one balance; separate accounts stay separate",
+      "checks": [
+        "shared_independent"
+      ]
+    },
+    {
+      "step": "Every operation draws the balance it left behind",
+      "checks": [
+        "account_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "Two functions agree on a value only if they reach the same binding. Ask which frame can hold it for both.",
+    "Draw the frame that make_account creates, and the frames of one withdraw call and one deposit call. What is the parent of each, and where does an assignment inside them land by default?",
+    "Keep the balance in make_account's frame. Each inner function that rebinds it must say that the name is the enclosing one, not a new local; withdraw decides whether to refuse before it changes anything."
+  ],
+  "questions": []
+}

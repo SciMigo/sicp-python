@@ -1,40 +1,59 @@
 {
-  "title": "Measure: count actual membership probes",
+  "title": "Measure: count the probes of a lookup",
   "checklist": [
     {
-      "step": "Match actual membership operations on hits and misses",
+      "step": "The reported count equals the membership tests actually made",
       "checks": [
         "actual_probes"
       ]
     },
     {
-      "step": "Draw the measured counts at all three depths",
+      "step": "The bars show your measured counts at three depths",
       "checks": [
         "measured_bars"
       ]
     }
   ],
   "hints": [
-    "Measure an event in the running traversal rather than guessing from input size.",
-    "Include the table that contains the successful binding, not only failed probes.",
-    "Start the counter anew and increment it immediately before each membership test."
+    "Count an event where it happens. A count worked out from the length of the list is a prediction, not a measurement.",
+    "Find the one line of your loop that asks a table whether it holds the name. That line runs once on a hit as well as on every miss before it.",
+    "Start a counter at zero for each call and add one each time you are about to test a table; return it beside the value on a hit, and beside None when the chain runs out."
   ],
   "questions": [
     {
-      "step": "Explain the bound",
-      "prompt": "For depth d, why can the explicit lookup use at most d probes?",
+      "step": "Predict the tallest bar",
+      "prompt": "In the demo's depth-9 chain the name is bound only in the root and the lookup starts at the deepest frame. How many probes?",
       "choices": [
         {
-          "text": "It visits each frame at most once",
-          "why": "Following valid acyclic parent links cannot revisit a frame."
+          "text": "1",
+          "why": "One probe is the cost of a name bound in the starting frame. Here it is at the far end of the chain."
         },
         {
-          "text": "It tests every binding in each frame",
-          "why": "One dictionary membership test is the counted operation, not a loop over all bindings."
+          "text": "8",
+          "why": "Eight frames miss, but the frame that holds the name is tested too."
         },
         {
-          "text": "Python caches every variable read",
-          "why": "This claim is about the model's loop, not interpreter optimization."
+          "text": "9",
+          "why": "Eight misses and then the hit at the root: every frame on the chain is tested once."
+        }
+      ],
+      "answer": 2
+    },
+    {
+      "step": "Explain the bound",
+      "prompt": "Why can a lookup on a chain of depth d never make more than d probes?",
+      "choices": [
+        {
+          "text": "It tests each frame on the chain at most once",
+          "why": "Each step moves to a parent, and a finite chain without cycles never returns to a frame."
+        },
+        {
+          "text": "It tests every binding in every frame",
+          "why": "A probe asks one table about one name; it does not scan the table's other bindings."
+        },
+        {
+          "text": "Python caches every variable it has read",
+          "why": "This model has no cache, and the bound does not need one."
         }
       ],
       "answer": 0
