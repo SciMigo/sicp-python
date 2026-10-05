@@ -1,0 +1,1 @@
+Implement `chain(f, g)` so its returned function computes `f(g(x))`. Creating it must not execute either callback. When invoked, record the actual `g` stage and then the actual `f` stage with `show_stage`. Predict the demo result before Run; the starter currently reverses the order.

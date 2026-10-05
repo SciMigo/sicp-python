@@ -1,5 +1,12 @@
 [
   {
+    "id": "01-higher-order-functions",
+    "label": "1 · Higher-Order Functions",
+    "eyebrow": "MODULE 01 · HIGHER-ORDER FUNCTIONS",
+    "heading": "Pass behavior, return configured functions, and count actual calls",
+    "subtitle": "Separate a reusable process from its rule; trace ordered calls, construct independent behavior, and distinguish setup from execution costs."
+  },
+  {
     "id": "06-trees",
     "label": "6 · Trees",
     "eyebrow": "MODULE 06 · TREES",
