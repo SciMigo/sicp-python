@@ -15,9 +15,9 @@
     }
   ],
   "hints": [
-    "What remains unproved when the outside pair matches?",
-    "Move both boundaries inward, so the remaining window loses two elements.",
-    "An empty or single-element window needs no further comparison. Return the inside answer when the outside values match."
+    "When the outside pair matches, what part of the claim is still unproved?",
+    "The inside window starts one place further right and ends one place further left, so it has two fewer elements.",
+    "Three cases: nothing left to compare, a mismatched pair, or a matched pair. Only the third needs a recursive call, and its answer is that call's answer."
   ],
   "questions": []
 }

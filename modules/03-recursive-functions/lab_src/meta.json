@@ -2,27 +2,27 @@
   "schema_version": "lab_v1",
   "lab_spec_id": "sicp-python-03-recursive-functions",
   "title": "Recursion in three rounds",
-  "description": "Round 1: see calls descend and return. Round 2: write shrinking-window and nested-container recursions. Round 3: trace branches, reuse states, measure work, and transfer the idea.",
+  "description": "Round 1: draw the calls that wait in a linear recursion. Round 2: recurse on a shrinking window and on nested containers. Round 3: trace a branching recurrence, compute each state once, measure both, and count plans for inputs too deep to recurse on.",
   "runtime": {
     "engine": "pyodide",
     "timeout_ms": 15000
   },
   "recap": {
     "learned": [
-      "Justify a base case with a decreasing argument on the allowed domain.",
-      "Distinguish call occurrences from distinct subproblem states.",
-      "Reuse completed states without confusing a cache with stack removal.",
-      "Choose a dependency order that supports large Python inputs."
+      "Tell a recursive definition from the process it generates, and draw the calls that are waiting.",
+      "Argue termination from an input that shrinks toward a base case, separately from correctness.",
+      "See repeated work in a branching recursion and compute each state once.",
+      "Pick an order of evaluation that needs no deep chain of waiting calls."
     ],
-    "invariant": "Each completed stored state has the correct answer; earlier dependencies are available before a new state is completed.",
-    "complexity": "Count transitions and recurrence additions, not elapsed time. Memoized routes expand at most n positive states; ordered packing uses at most n times the number of allowed sizes additions, with modular residues and drawing excluded.",
-    "common_mistake": "Assuming that memoization or a tail-position call removes Python recursion depth.",
+    "invariant": "Every stored answer is correct for its state, and it is stored only after the answers it depends on are complete.",
+    "complexity": "Counting one step per state expansion or addition, and leaving drawing out: the naive route count expands exponentially many states in n, the memoized one expands n, and ordered packing needs at most n times the number of sizes additions. Waiting calls are counted separately: the memoized recursion is still n deep.",
+    "common_mistake": "Assuming that memoization or a call in tail position removes Python's call depth.",
     "in_real_programs": [
-      "Python exposes a recursion-depth limit; raising it does not remove recursive stack growth."
+      "CPython enforces a recursion limit (1,000 by default) and does not optimize tail calls."
     ],
     "retrieval": {
       "question": "Module 2: why can separate calls use the same parameter name independently?",
-      "answer": "Each invocation has its own local parameter binding; the same spelling does not imply the same binding."
+      "answer": "Each call has its own frame with its own binding for the parameter; the same spelling does not mean the same binding."
     }
   }
 }

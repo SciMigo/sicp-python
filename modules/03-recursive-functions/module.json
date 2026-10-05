@@ -1,17 +1,17 @@
 {
   "id": "03-recursive-functions",
   "title": "Recursive Functions",
-  "subtitle": "Prove termination, trace pending work, and avoid repeated subproblems",
-  "chapter": "1.8",
-  "description": "Distinguish recursive definitions from iterative processes, trace call occurrences, reuse solved subproblems, and handle large recurrences without deep Python call chains.",
-  "estimatedMinutes": 150,
+  "subtitle": "Linear and tree recursion, the processes they generate, and how to avoid repeated work",
+  "chapter": "SICP §1.2",
+  "description": "Follow SICP 1.2 in Python: factorial as a recursive and an iterative process, Fibonacci and counting change as tree recursion, orders of growth, exponentiation by squaring and Euclid's algorithm. Then trace waiting calls, compute each state once, and handle inputs too deep to recurse on.",
+  "estimatedMinutes": 110,
   "prerequisites": [
     "02-environment-diagrams"
   ],
   "lab": {
     "title": "Recursion in three rounds",
     "exercises": [
-      "recursive_sum",
+      "power",
       "mirrored",
       "nested_total",
       "route_trace",
@@ -25,6 +25,6 @@
   "backgroundReading": "reading/03-recursive-functions.html",
   "format": "lesson-visual-lab",
   "publicationStatus": "draft",
-  "estimateNote": "Author estimate, not learner-measured: lesson 35\u201345 minutes; seven labs 90\u2013130 minutes (125\u2013175 total). Work in three sessions; optional background excluded.",
-  "sourceAttribution": "Original Python lesson informed by SICP ideas by Harold Abelson, Gerald Jay Sussman, and Julie Sussman. Independent course; not endorsed by MIT or UC Berkeley."
+  "estimateNote": "Author estimate, not learner-measured: lesson 25–35 minutes; seven exercises 65–90 minutes. Meant for three sittings. The optional SICP reading is not included.",
+  "sourceAttribution": "Original Python lesson that follows section 1.2 of Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman with Julie Sussman, and uses that section's examples (factorial, Fibonacci, counting change, fast exponentiation, Euclid's algorithm). Independent course; not endorsed by MIT or UC Berkeley."
 }

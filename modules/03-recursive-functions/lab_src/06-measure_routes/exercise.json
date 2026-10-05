@@ -1,5 +1,5 @@
 {
-  "title": "Measure: actual state expansions",
+  "title": "Round 3: measure the expansions",
   "checklist": [
     {
       "step": "Count actual transitions and restore instrumentation",
@@ -15,9 +15,9 @@
     }
   ],
   "hints": [
-    "A measurement counts the event that actually happened.",
-    "The transition helper is called whenever a positive state is expanded.",
-    "Wrap and restore the helper with try/finally; initialize a new counter for each measurement."
+    "A measurement counts an event when it happens. Which call marks one state being expanded?",
+    "Both solvers look up the global name transition each time they use it, so a replacement installed while the solver runs sees every call.",
+    "Declare transition global, keep the original, install a wrapper that adds one and calls the original, and restore the original in a finally block."
   ],
   "questions": [
     {

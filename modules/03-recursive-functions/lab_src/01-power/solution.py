@@ -1,9 +1,13 @@
-def recursive_sum(n,stack=None):
-    if stack is None:stack=[]
+def power(base, n, stack=None):
+    if stack is None:
+        stack = []
     stack.append(n)
-    show_stack("enter",stack,n)
-    result=0 if n==0 else n+recursive_sum(n-1,stack)
-    show_stack("leave",stack,result)
+    show_stack("enter", stack, n)
+    if n == 0:
+        result = 1
+    else:
+        result = base * power(base, n - 1, stack)
+    show_stack("leave", stack, result)
     stack.pop()
     return result
 from scimigo import canvas,figure,frame,text
@@ -15,4 +19,4 @@ def show_stack(stage,stack,result):
     text(12,275,stage+": "+str(result),size=18)
     frame()
 
-print(recursive_sum(3))
+print(power(2,3))

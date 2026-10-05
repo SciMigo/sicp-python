@@ -1,23 +1,12 @@
 {
-  "title": "Build: draw pending recursive work",
+  "title": "Round 1: draw the waiting calls",
   "checklist": [
-    {
-      "step": "Recurse to zero with fresh state and correct answers",
-      "checks": [
-        "recursive_values"
-      ]
-    },
-    {
-      "step": "Show descent and return answers in the real stack",
-      "checks": [
-        "stack_frames"
-      ]
-    }
+    {"step": "Recurse down to exponent 0 and return the right power", "checks": ["power_values"]},
+    {"step": "Show every call entering and leaving on the real stack", "checks": ["stack_frames"]}
   ],
   "hints": [
-    "Separate the smaller problem from the addition waiting for it.",
-    "For n equal to zero, what value represents an empty sum?",
-    "Combine n with the returned recursive answer; draw before popping its stack entry."
-  ],
-  "questions": []
+    "A call for n cannot multiply until the call for n - 1 has returned. That waiting is what the stack shows.",
+    "Which exponent needs no recursive call, and what is any base raised to it?",
+    "Compute this call's result first, from the base case or from base times the recursive answer. Then draw the leave frame, then pop."
+  ]
 }

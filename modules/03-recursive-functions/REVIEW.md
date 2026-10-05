@@ -27,3 +27,40 @@ Generated evidence: output/review/03-recursive-functions/.
 Author estimate is unmeasured: lesson 35–45 minutes, lab 90–130 minutes (125–175 total), recommended over three sessions. Recursive demonstrations use small inputs; memoization does not remove recursion depth. Arithmetic operation bounds use a unit-cost model, with integer growth qualified in the lesson. Checks provide educational feedback, not secure anti-cheating. Optional legacy reading is not fully re-audited. No live assets were published.
 
 Expansion review: invalid window-diagram bindings were repaired after image inspection; boundary arrows and active-window coloring show actual current indices. Nested-node frames use a readable node kind, path and returned value rather than overflowing cells with a stringified container. Varied and frame checks cover both new exercises.
+
+# Review and fix pass — 2026-10-05 (Claude)
+
+Reviewed Codex's commits b51b20b and 0f1a4bf, then changed the module. Not published.
+
+## Found in the previous version
+
+- The lesson used none of SICP 1.2's examples (no factorial, Fibonacci by name, counting change, orders of growth, exponentiation or gcd).
+- "A problem that looks different" described the mastery problem, including the modulus, and `tray_total` was the solution to lab exercise 1.
+- Four starters were a one-line repair with a comment marking the line.
+- 24 assertions had no message.
+- The 150-minute estimate was about 40% above my estimate.
+- `chapter` was "1.8", which matches nothing.
+
+## Changed
+
+- Lesson rewritten around SICP 1.2 (see topic.md). Nine executable blocks, four figures, about 2,300 prose words.
+- Exercise 1 is now `power` (linear recursive b^n). Exercises 1–4 start from stubs.
+- Every assertion has a message that states what was expected and what came back.
+- `mirrored` rejects slicing; `memo_routes` and `packing` are called twice with the same input to catch shared state; `packing` must use `combine`; RecursionError is reported as a check failure with an explanation.
+- Hints rewritten per exercise. Recap, description, subtitle, attribution and estimate (110 minutes, unmeasured) updated; `chapter` is "1.2".
+
+## Verified in this pass
+
+- `tools/lessons.py check 03`: 9 blocks, 4 figures, 0 failures.
+- `tools/check_lab.py 03`: 7 exercises, 14 solution checks pass.
+- `lab_src.py check`: lab.json up to date.
+- Every starter fails at least one check; only `packing_behavior` passes on its starter, by design (the starter is correct but too slow).
+- Eight shortcut submissions each fail at least one check.
+- Browser smoke (`preview_smoke.mjs --all`, Chromium, Pyodide from the public CDN): all checks passed for the seven exercises, embedded mode and host-supplied lab.
+- Lesson at 390 px dark and 1100 px light: document width stays 390 px on the phone after shortening one formula and one table header. Four figures and the growth table inspected.
+
+## Not done
+
+- No learner has timed the module.
+- The background-reading link is still relative (`../../reading/...`); it needs the published URL once routing for converted modules exists.
+- Pyodide's recursion limit was not measured (see topic.md).

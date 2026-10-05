@@ -1,5 +1,5 @@
 {
-  "title": "Implement: compute each state once",
+  "title": "Round 3: compute each state once",
   "checklist": [
     {
       "step": "Compute correct routes with one expansion per positive state",
@@ -15,9 +15,9 @@
     }
   ],
   "hints": [
-    "Different calls can request the same remainder.",
-    "Store only completed answers and check for a stored answer before expanding a state.",
-    "Use a fresh dictionary inside the public function, with zero as its initial completed state."
+    "Draw the calls for n = 6 on paper. Which remaining distances appear more than once?",
+    "An answer that has been computed once never changes during this call of memo_routes. Where could it wait until it is asked for again?",
+    "Keep a dictionary created inside memo_routes, holding the answer for state 0 from the start. Expand a state only when it is missing, and store its answer before returning it."
   ],
   "questions": []
 }
