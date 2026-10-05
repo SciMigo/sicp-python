@@ -8,7 +8,8 @@ const require=createRequire(import.meta.url);
 const {chromium}=require(path.resolve(root,'../scimigo-learn/node_modules/playwright'));
 const moduleId=process.argv[2];
 if (!/^\d{2}-[a-z0-9-]+$/.test(moduleId??'')) throw Error('Provide a module id');
-const base=process.argv[3]??'http://127.0.0.1:8768';
+const base=process.argv.slice(3).find(x=>!x.startsWith('--'))??'http://127.0.0.1:8768';
+const runtimeQuery=process.argv.includes('--local-runtime')?'&runtime=local':'';
 const out=path.join(root,'output/review',moduleId);mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTABLE_PATH??'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
 try {
@@ -36,7 +37,7 @@ try {
   await page.close();
  }
  const page=await browser.newPage({viewport:{width:390,height:850}});
- await page.goto(`${base}/preview/?module=${moduleId}`);
+ await page.goto(`${base}/preview/?module=${moduleId}${runtimeQuery}`);
  await page.waitForSelector('#runtime.ready',{timeout:180000});
  await page.click('#run');await page.waitForFunction(()=>!document.getElementById('run').disabled,{timeout:60000});
  await page.screenshot({path:path.join(out,'lab-mobile.png'),fullPage:true});

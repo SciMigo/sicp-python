@@ -7,6 +7,13 @@
     "subtitle": "Separate a reusable process from its rule; trace ordered calls, construct independent behavior, and distinguish setup from execution costs."
   },
   {
+    "id": "02-environment-diagrams",
+    "label": "2 · Environment Diagrams",
+    "eyebrow": "MODULE 02 · ENVIRONMENT DIAGRAMS",
+    "heading": "Trace name ownership, call environments, and shared state",
+    "subtitle": "Find the binding a name refers to, distinguish definition scope from caller scope, build independent shared-state services, and count lookup probes in an explicit model."
+  },
+  {
     "id": "06-trees",
     "label": "6 · Trees",
     "eyebrow": "MODULE 06 · TREES",

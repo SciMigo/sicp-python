@@ -30,6 +30,7 @@ const option = (name, fallback) => {
 const root = path.resolve(option('--root', repoRoot));
 const outDir = option('--out', path.join(tmpdir(), 'sicp-python-preview-smoke'));
 const all = args.includes('--all');
+const runtimeQuery = args.includes('--local-runtime') ? '&runtime=local' : '';
 const moduleArg = args.find((arg) => !arg.startsWith('--'));
 mkdirSync(outDir, { recursive: true });
 
@@ -98,7 +99,7 @@ try {
   for (const [position, exercise] of exercises.entries()) {
     const number = lab.exercises.indexOf(exercise) + 1;
     console.log(`exercise ${number}: ${exercise.exercise_id}`);
-    await page.goto(`${base}/preview/?module=${moduleId}&exercise=${number}`);
+    await page.goto(`${base}/preview/?module=${moduleId}${runtimeQuery}&exercise=${number}`);
     if (position === 0) {
       await page.waitForSelector('#runtime.ready', { timeout: 180000 });
       expect(true, 'Pyodide ready');
@@ -169,7 +170,7 @@ try {
     window.__messages = [];
     addEventListener('message', (event) => { if (event.data?.source === 'scimigo-visual-lab') window.__messages.push(event.data); });
   });
-  await embedded.goto(`${base}/preview/?module=${moduleId}&embed=1`);
+  await embedded.goto(`${base}/preview/?module=${moduleId}${runtimeQuery}&embed=1`);
   await embedded.waitForFunction(() => window.__messages.some((m) => m.type === 'ready'), null, { timeout: 180000 });
   const ready = await embedded.evaluate(() => window.__messages.find((m) => m.type === 'ready'));
   expect(ready.module === moduleId && ready.total === lab.exercises.length, `ready message names the module and ${lab.exercises.length} exercises`);
@@ -186,7 +187,7 @@ try {
   const hostContext = await browser.newContext({ viewport: { width: 1360, height: 900 } });
   await hostContext.route(`${base}/__host.html`, (route) => route.fulfill({ contentType: 'text/html', body: `<!doctype html>
 <link rel="icon" href="data:,">
-<iframe id="lab" style="width:1300px;height:1600px;border:0" src="/preview/?module=${moduleId}&embed=1&lab=host"></iframe>
+<iframe id="lab" style="width:1300px;height:1600px;border:0" src="/preview/?module=${moduleId}${runtimeQuery}&embed=1&lab=host"></iframe>
 <script>
 const lab = ${JSON.stringify(publicLab)};
 const solutions = ${JSON.stringify(answers)};

@@ -192,7 +192,11 @@ function startWorker() {
   ready = false;
   hasRun = false;
   setCanvasInteraction(false);
-  worker = new Worker('./worker.js?v=1', { type: 'module' });
+  const workerUrl = new URL('./worker.js?v=1', location.href);
+  if (searchParams.get('runtime') === 'local' && ['localhost', '127.0.0.1'].includes(location.hostname)) {
+    workerUrl.searchParams.set('runtime', 'local');
+  }
+  worker = new Worker(workerUrl, { type: 'module' });
   ui.runtime.textContent = 'Loading Python…';
   ui.runtime.classList.remove('ready');
   setButtons();

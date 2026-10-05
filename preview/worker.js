@@ -1,6 +1,11 @@
 // Runs learner Python in Pyodide. The Python side (the scimigo API, runs and checks) lives in
 // scimigo_bridge.py, which tools/check_lab.py also imports, so both run the same code.
-const PYODIDE_BASE = 'https://cdn.jsdelivr.net/pyodide/v0.27.4/full/';
+// Local review can use an ignored cache when the external CDN is unavailable.
+const localRuntime = new URL(location.href).searchParams.get('runtime') === 'local'
+  && ['localhost', '127.0.0.1'].includes(location.hostname);
+const PYODIDE_BASE = localRuntime
+  ? new URL('../output/pyodide-cache/', location.href).href
+  : 'https://cdn.jsdelivr.net/pyodide/v0.27.4/full/';
 const STRAIGHTEDGE_WHEEL = './vendor/straightedge-0.8.0-py3-none-any.whl';
 
 let pyodide;
