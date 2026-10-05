@@ -1,95 +1,332 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "recursive-functions-lab",
-  "title": "Recursive Functions Lab",
-  "description": "Practice predicting recursive output, tracing call trees, and implementing both recursive and iterative processes in Python. Inspired by SICP Exercises 1.11 and 1.12.",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 5000
-  },
-  "exercises": [
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-03-recursive-functions",
+ "title": "Calls, states, and repeated work",
+ "description": "Draw pending recursive work, trace branching calls, reuse solved states, measure expansions, and handle large ordered packing plans.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "Justify a base case with a decreasing argument on the allowed domain.",
+   "Distinguish call occurrences from distinct subproblem states.",
+   "Reuse completed states without confusing a cache with stack removal.",
+   "Choose a dependency order that supports large Python inputs."
+  ],
+  "invariant": "Each completed stored state has the correct answer; earlier dependencies are available before a new state is completed.",
+  "complexity": "Count transitions and recurrence additions, not elapsed time. Memoized routes expand at most n positive states; ordered packing uses at most n times the number of allowed sizes additions, with modular residues and drawing excluded.",
+  "common_mistake": "Assuming that memoization or a tail-position call removes Python recursion depth.",
+  "in_real_programs": [
+   "Python exposes a recursion-depth limit; raising it does not remove recursive stack growth."
+  ],
+  "retrieval": {
+   "question": "Module 2: why can separate calls use the same parameter name independently?",
+   "answer": "Each invocation has its own local parameter binding; the same spelling does not imply the same binding."
+  }
+ },
+ "exercises": [
+  {
+   "exercise_id": "recursive_sum",
+   "title": "Build: draw pending recursive work",
+   "prompt_md": "Repair `recursive_sum(n, stack=None)` for nonnegative integers up to 20. It must recursively call itself with n minus one and return the sum from 1 through n. Start a fresh stack when none is supplied, append the current n, then call `show_stack(\"enter\", stack, n)`. Before removing that n, call `show_stack(\"leave\", stack, result)` with its actual returned answer. Record the base call too. A supplied stack must be restored on return; do not keep state between invocations.\n",
+   "questions": [],
+   "checklist": [
     {
-      "exercise_id": "ex1_predict_fact_trace",
-      "title": "Predict the Unwinding of `fact`",
-      "slide_anchor": 2,
-      "prompt_md": "**Predict the output before running.**\n\n```python\ndef fact(n):\n    print(\"enter\", n)\n    if n == 0:\n        return 1\n    result = n * fact(n - 1)\n    print(\"leave\", n, \"->\", result)\n    return result\n\nfact(3)\n```\n\nWhat lines are printed, in order? Be careful: does the base case print a `leave` line?",
-      "starter_code": "def fact(n):\n    print(\"enter\", n)\n    if n == 0:\n        return 1\n    result = n * fact(n - 1)\n    print(\"leave\", n, \"->\", result)\n    return result\n\n# First, write your prediction as a comment:\n# I predict the printed lines will be:\n# 1. ???\n# 2. ???\n# ...\n\n# Then uncomment to check:\n# fact(3)",
-      "tests": [
-        {
-          "name": "t1_return_value",
-          "code": "assert fact(3) == 6"
-        },
-        {
-          "name": "t2_printed_lines",
-          "code": "import io, contextlib\nbuf = io.StringIO()\nwith contextlib.redirect_stdout(buf):\n    result = fact(3)\nassert result == 6\nassert buf.getvalue().strip().splitlines() == ['enter 3', 'enter 2', 'enter 1', 'enter 0', 'leave 1 -> 1', 'leave 2 -> 2', 'leave 3 -> 6']"
-        }
-      ],
-      "hints": [
-        "A call cannot print its `leave` line until the recursive call below it returns.",
-        "The base case `n == 0` returns immediately.",
-        "Since `fact(0)` returns before reaching the second print, there is no `leave 0 -> 1` line."
-      ],
-      "solution": "The calls go down first: `enter 3`, `enter 2`, `enter 1`, `enter 0`. Then `fact(0)` returns 1 immediately. The waiting calls unwind: `leave 1 -> 1`, `leave 2 -> 2`, `leave 3 -> 6`."
+     "step": "Recurse to zero with fresh state and correct answers",
+     "checks": [
+      "recursive_values"
+     ]
     },
     {
-      "exercise_id": "ex2_trace_sicp_1_11_tree",
-      "title": "Trace the Call Tree for `f(4)` (SICP Ex 1.11)",
-      "slide_anchor": 10,
-      "prompt_md": "Trace this recursive function from SICP Exercise 1.11:\n\n```python\ndef f(n):\n    return n if n < 3 else f(n - 1) + 2 * f(n - 2) + 3 * f(n - 3)\n```\n\nBefore running, fill in:\n\n1. The value of `f(4)`\n2. The total number of calls made while evaluating `f(4)`, including the original call\n\nDraw the tree if helpful: `f(4)` branches into `f(3)`, `f(2)`, and `f(1)`. Then only `f(3)` branches further.",
-      "starter_code": "def f(n):\n    return n if n < 3 else f(n - 1) + 2 * f(n - 2) + 3 * f(n - 3)\n\n# Fill these in after tracing by hand:\npredicted_value = None      # replace None with your predicted f(4)\npredicted_call_count = None # replace None with total calls made by f(4)\n\n# Optional: use this helper after predicting to verify the call count.\ndef counted_f(n):\n    counted_f.calls += 1\n    return n if n < 3 else counted_f(n - 1) + 2 * counted_f(n - 2) + 3 * counted_f(n - 3)\n\ncounted_f.calls = 0\nactual_value = counted_f(4)\nprint(\"f(4) =\", actual_value)\nprint(\"calls =\", counted_f.calls)",
-      "tests": [
-        {
-          "name": "t1_value_prediction",
-          "code": "assert predicted_value == 11, 'f(4) should be 11'"
-        },
-        {
-          "name": "t2_call_count_prediction",
-          "code": "assert predicted_call_count == 7, 'f(4) makes 7 total calls'"
-        },
-        {
-          "name": "t3_function_values",
-          "code": "assert f(0) == 0\nassert f(1) == 1\nassert f(2) == 2\nassert f(3) == 4\nassert f(4) == 11"
-        }
-      ],
-      "hints": [
-        "Base cases: `f(0) = 0`, `f(1) = 1`, and `f(2) = 2`.",
-        "`f(3) = f(2) + 2*f(1) + 3*f(0)`.",
-        "`f(4) = f(3) + 2*f(2) + 3*f(1)`.",
-        "For the call count, count every node in the call tree, including repeated base-case calls."
-      ],
-      "solution": "`f(3) = f(2) + 2*f(1) + 3*f(0) = 2 + 2*1 + 3*0 = 4`. Then `f(4) = f(3) + 2*f(2) + 3*f(1) = 4 + 4 + 3 = 11`. The calls are `f(4)`, `f(3)`, `f(2)`, `f(1)`, `f(0)`, another `f(2)`, and another `f(1)`: 7 total calls."
-    },
-    {
-      "exercise_id": "ex3_implement_extend_sicp_1_11_iterative",
-      "title": "Recursive and Iterative Processes for `f` (SICP Ex 1.11)",
-      "slide_anchor": 10,
-      "prompt_md": "Implement the SICP Exercise 1.11 function in two ways.\n\nThe function is defined as:\n\n```python\nf(n) = n                                      if n < 3\nf(n) = f(n - 1) + 2*f(n - 2) + 3*f(n - 3)    if n >= 3\n```\n\nPart A: Implement `f_rec(n)` using the direct recursive definition.\n\nPart B: Implement `f_iter(n)` as an iterative process: carry the last three values as state, similar to iterative Fibonacci.\n\nBefore coding `f_iter`, predict the state updates starting from:\n\n```python\nf(0) = 0, f(1) = 1, f(2) = 2\n```\n\nThe next value should be:\n\n```python\nf(3) = f(2) + 2*f(1) + 3*f(0)\n```",
-      "starter_code": "def f_rec(n):\n    \"\"\"Return f(n) using the direct recursive process.\n\n    >>> f_rec(4)\n    11\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef f_iter(n):\n    \"\"\"Return f(n) using an iterative process.\n\n    Carry three consecutive values as state:\n    a = f(k - 2), b = f(k - 1), c = f(k)\n\n    >>> f_iter(4)\n    11\n    >>> f_iter(5)\n    25\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\n# Try these after implementing:\nprint(f_rec(4))   # Expected: 11\nprint(f_iter(4))  # Expected: 11\nprint(f_iter(5))  # Expected: 25",
-      "tests": [
-        {
-          "name": "t1_base_cases",
-          "code": "assert f_rec(0) == 0\nassert f_rec(1) == 1\nassert f_rec(2) == 2\nassert f_iter(0) == 0\nassert f_iter(1) == 1\nassert f_iter(2) == 2"
-        },
-        {
-          "name": "t2_small_values",
-          "code": "assert f_rec(3) == 4\nassert f_rec(4) == 11\nassert f_rec(5) == 25\nassert f_iter(3) == 4\nassert f_iter(4) == 11\nassert f_iter(5) == 25"
-        },
-        {
-          "name": "t3_versions_agree",
-          "code": "for n in range(10):\n    assert f_iter(n) == f_rec(n), f'f_iter({n}) should equal f_rec({n})'"
-        },
-        {
-          "name": "t4_larger_iterative_value",
-          "code": "assert f_iter(10) == 1892"
-        }
-      ],
-      "hints": [
-        "For `f_rec`, translate the mathematical definition directly into an `if` expression or `if` statement.",
-        "For `f_iter`, start with `a, b, c = 0, 1, 2`.",
-        "The next value is `c + 2*b + 3*a`.",
-        "After computing the next value, slide the window forward: old `b` becomes new `a`, old `c` becomes new `b`, and `next_value` becomes new `c`."
-      ],
-      "solution": "def f_rec(n):\n    if n < 3:\n        return n\n    return f_rec(n - 1) + 2 * f_rec(n - 2) + 3 * f_rec(n - 3)\n\n\ndef f_iter(n):\n    if n < 3:\n        return n\n    a, b, c = 0, 1, 2\n    for k in range(3, n + 1):\n        next_value = c + 2 * b + 3 * a\n        a, b, c = b, c, next_value\n    return c"
+     "step": "Show descent and return answers in the real stack",
+     "checks": [
+      "stack_frames"
+     ]
     }
-  ]
+   ],
+   "starter_code": "def recursive_sum(n,stack=None):\n    if stack is None:stack=[]\n    stack.append(n)\n    show_stack(\"enter\",stack,n)\n    result=n  # include the smaller recursive answer\n    show_stack(\"leave\",stack,result)\n    stack.pop()\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_stack(stage,stack,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=240,\n           values=list(stack),indices=False)\n    text(12,275,stage+\": \"+str(result),size=18)\n    frame()\n\nprint(recursive_sum(3))\n",
+   "tests": [
+    {
+     "name": "recursive_values",
+     "code": "saved_show=show_stack;show_stack=lambda *a:None\noriginal=recursive_sum\nseen=[]\ndef watched(n,stack=None):\n    seen.append(n)\n    return original(n,stack)\nrecursive_sum=watched\nfor n in [0,1,2,6,11,17]:\n    seen.clear();stack=[99]\n    result=recursive_sum(n,stack)\n    assert result==n*(n+1)//2,\"Add the completed smaller sum.\"\n    assert seen==list(range(n,-1,-1)),\"Call the same function once per decreasing argument, including zero.\"\n    assert stack==[99],\"Restore the caller's supplied stack.\"\nrecursive_sum=original;show_stack=saved_show\n"
+    },
+    {
+     "name": "stack_frames",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert recursive_sum(3)==6\nexpected=[('enter',[3],3),('enter',[3,2],2),('enter',[3,2,1],1),('enter',[3,2,1,0],0),('leave',[3,2,1,0],0),('leave',[3,2,1],1),('leave',[3,2],3),('leave',[3],6)]\nassert _frame_count()-before==len(expected)\nfor j,(stage,stack,value) in enumerate(expected):\n    objects=_frame(before+j);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==stack,\"Draw the actual active argument stack.\"\n    assert any(o['kind']=='text' and o['value']==stage+': '+str(value) for o in objects),\"Draw the value at this entry or return.\"\n"
+    }
+   ],
+   "hints": [
+    "Separate the smaller problem from the addition waiting for it.",
+    "For n equal to zero, what value represents an empty sum?",
+    "Combine n with the returned recursive answer; draw before popping its stack entry."
+   ],
+   "solution": "def recursive_sum(n,stack=None):\n    if stack is None:stack=[]\n    stack.append(n)\n    show_stack(\"enter\",stack,n)\n    result=0 if n==0 else n+recursive_sum(n-1,stack)\n    show_stack(\"leave\",stack,result)\n    stack.pop()\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_stack(stage,stack,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=240,\n           values=list(stack),indices=False)\n    text(12,275,stage+\": \"+str(result),size=18)\n    frame()\n\nprint(recursive_sum(3))\n"
+  },
+  {
+   "exercise_id": "route_trace",
+   "title": "Trace: every completed branch",
+   "prompt_md": "Complete `route_trace(n)` for routes made of jumps of length 1 or 3, where order matters. Zero remaining distance has one completed route; negative remaining distance has none. For positive n, add the counts of the two smaller remainders. After its children finish, every call invokes `show_route(n, result)` once, including zero and negative base calls. Evaluate the length-1 child before the length-3 child. Demo n is 4. Predict the total call occurrences, including the original and all base calls; the picture records completion order.\n",
+   "questions": [
+    {
+     "step": "Predict the calls",
+     "prompt": "How many calls does the two-branch recurrence make for distance 4?",
+     "choices": [
+      {
+       "text": "5",
+       "why": "This counts only the descending length-1 chain."
+      },
+      {
+       "text": "11",
+       "why": "The call counts are C(4)=1+C(3)+C(1)=1+7+3."
+      },
+      {
+       "text": "3",
+       "why": "This is the number of routes, not the number of calls."
+      }
+     ],
+     "answer": 1
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Count ordered routes with both base cases",
+     "checks": [
+      "route_values"
+     ]
+    },
+    {
+     "step": "Record every call after its children finish",
+     "checks": [
+      "completion_order"
+     ]
+    }
+   ],
+   "starter_code": "def route_trace(n):\n    if n<0:result=0\n    elif n==0:result=1\n    else:result=route_trace(n-1)  # include the other final jump\n    show_route(n,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_route(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Completed remaining=\"+str(n)+\", ways=\"+str(result),size=18)\n    frame()\n\nprint(route_trace(4))\n",
+   "tests": [
+    {
+     "name": "route_values",
+     "code": "saved=show_route;show_route=lambda *a:None\nexpected=[1,1,1,2,3,4,6,9,13,19]\nfor n,value in enumerate(expected):assert route_trace(n)==value,\"Include both possible final jumps.\"\nassert route_trace(-1)==route_trace(-2)==0\nshow_route=saved\n"
+    },
+    {
+     "name": "completion_order",
+     "code": "from scimigo import _frame_count,_frame\nexpected=[]\ndef oracle(k):\n    value=0 if k<0 else 1 if k==0 else oracle(k-1)+oracle(k-3)\n    expected.append((k,value))\n    return value\nassert oracle(4)==3 and len(expected)==11\nbefore=_frame_count();assert route_trace(4)==3\nassert _frame_count()-before==11,\"Include all eleven call occurrences, even repeated base calls.\"\nfor j,(n,value) in enumerate(expected):\n    fig=next(o for o in _frame(before+j) if o['kind']=='figure')\n    assert fig['params']['values']==[n,value],\"Record each actual completed remainder and answer in postorder.\"\n"
+    }
+   ],
+   "hints": [
+    "Separate a completed zero remainder from an impossible negative remainder.",
+    "Partition routes by whether their last jump has length 1 or 3.",
+    "Compute both child answers before drawing this call's result."
+   ],
+   "solution": "def route_trace(n):\n    if n<0:result=0\n    elif n==0:result=1\n    else:result=route_trace(n-1)+route_trace(n-3)\n    show_route(n,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_route(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Completed remaining=\"+str(n)+\", ways=\"+str(result),size=18)\n    frame()\n\nprint(route_trace(4))\n"
+  },
+  {
+   "exercise_id": "memo_routes",
+   "title": "Implement: compute each state once",
+   "prompt_md": "Repair `memo_routes(n)` for nonnegative n up to 200. It counts ordered routes with jumps 1 or 3. The supplied `transition(k)` returns the two dependencies. Call it exactly once for each positive state expanded, never for a base state. Reuse a completed state within one invocation; start fresh between invocations. Record each newly completed positive state with `record_state(k, value)` exactly once. Zero returns one and negative dependencies return zero. The starter repeats solved work.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Compute correct routes with one expansion per positive state",
+     "checks": [
+      "one_expansion"
+     ]
+    },
+    {
+     "step": "Draw every newly completed positive state once",
+     "checks": [
+      "stored_frames"
+     ]
+    }
+   ],
+   "starter_code": "def memo_routes(n):\n    def solve(k):\n        if k<0:return 0\n        if k==0:return 1\n        left,right=transition(k)\n        value=solve(left)+solve(right)\n        record_state(k,value)\n        return value\n    return solve(n)\nfrom scimigo import canvas,figure,frame,text\n\ndef transition(k):\n    return k-1,k-3\n\ndef record_state(k,value):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[k,value],indices=False)\n    text(12,260,\"Stored state \"+str(k)+\": \"+str(value),size=18)\n    frame()\n\nprint(memo_routes(4))\n",
+   "tests": [
+    {
+     "name": "one_expansion",
+     "code": "saved_transition=transition;saved_record=record_state\nrecord_state=lambda *a:None\nclass BudgetExceeded(BaseException):pass\nfor n in [0,1,4,12,37,120,200]:\n    seen=[]\n    def watched(k):\n        seen.append(k)\n        if len(seen)>n:raise BudgetExceeded('Repeated work exceeds the positive-state budget.')\n        return saved_transition(k)\n    transition=watched\n    table=[1]+[0]*n\n    for k in range(1,n+1):table[k]=table[k-1]+(table[k-3] if k>=3 else 0)\n    try:\n        result=memo_routes(n)\n    except BudgetExceeded as exc:\n        raise AssertionError(str(exc))\n    assert result==table[n]\n    assert sorted(seen)==list(range(1,n+1)),\"Expand each positive state exactly once.\"\ntransition=saved_transition;record_state=saved_record\n"
+    },
+    {
+     "name": "stored_frames",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert memo_routes(4)==3\nassert _frame_count()-before==4,\"A stored answer must not be drawn as a new computation twice.\"\nfor j,value in enumerate([1,1,2,3]):\n    fig=next(o for o in _frame(before+j) if o['kind']=='figure')\n    assert fig['params']['values']==[j+1,value]\n"
+    }
+   ],
+   "hints": [
+    "Different calls can request the same remainder.",
+    "Store only completed answers and check for a stored answer before expanding a state.",
+    "Use a fresh dictionary inside the public function, with zero as its initial completed state."
+   ],
+   "solution": "def memo_routes(n):\n    cache={0:1}\n    def solve(k):\n        if k<0:return 0\n        if k not in cache:\n            left,right=transition(k)\n            cache[k]=solve(left)+solve(right)\n            record_state(k,cache[k])\n        return cache[k]\n    return solve(n)\nfrom scimigo import canvas,figure,frame,text\n\ndef transition(k):\n    return k-1,k-3\n\ndef record_state(k,value):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[k,value],indices=False)\n    text(12,260,\"Stored state \"+str(k)+\": \"+str(value),size=18)\n    frame()\n\nprint(memo_routes(4))\n"
+  },
+  {
+   "exercise_id": "measure_routes",
+   "title": "Measure: actual state expansions",
+   "prompt_md": "Implement `measure(solver, n)` returning `(answer, expansions)`. Wrap the supplied global `transition` while the solver runs, counting actual calls to it, and restore it afterward even if the solver raises. Each transition call is one non-base state expansion, not one total function entry. The provided naive and cached solvers use the same dependencies. Keep each measurement fresh. The demo draws your measurements at 5, 9, and 13; no algorithm drawing is counted.\n",
+   "questions": [
+    {
+     "step": "Explain the count",
+     "prompt": "Why does the cached solver expand n positive states?",
+     "choices": [
+      {
+       "text": "Every call is a cache miss",
+       "why": "Many calls can reuse a stored answer."
+      },
+      {
+       "text": "It draws n diagrams",
+       "why": "Algorithm drawing is excluded and these solvers do not draw."
+      },
+      {
+       "text": "Each positive remainder is expanded once",
+       "why": "The length-1 dependency reaches every positive remainder, and caching prevents repeated expansion."
+      }
+     ],
+     "answer": 2
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Count actual transitions and restore instrumentation",
+     "checks": [
+      "measured_expansions"
+     ]
+    },
+    {
+     "step": "Draw your own naive and cached measurements",
+     "checks": [
+      "comparison_bars"
+     ]
+    }
+   ],
+   "starter_code": "def measure(solver,n):\n    return solver(n),0  # observe transitions rather than guessing\nfrom scimigo import canvas,rectangle,text,frame\n\ndef transition(k):\n    return k-1,k-3\n\ndef naive_routes(n):\n    if n<0:return 0\n    if n==0:return 1\n    a,b=transition(n)\n    return naive_routes(a)+naive_routes(b)\n\ndef cached_routes(n):\n    cache={0:1}\n    def solve(k):\n        if k<0:return 0\n        if k not in cache:\n            a,b=transition(k)\n            cache[k]=solve(a)+solve(b)\n        return cache[k]\n    return solve(n)\n\ndef show_expansions(rows):\n    canvas(600,370)\n    largest=max(a for n,a,b in rows) or 1\n    for i,(n,naive,cached) in enumerate(rows):\n        y=20+110*i\n        text(12,y+22,\"n=\"+str(n),size=18)\n        rectangle(120,y,420*naive/largest,22,color=\"#276bb0\")\n        text(125,y+43,\"naive=\"+str(naive),size=17)\n        rectangle(120,y+55,420*cached/largest,22,color=\"#7c3aed\")\n        text(125,y+98,\"cached=\"+str(cached),size=17)\n    frame()\n\nrows=[]\nfor n in [5,9,13]:\n    rows.append((n,measure(naive_routes,n)[1],measure(cached_routes,n)[1]))\nshow_expansions(rows)\n",
+   "tests": [
+    {
+     "name": "measured_expansions",
+     "code": "original=transition\nfor n in [0,1,4,7,11]:\n    def expansions(k):return 0 if k<=0 else 1+expansions(k-1)+expansions(k-3)\n    table=[1]+[0]*n\n    for k in range(1,n+1):table[k]=table[k-1]+(table[k-3] if k>=3 else 0)\n    assert measure(naive_routes,n)==(table[n],expansions(n))\n    assert transition is original,\"Restore the original helper after measuring.\"\n    assert measure(cached_routes,n)==(table[n],n)\ndef odd_solver(n):\n    for _ in range(n+2):transition(1)\n    return 77\nassert measure(odd_solver,3)==(77,5),\"Report actual events, not a guessed formula in n.\"\ndef raises(n):\n    transition(1)\n    raise ValueError('deliberate')\ntry:measure(raises,1)\nexcept ValueError:pass\nelse:raise AssertionError('Propagate solver errors.')\nassert transition is original,\"Restore instrumentation even after an error.\"\n"
+    },
+    {
+     "name": "comparison_bars",
+     "code": "from scimigo import _frame_count,_frame\nrows=[(n,measure(naive_routes,n)[1],measure(cached_routes,n)[1]) for n in [5,9,13]]\nassert rows==[(5,8,5),(9,40,9),(13,188,13)]\nbefore=_frame_count();show_expansions(rows)\nobjects=_frame(before)\nassert len([o for o in objects if o['kind']=='rectangle'])==6\nfor n,a,b in rows:\n    for label in ['n='+str(n),'naive='+str(a),'cached='+str(b)]:\n        assert any(o['kind']=='text' and o['value']==label for o in objects),\"Draw the measured values, not expected constants.\"\n"
+    }
+   ],
+   "hints": [
+    "A measurement counts the event that actually happened.",
+    "The transition helper is called whenever a positive state is expanded.",
+    "Wrap and restore the helper with try/finally; initialize a new counter for each measurement."
+   ],
+   "solution": "def measure(solver,n):\n    global transition\n    original=transition\n    expansions=0\n    def counted(k):\n        nonlocal expansions\n        expansions+=1\n        return original(k)\n    transition=counted\n    try:\n        answer=solver(n)\n    finally:\n        transition=original\n    return answer,expansions\nfrom scimigo import canvas,rectangle,text,frame\n\ndef transition(k):\n    return k-1,k-3\n\ndef naive_routes(n):\n    if n<0:return 0\n    if n==0:return 1\n    a,b=transition(n)\n    return naive_routes(a)+naive_routes(b)\n\ndef cached_routes(n):\n    cache={0:1}\n    def solve(k):\n        if k<0:return 0\n        if k not in cache:\n            a,b=transition(k)\n            cache[k]=solve(a)+solve(b)\n        return cache[k]\n    return solve(n)\n\ndef show_expansions(rows):\n    canvas(600,370)\n    largest=max(a for n,a,b in rows) or 1\n    for i,(n,naive,cached) in enumerate(rows):\n        y=20+110*i\n        text(12,y+22,\"n=\"+str(n),size=18)\n        rectangle(120,y,420*naive/largest,22,color=\"#276bb0\")\n        text(125,y+43,\"naive=\"+str(naive),size=17)\n        rectangle(120,y+55,420*cached/largest,22,color=\"#7c3aed\")\n        text(125,y+98,\"cached=\"+str(cached),size=17)\n    frame()\n\nrows=[]\nfor n in [5,9,13]:\n    rows.append((n,measure(naive_routes,n)[1],measure(cached_routes,n)[1]))\nshow_expansions(rows)\n"
+  },
+  {
+   "exercise_id": "packing",
+   "title": "Mastery challenge: ordered packing plans",
+   "prompt_md": "A packing line fills exactly n units using permitted batch sizes. Order matters: a small batch followed by a larger one is a different plan from the reverse. Implement `packing_plans(n, sizes, modulus)` returning the number of plans modulo a positive integer. The sizes are distinct positive integers in any order, and n is nonnegative. Zero units has one empty plan; no permitted sizes means no plan for positive n. Use `combine(a, b, modulus)` for each addition of plan counts. For n up to 6,000, use at most n times the number of sizes combine calls and avoid a deep Python call chain. Settings and counts must be fresh between calls. The starter follows valid smaller remainders but repeats work and cannot support the large request. The demo displays the residue actually returned.\n",
+   "questions": [
+    {
+     "step": "Name the plan",
+     "prompt": "What must be true before a count is completed?",
+     "choices": [
+      {
+       "text": "Every dependency has a completed answer",
+       "why": "Only completed smaller answers may be combined."
+      },
+      {
+       "text": "Only the largest batch is considered",
+       "why": "That discards plans using other permitted batches."
+      },
+      {
+       "text": "The final residue is already known",
+       "why": "That restates the output without explaining correctness."
+      }
+     ],
+     "answer": 0
+    },
+    {
+     "step": "State the invariant",
+     "prompt": "Which property makes reused answers valid?",
+     "choices": [
+      {
+       "text": "All settings share one count table",
+       "why": "Different sizes or moduli can change the answer."
+      },
+      {
+       "text": "Earlier answers match this request's rules",
+       "why": "The same batch choices and modulus determine each stored answer."
+      },
+      {
+       "text": "Every remainder has exactly one plan",
+       "why": "Several ordered plans can fill the same remainder."
+      }
+     ],
+     "answer": 1
+    },
+    {
+     "step": "Predict the cost",
+     "prompt": "Which bound fits n units and k permitted batch sizes?",
+     "choices": [
+      {
+       "text": "Exponential additions, constant depth",
+       "why": "Repeated branching misses the budget."
+      },
+      {
+       "text": "Constant additions for every n",
+       "why": "The specified process must combine preceding states."
+      },
+      {
+       "text": "At most n times k additions",
+       "why": "For each positive amount, there is at most one addition per permitted batch size."
+      }
+     ],
+     "answer": 2
+    },
+    {
+     "step": "Why not unordered plans?",
+     "prompt": "With sizes 1 and 2, how many ordered plans fill 3 units?",
+     "choices": [
+      {
+       "text": "2",
+       "why": "This merges [1,2] and [2,1], contrary to the order-sensitive contract."
+      },
+      {
+       "text": "3",
+       "why": "The plans are [1,1,1], [1,2], and [2,1]."
+      },
+      {
+       "text": "4",
+       "why": "There is no fourth plan with only positive sizes 1 and 2."
+      }
+     ],
+     "answer": 1
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Count ordered plans with varied settings and edge cases",
+     "checks": [
+      "packing_behavior"
+     ]
+    },
+    {
+     "step": "Meet the addition budget and handle large Python inputs",
+     "checks": [
+      "packing_budget"
+     ]
+    }
+   ],
+   "starter_code": "def packing_plans(n,sizes,modulus):\n    def solve(k):\n        if k==0:return 1%modulus\n        total=0\n        for size in sizes:\n            if size<=k:\n                total=combine(total,solve(k-size),modulus)\n        return total\n    return solve(n)\nfrom scimigo import canvas,figure,frame,text\n\ndef combine(a,b,modulus):\n    return (a+b)%modulus\n\ndef show_packing(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Requested units / reported residue\",size=18)\n    frame()\n\nshow_packing(8,packing_plans(8,[1,4,6],97))\n",
+   "tests": [
+    {
+     "name": "packing_behavior",
+     "code": "import random\nrng=random.Random(3003)\ndef oracle(n,sizes,mod):\n    table=[1%mod]+[0]*n\n    for k in range(1,n+1):table[k]=sum(table[k-s] for s in sizes if s<=k)%mod\n    return table[n]\nfor _ in range(25):\n    n=rng.randrange(0,9);sizes=rng.sample(range(1,7),rng.randrange(0,4));mod=rng.choice([1,2,7,97])\n    old=list(sizes)\n    assert packing_plans(n,sizes,mod)==oracle(n,sizes,mod),\"Count ordered plans using these settings, including the empty plan.\"\n    assert sizes==old\nassert packing_plans(0,[],13)==1 and packing_plans(5,[],13)==0\nassert packing_plans(3,[1,2],97)==3,\"Ordered plans are [1,1,1], [1,2], and [2,1].\"\n"
+    },
+    {
+     "name": "packing_budget",
+     "code": "saved=combine\nclass BudgetExceeded(BaseException):pass\nfor n,sizes,mod in [(45,[1,4,6],97),(1200,[3,1,5],1009),(6000,[1,7,4],1000000007)]:\n    count=[0]\n    def counted(a,b,m):\n        count[0]+=1\n        if count[0]>n*len(sizes):raise BudgetExceeded('Repeated branches exceed the addition budget.')\n        assert 0<=a<m and 0<=b<m,\"Keep intermediate residues bounded by the modulus.\"\n        return saved(a,b,m)\n    combine=counted\n    table=[1%mod]+[0]*n\n    for k in range(1,n+1):table[k]=sum(table[k-s] for s in sizes if s<=k)%mod\n    try:\n        result=packing_plans(n,sizes,mod)\n    except BudgetExceeded as exc:\n        raise AssertionError(str(exc))\n    assert result==table[n],\"Handle large input without a deep Python call chain.\"\ncombine=saved\n"
+    }
+   ],
+   "hints": [
+    "What does the largest request require from the order in which smaller answers are completed?",
+    "All permitted batch sizes reduce the requested unit count. Can those dependencies already be available?",
+    "Complete answers for increasing unit counts and reuse the preceding answers needed by each batch size."
+   ],
+   "solution": "def packing_plans(n,sizes,modulus):\n    counts=[1%modulus]+[0]*n\n    for units in range(1,n+1):\n        total=0\n        for size in sizes:\n            if size<=units:\n                total=combine(total,counts[units-size],modulus)\n        counts[units]=total\n    return counts[n]\nfrom scimigo import canvas,figure,frame,text\n\ndef combine(a,b,modulus):\n    return (a+b)%modulus\n\ndef show_packing(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Requested units / reported residue\",size=18)\n    frame()\n\nshow_packing(8,packing_plans(8,[1,4,6],97))\n"
+  }
+ ]
 }

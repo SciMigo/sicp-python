@@ -1,0 +1,43 @@
+{
+  "title": "Trace: every completed branch",
+  "checklist": [
+    {
+      "step": "Count ordered routes with both base cases",
+      "checks": [
+        "route_values"
+      ]
+    },
+    {
+      "step": "Record every call after its children finish",
+      "checks": [
+        "completion_order"
+      ]
+    }
+  ],
+  "hints": [
+    "Separate a completed zero remainder from an impossible negative remainder.",
+    "Partition routes by whether their last jump has length 1 or 3.",
+    "Compute both child answers before drawing this call's result."
+  ],
+  "questions": [
+    {
+      "step": "Predict the calls",
+      "prompt": "How many calls does the two-branch recurrence make for distance 4?",
+      "choices": [
+        {
+          "text": "5",
+          "why": "This counts only the descending length-1 chain."
+        },
+        {
+          "text": "11",
+          "why": "The call counts are C(4)=1+C(3)+C(1)=1+7+3."
+        },
+        {
+          "text": "3",
+          "why": "This is the number of routes, not the number of calls."
+        }
+      ],
+      "answer": 1
+    }
+  ]
+}

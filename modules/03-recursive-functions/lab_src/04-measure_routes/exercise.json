@@ -1,0 +1,43 @@
+{
+  "title": "Measure: actual state expansions",
+  "checklist": [
+    {
+      "step": "Count actual transitions and restore instrumentation",
+      "checks": [
+        "measured_expansions"
+      ]
+    },
+    {
+      "step": "Draw your own naive and cached measurements",
+      "checks": [
+        "comparison_bars"
+      ]
+    }
+  ],
+  "hints": [
+    "A measurement counts the event that actually happened.",
+    "The transition helper is called whenever a positive state is expanded.",
+    "Wrap and restore the helper with try/finally; initialize a new counter for each measurement."
+  ],
+  "questions": [
+    {
+      "step": "Explain the count",
+      "prompt": "Why does the cached solver expand n positive states?",
+      "choices": [
+        {
+          "text": "Every call is a cache miss",
+          "why": "Many calls can reuse a stored answer."
+        },
+        {
+          "text": "It draws n diagrams",
+          "why": "Algorithm drawing is excluded and these solvers do not draw."
+        },
+        {
+          "text": "Each positive remainder is expanded once",
+          "why": "The length-1 dependency reaches every positive remainder, and caching prevents repeated expansion."
+        }
+      ],
+      "answer": 2
+    }
+  ]
+}

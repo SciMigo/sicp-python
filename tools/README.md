@@ -1,6 +1,6 @@
 # Converted-module tools
 
-Modules 01, 02 and 06 are converted to lesson + visual lab. Other modules retain their legacy format. The course remains free.
+Modules 01, 02, 03 and 06 are converted to lesson + visual lab. Other modules retain their legacy format. The course remains free.
 
 The browser runtime and check/build tools were copied from the sibling algorithm-design course on 2026-10-04 and adapted to SICP. Vendored runtime notices are in preview/THIRD_PARTY_NOTICES.txt. Author lab files in lab_src; pack with ~/.codex/skills/scimigo-course-module/scripts/lab_src.py.
 

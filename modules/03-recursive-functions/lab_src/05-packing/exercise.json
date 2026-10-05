@@ -1,0 +1,100 @@
+{
+  "title": "Mastery challenge: ordered packing plans",
+  "checklist": [
+    {
+      "step": "Count ordered plans with varied settings and edge cases",
+      "checks": [
+        "packing_behavior"
+      ]
+    },
+    {
+      "step": "Meet the addition budget and handle large Python inputs",
+      "checks": [
+        "packing_budget"
+      ]
+    }
+  ],
+  "hints": [
+    "What does the largest request require from the order in which smaller answers are completed?",
+    "All permitted batch sizes reduce the requested unit count. Can those dependencies already be available?",
+    "Complete answers for increasing unit counts and reuse the preceding answers needed by each batch size."
+  ],
+  "questions": [
+    {
+      "step": "Name the plan",
+      "prompt": "What must be true before a count is completed?",
+      "choices": [
+        {
+          "text": "Every dependency has a completed answer",
+          "why": "Only completed smaller answers may be combined."
+        },
+        {
+          "text": "Only the largest batch is considered",
+          "why": "That discards plans using other permitted batches."
+        },
+        {
+          "text": "The final residue is already known",
+          "why": "That restates the output without explaining correctness."
+        }
+      ],
+      "answer": 0
+    },
+    {
+      "step": "State the invariant",
+      "prompt": "Which property makes reused answers valid?",
+      "choices": [
+        {
+          "text": "All settings share one count table",
+          "why": "Different sizes or moduli can change the answer."
+        },
+        {
+          "text": "Earlier answers match this request's rules",
+          "why": "The same batch choices and modulus determine each stored answer."
+        },
+        {
+          "text": "Every remainder has exactly one plan",
+          "why": "Several ordered plans can fill the same remainder."
+        }
+      ],
+      "answer": 1
+    },
+    {
+      "step": "Predict the cost",
+      "prompt": "Which bound fits n units and k permitted batch sizes?",
+      "choices": [
+        {
+          "text": "Exponential additions, constant depth",
+          "why": "Repeated branching misses the budget."
+        },
+        {
+          "text": "Constant additions for every n",
+          "why": "The specified process must combine preceding states."
+        },
+        {
+          "text": "At most n times k additions",
+          "why": "For each positive amount, there is at most one addition per permitted batch size."
+        }
+      ],
+      "answer": 2
+    },
+    {
+      "step": "Why not unordered plans?",
+      "prompt": "With sizes 1 and 2, how many ordered plans fill 3 units?",
+      "choices": [
+        {
+          "text": "2",
+          "why": "This merges [1,2] and [2,1], contrary to the order-sensitive contract."
+        },
+        {
+          "text": "3",
+          "why": "The plans are [1,1,1], [1,2], and [2,1]."
+        },
+        {
+          "text": "4",
+          "why": "There is no fourth plan with only positive sizes 1 and 2."
+        }
+      ],
+      "answer": 1
+    }
+  ]
+}

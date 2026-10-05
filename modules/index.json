@@ -14,6 +14,13 @@
     "subtitle": "Find the binding a name refers to, distinguish definition scope from caller scope, build independent shared-state services, and count lookup probes in an explicit model."
   },
   {
+    "id": "03-recursive-functions",
+    "label": "3 · Recursive Functions",
+    "eyebrow": "MODULE 03 · RECURSIVE FUNCTIONS",
+    "heading": "Prove termination, trace pending work, and avoid repeated subproblems",
+    "subtitle": "Distinguish recursive definitions from iterative processes, trace call occurrences, reuse solved subproblems, and handle large recurrences without deep Python call chains."
+  },
+  {
     "id": "06-trees",
     "label": "6 · Trees",
     "eyebrow": "MODULE 06 · TREES",

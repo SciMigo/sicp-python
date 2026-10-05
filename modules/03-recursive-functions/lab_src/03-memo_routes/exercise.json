@@ -1,0 +1,23 @@
+{
+  "title": "Implement: compute each state once",
+  "checklist": [
+    {
+      "step": "Compute correct routes with one expansion per positive state",
+      "checks": [
+        "one_expansion"
+      ]
+    },
+    {
+      "step": "Draw every newly completed positive state once",
+      "checks": [
+        "stored_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "Different calls can request the same remainder.",
+    "Store only completed answers and check for a stored answer before expanding a state.",
+    "Use a fresh dictionary inside the public function, with zero as its initial completed state."
+  ],
+  "questions": []
+}
