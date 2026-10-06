@@ -28,3 +28,26 @@ An unbounded mastery source is promised eventually to provide k rises when k is 
 Publication needs reviewed asset export (05 added to PREVIEW_MODULES), then a sicpModule registry entry and viewer deployment. No live assets changed. Evidence: output/review/05-sequences/.
 
 Follow-up from Module 4 PR #11: measurement now passes a counting source into strategies, using the wrapper pattern taught in Module 1. Learners need no global rebinding. Fresh counts, actual delegation and exceptions remain checked.
+
+## 2026-10-06: polish after review (Claude)
+
+The minor items from the review of this module, none of which blocked it.
+
+- Lesson: the first figure now draws the chain of pairs; the pipeline figure is a flow of four
+  stages, so the environment-frame picture keeps its one meaning from module 2. Added the
+  invariant call-out, two predict blocks, a measured table (reads for "build everything" against
+  "ask for three" at 20, 40 and 80 items, asserted in a code block), the standard recap labels
+  with an "In real software" line, and three "Check yourself" questions.
+- Lab: every check message now says what was called, what was expected and what came back. The
+  trace check names the first event that differs.
+- Measure: the bars check recounts on sizes the demo does not use (10, 30, 70 with two results).
+- Horner: the starter's placeholder frame no longer shows index -1, and is not counted.
+- Mastery: one frame per pair of neighbouring readings, then the preview. The check compares the
+  step frames with the readings actually pulled.
+- Prompts are split into what to build, what to draw and the limits.
+
+Verified: `lessons.py check 05` ok (10 blocks, 2 figures); `check_lab.py 05` ok (5 exercises,
+10 solution checks); lab sources up to date; 9 of 10 checks red on untouched starters (the tenth
+is the mastery correctness check); 13 wrong, lazy and alternative submissions behave as expected;
+browser smoke with `--all` on Pyodide 0.27.4 from the CDN passes; lesson stays within 390 px.
+Looked at both lesson figures and the mastery's first step frame.
