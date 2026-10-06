@@ -271,7 +271,7 @@
      "choices": [
       {
        "text": "Once",
-       "why": "Every further appearance is treated as a separate quantity free to take any value in the interval, which widens the result."
+       "why": "Every further appearance is treated as a separate quantity free to take any value in the interval. That can widen the result, and in this formula it does."
       },
       {
        "text": "Twice",
