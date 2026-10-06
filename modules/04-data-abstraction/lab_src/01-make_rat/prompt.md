@@ -1,0 +1,3 @@
+This is SICP's exercise 2.1: a constructor that reduces to lowest terms and handles signs. Implement `make_rat(n, d)` for integers `n` and `d`. Return a tuple `(numerator, denominator)` in lowest terms with a positive denominator, so that -8/-12 is stored as 2/3 and 8/-12 as -2/3. Zero is stored as 0/1. A zero denominator raises `ZeroDivisionError`.
+
+Find the greatest common divisor with Euclid's algorithm from module 3, as a loop: start with `a, b = abs(n), abs(d)`; while `b` is not zero, call `show_gcd(a, b)` and then replace the pair by `(b, a % b)`. When the loop ends, `a` is the divisor. Do not import a fraction type. Call `show_rat(n, d, result)` once at the end. Before you press Run, predict how many Euclid frames -8/-12 takes.
