@@ -1,0 +1,46 @@
+{
+  "title": "Trace: change the link, preserve the aliases (3.12)",
+  "hints": [
+    "What does an alias to the first head need to keep seeing?",
+    "Find the last pair without allocating replacement pairs.",
+    "Draw before the field update, then draw the changed graph."
+  ],
+  "questions": [
+    {
+      "step": "Predict aliasing",
+      "prompt": "After attaching y, what does an alias to the original first head reach?",
+      "answer": 1,
+      "choices": [
+        {
+          "text": "Only the old first chain",
+          "why": "The final rest field is shared by all aliases."
+        },
+        {
+          "text": "The extended chain",
+          "why": "The original pair identities are retained and the final link changes."
+        },
+        {
+          "text": "A separate copied chain",
+          "why": "The operation does not allocate replacement pairs."
+        }
+      ]
+    }
+  ],
+  "checklist": [
+    {
+      "step": "Attach existing pairs without copying or altering values",
+      "checks": [
+        "identity"
+      ]
+    },
+    {
+      "step": "Show each visited pair and the actual changed tail",
+      "checks": [
+        "link_replay"
+      ]
+    }
+  ],
+  "concepts": [
+    "mutable-data/append_links"
+  ]
+}

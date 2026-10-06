@@ -1,0 +1,5 @@
+Translate SICP exercises **3.1 and 3.2**. `make_accumulator(initial)` returns an operation that adds each integer argument to its own retained total and returns that total. After each addition call `show_state('accumulated total', [total])`.
+
+`make_monitored(f)` returns a single-argument operation. Ordinary arguments increment its attempted-call count **before** calling `f`, then return `f`'s result unchanged. After a successful ordinary call show `show_state('attempted calls', [count])`. The string `how-many-calls?` queries without calling `f` or drawing; `reset-count` resets to zero, draws `show_state('monitor reset', [0])` and returns zero. These two strings are reserved commands. If `f` raises, propagate the exception and retain the increment, with no successful-call frame. Independent constructors must not share totals or counts.
+
+Write both closures. The supplied demonstration should replay the changing total and count, including a reset; drawing belongs to the operations, not to a precomputed answer.

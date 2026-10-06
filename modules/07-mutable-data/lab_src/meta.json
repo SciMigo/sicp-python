@@ -1,0 +1,28 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "sicp-python-07-mutable-data",
+  "title": "State, identity and shared access",
+  "description": "Replay retained totals, links, account balances and measured pair expansions; connect access routes to one history.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 15000
+  },
+  "recap": {
+    "learned": [
+      "Build independent stateful closures and distinguish requests from worker calls.",
+      "Trace aliases through an actual field update.",
+      "Delegate through shared access without copying state."
+    ],
+    "invariant": "Each account retains one balance reached by all its authorized operations and aliases; rejected operations preserve it.",
+    "complexity": "On n doubled-link pairs, naive expands 2**n-1 encounters while a visited-identity traversal expands n distinct pairs. Forwarding through d routes takes O(d) calls.",
+    "common_mistake": "Counting equal contents as one identity, or creating a new balance for a new credential.",
+    "in_real_programs": [
+      "Python nonlocal updates an enclosing binding.",
+      "Shallow container copies can retain shared mutable elements."
+    ],
+    "retrieval": {
+      "question": "Module 2: what survives when a closure creator returns?",
+      "answer": "The environment containing bindings reachable through the returned function."
+    }
+  }
+}

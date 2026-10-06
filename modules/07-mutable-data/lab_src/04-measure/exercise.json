@@ -1,0 +1,46 @@
+{
+  "title": "Measure: repeated encounters versus distinct objects (3.16, 3.17)",
+  "hints": [
+    "The unit is one attempted request to the supplied fields function.",
+    "Which function argument does the strategy actually call?",
+    "Wrap that argument with a local counter and pass the wrapper to the strategy."
+  ],
+  "questions": [
+    {
+      "step": "Predict growth",
+      "prompt": "On a stack of n pairs where each pair points twice to the one below, how many expansions does naive make?",
+      "answer": 2,
+      "choices": [
+        {
+          "text": "n",
+          "why": "That is the distinct count."
+        },
+        {
+          "text": "2*n",
+          "why": "Doubling occurs at every level, not just once."
+        },
+        {
+          "text": "2**n - 1",
+          "why": "The recurrence C(n)=1+2*C(n-1), C(0)=0 gives this count."
+        }
+      ]
+    }
+  ],
+  "checklist": [
+    {
+      "step": "Delegate the supplied function and count the calls actually made",
+      "checks": [
+        "actual_calls"
+      ]
+    },
+    {
+      "step": "Replay the changing measured count after each delegated expansion",
+      "checks": [
+        "expansion_replay"
+      ]
+    }
+  ],
+  "concepts": [
+    "mutable-data/measure"
+  ]
+}

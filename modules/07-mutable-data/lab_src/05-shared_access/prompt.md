@@ -1,0 +1,9 @@
+A service starts with one owner credential. Add a second credential, then allow it to sponsor a third. Every accepted operation must affect the **same** underlying balance. Existing credentials stay valid. Creating access must not make any deposit or withdrawal, even of zero.
+
+This is an adaptation of SICP exercise **3.7**. The supplied service uses `service(password, 'check')` to return an authorization boolean without changing state; this explicit query is our extension to the book's protocol. Ordinary requests return amount operations as in the previous exercise.
+
+Write `connect(service, old_password, new_password)`: reject an invalid old credential with `ValueError`; otherwise return a new service accepting **only** the new credential and forwarding authorized operations to its parent. It also supports the boolean `'check'` request, so a new route can sponsor another. A wrong ordinary credential returns an operation yielding `'Incorrect password'` without reaching the parent operation. A returned operation must remain usable after other operations run.
+
+Write `run_access(account, program)`. Begin with a route named `'owner'`. Events are either `('join', new_name, parent_name, old_password, new_password)` or `('use', route_name, password, request, amount)`. A successful join records the new route and returns `'Joined'`; a rejected join returns `'Incorrect password'` and records nothing. Use events return the amount operation's result. Return all results in order. After every event draw `show_state('access result', [number_of_routes, result])`. Names are distinct for successful joins, parent and use names exist, requests are withdraw/deposit, amounts are nonnegative integers.
+
+Support routes connected through other routes. Do not reconstruct the account, read its closure internals, or probe it with an amount operation to authorize a join.

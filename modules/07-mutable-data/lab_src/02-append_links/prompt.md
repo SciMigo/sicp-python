@@ -1,0 +1,5 @@
+SICP exercise **3.12** contrasts ordinary append with destructive append. Implement `append_in_place(first, second)` on two disjoint finite proper chains of mutable pairs `[value, rest]`, ending in `None`. Preserve every existing pair and attach the second chain by replacing the first chain's final rest field. Return the original first head; if it is empty, return the second head.
+
+For a nonempty first chain, draw `show_links(first, second, current[0])` for each pair visited, **before** changing the final link. Then draw `show_links(first, second, 'linked')`. Empty first: draw once with current `'empty'`. Pictured values are distinct short strings and there are at most eight pairs; behavioral checks include repeated values and empty chains. The helper assigns stable names by identity. Do not copy either chain or alter any value field.
+
+Predict whether the alias can see the new tail before you run. This contract excludes cyclic inputs and overlapping chains; either could make destructive attachment create a cycle.

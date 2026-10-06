@@ -1,0 +1,5 @@
+Implement SICP exercise **3.3** as `make_account(initial, password)`. Calling `account(given_password, request)` returns an operation taking a nonnegative integer amount. For the correct password, `withdraw` subtracts only if funds suffice, otherwise returns `'Insufficient funds'`; `deposit` adds. Accepted operations return the new balance. For a wrong password, return an operation that returns `'Incorrect password'` and leaves state unchanged. With the correct password, an unknown request raises `ValueError` without mutation. Password comparison is equality, not identity.
+
+Each amount operation draws one frame using `show_state(label, [current_balance])`: labels are `'withdraw'`, `'deposit'`, `'rejected withdrawal'`, or `'wrong password'`. Returning an operation from dispatch draws nothing. Every returned authorized operation must reach the same retained balance, including operations saved and called later. Independent accounts remain independent.
+
+This is the book's teaching protocol: possession of a previously returned operation grants access to it. It is not production authentication or protection from a caller inspecting Python objects.
