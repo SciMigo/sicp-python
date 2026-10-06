@@ -1,0 +1,23 @@
+{
+  "title": "Implement: a pair that accepts a chooser",
+  "checklist": [
+    {
+      "step": "Keep each pair independent and defer the choice until selection",
+      "checks": [
+        "pair_laws"
+      ]
+    },
+    {
+      "step": "Draw values obtained through the two selectors",
+      "checks": [
+        "pair_picture"
+      ]
+    }
+  ],
+  "hints": [
+    "The pair keeps its parts, but selection supplies the operation to perform on them.",
+    "Which call creates bindings, and which later call receives a chooser?",
+    "Return a function that retains the creator\u2019s two arguments and gives both to the chooser when called."
+  ],
+  "questions": []
+}

@@ -1,27 +1,15 @@
-# Data Abstraction
+# Data abstraction — module plan, 2026-10-06
 
-## SICP Reference
-- Chapter 2.1: Introduction to Data Abstraction
-- Chapter 2.2: Hierarchical Data and the Closure Property
+Base: merged main 5f8554a, including Claude review fixes. Owner rules: keep SICP examples/exercises in Python; book text separate; Build/Implement stubs run and draw one frame; no lesson lab answer or mastery teaser; tailored hints; every assert has a message; all untouched checklist checks fail except mastery correctness; estimates use 200 words/minute plus per-exercise work.
 
-## Core Concepts
-- Abstraction barriers: separating use from implementation
-- Constructors and selectors (the interface)
-- Pairs and tuples as the simplest compound data
-- Rational number arithmetic as a case study
-- Data abstraction violations: reaching through the barrier
-- The closure property: combining data to make more data
+Seven beats: rational arithmetic problem; raw tuple representation; interface dependency and midpoint figures; ratio and pair laws; representations, numeric dispatch and interval implementation; construction versus selection gcd counts; map units teaser, distinct from the shipping mastery. Book source: local reference/2.1-data-abstraction.md §§2.1.1–2.1.4. No new real-software claims requiring external documentation. Keep the book's material, not its copied prose.
 
-## Key Examples (Python)
-1. **Rational numbers**: `make_rat(n, d)`, `numer(r)`, `denom(r)` — full abstraction barrier
-2. **Pairs via functions**: `pair(x, y)` using closures — data without data structures
-3. **Points and segments**: Layered abstraction — segments built on points built on pairs
-4. **Violation example**: Accessing `r[0]` instead of `numer(r)` — why barriers matter
+Lesson examples: book fractions 1/2 and 1/3, midpoint (1,2)..(5,8), numeric pair requests, interval [-2,3] times [4,5]. Lab examples differ: signed fractions, callable rectangle dimensions, function-choice pairs (exercise 2.4), selected counts 3/7/12, shipping records. Signed normalization and function-choice implementation are not solved in the lesson.
 
-## Reference Files
-- `2.1-data-abstraction.md`
-- `2.2-hierarchical-data.md`
+Five labs: make_rat (2.1), rectangle_report (2.3), cons (2.4), actual gcd-call measurement, manifest_report. Measure excludes drawing and counts actual wrapped gcd invocations, not internal gcd work or time. Mastery uses opaque records with at most one weight read each, first-tie semantics and varied packages. Small inputs all run/draw; report correctness passes on the deliberately over-budget mastery starter.
 
-## Speaker Persona
-- Professor Dana: Emphasizes "program to the interface, not the implementation"
-- Alex (student): Tempted to skip the abstraction, learns why barriers matter
+Correctness boundaries: integers/nonzero denominators; rectangle nonnegative finite dimensions; pair selectors preserve object identity; old tuple values do not become compatible with dictionary selectors merely by replacement. Simple interval arithmetic does not track repeated-variable dependence. Constructor positive-only reduction is expressly weaker than lab signed normalization.
+
+Oral anchors: value equality versus raw-part equality; indexing is correct inside a representation implementation and wrong above its interface; closure versus selection time; representation independence does not erase migration; eager/lazy cost depends on uses.
+
+Publication: add 04 to publisher PREVIEW_MODULES and registry sicpModule entry only when the reviewed module is ready. These are separate deployment changes; do not restore lectures or change the remaining old modules. Book reference host/CC notices across the old readings and course-wide tutor concepts remain separate work.

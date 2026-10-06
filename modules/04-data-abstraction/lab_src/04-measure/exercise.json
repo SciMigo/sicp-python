@@ -1,0 +1,23 @@
+{
+  "title": "Measure: move work across the interface",
+  "checklist": [
+    {
+      "step": "Count actual gcd calls and restore the helper even on errors",
+      "checks": [
+        "counted_gcd"
+      ]
+    },
+    {
+      "step": "Draw the measurements made by the supplied solvers",
+      "checks": [
+        "count_bars"
+      ]
+    }
+  ],
+  "hints": [
+    "The same public values can require different work depending on where reduction happens.",
+    "Observe the gcd function used by the solver; an expected formula does not measure it.",
+    "Wrap gcd during one solver call, preserve its return value, and use finally to restore the original function."
+  ],
+  "questions": []
+}

@@ -1,0 +1,43 @@
+{
+  "title": "Trace: keep geometry above its representation",
+  "checklist": [
+    {
+      "step": "Use only the selectors across different rectangle representations",
+      "checks": [
+        "rectangle_clients"
+      ]
+    },
+    {
+      "step": "Show selected dimensions and the computed report",
+      "checks": [
+        "rectangle_picture"
+      ]
+    }
+  ],
+  "hints": [
+    "Geometry needs dimensions, not the place those dimensions are stored.",
+    "Read the two public operations and retain their answers for both calculations.",
+    "Area multiplies the dimensions; perimeter adds both widths and both heights."
+  ],
+  "questions": [
+    {
+      "step": "Predict the demo",
+      "prompt": "The demo rectangle has width 7 and height 3. What are area and perimeter?",
+      "choices": [
+        {
+          "text": "21 and 20",
+          "why": "Multiply dimensions for area; add all four sides for perimeter."
+        },
+        {
+          "text": "20 and 21",
+          "why": "This reverses the requested answer order."
+        },
+        {
+          "text": "21 and 10",
+          "why": "This counts only one width and one height."
+        }
+      ],
+      "answer": 0
+    }
+  ]
+}

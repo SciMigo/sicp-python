@@ -21,6 +21,13 @@
     "subtitle": "Follow SICP 1.2 in Python: factorial as a recursive and an iterative process, Fibonacci and counting change as tree recursion, orders of growth, exponentiation by squaring and Euclid's algorithm. Then trace waiting calls, compute each state once, and handle inputs too deep to recurse on."
   },
   {
+    "id": "04-data-abstraction",
+    "label": "4 · Data Abstraction",
+    "eyebrow": "MODULE 04 · DATA ABSTRACTION",
+    "heading": "Rational numbers, geometry and procedural pairs behind tested interfaces",
+    "subtitle": "Follow SICP’s rational-number, point and segment, procedural-pair and interval examples in Python. Specify constructor-selector laws, keep clients independent of storage and count where normalization work happens."
+  },
+  {
     "id": "06-trees",
     "label": "6 · Trees",
     "eyebrow": "MODULE 06 · TREES",

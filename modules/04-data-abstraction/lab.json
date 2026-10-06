@@ -1,90 +1,312 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "lecture-$4$:-data-abstraction-lab",
-  "title": "Data Abstraction Lab",
-  "description": "Practice abstraction barriers with rationals and pairs: predict normalized representations, trace closure-based pairs, and implement rational subtraction that survives a representation swap.",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 5000
-  },
-  "exercises": [
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-04-data-abstraction",
+ "title": "Meaning above storage",
+ "description": "Normalize fractions, trace representation-independent geometry, build procedural pairs, count gcd calls and produce a constrained manifest report.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "State and test constructor-selector laws.",
+   "Change a representation without changing clients that use its interface.",
+   "Keep independently created procedural pairs separate.",
+   "Measure where an interface performs normalization work."
+  ],
+  "invariant": "Constructed values satisfy the public laws; clients depend on those meanings rather than storage positions.",
+  "complexity": "For one fraction selected k times in each part, eager normalization makes one gcd call and uncached lazy normalization makes 2k calls. Manifest reporting permits at most n weight reads for n records. These count interface operations, exclude drawing and do not assume fixed-cost large-integer arithmetic.",
+  "common_mistake": "Reaching through a public selector into the current tuple or dictionary layout.",
+  "in_real_programs": [
+   "An interface can preserve behavior while changing representation; old stored values still need a migration or compatibility policy."
+  ],
+  "retrieval": {
+   "question": "Module 2: why can separate calls to a pair creator retain different captured values?",
+   "answer": "Each creator invocation provides its own defining environment; its returned function retains access to those bindings."
+  }
+ },
+ "exercises": [
+  {
+   "exercise_id": "make_rat",
+   "title": "Build: normalize a rational number",
+   "prompt_md": "SICP exercise 2.1 asks for a constructor that handles signs. Implement `make_rat(n, d)` for integers with nonzero d, returning a lowest-terms tuple whose denominator is positive. Zero must select as 0 over 1. Reject d equal to zero with `ZeroDivisionError`. Use the supplied `numer` and `denom` to observe the result. Call `show_rat(n, d, result)` once after a valid construction. The four cells show input numerator, input denominator, selected numerator and selected denominator. Predict the demo before Run.\n",
+   "questions": [],
+   "checklist": [
     {
-      "exercise_id": "ex1_predict_normalized_rationals",
-      "title": "Predict Normalization Results (SICP Ex 2.1)",
-      "slide_anchor": 6,
-      "prompt_md": "**Predict the output** (write it down before running).\n\nThis `make_rat` reduces by `gcd` and normalizes the sign so the denominator is always positive.\n\n```python\nfrom math import gcd\n\ndef make_rat(n, d):\n    if d == 0:\n        raise ZeroDivisionError\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return (n, d)\n\ndef numer(r):\n    return r[0]\n\ndef denom(r):\n    return r[1]\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef rat_str(r):\n    return f\"{numer(r)}/{denom(r)}\"\n\nprint(make_rat(2, 4))\nprint(rat_str(make_rat(1, -2)))\nprint(rat_str(add_rat(make_rat(1, 3), make_rat(1, 6))))\n```\n\nWhat are the three printed lines (in order)?",
-      "starter_code": "from math import gcd\n\ndef make_rat(n, d):\n    if d == 0:\n        raise ZeroDivisionError\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return (n, d)\n\ndef numer(r):\n    return r[0]\n\ndef denom(r):\n    return r[1]\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef rat_str(r):\n    return f\"{numer(r)}/{denom(r)}\"\n\n# Prediction (before running):\n# Line 1: \n# Line 2: \n# Line 3: \n\n# Uncomment to check:\n# print(make_rat(2, 4))\n# print(rat_str(make_rat(1, -2)))\n# print(rat_str(add_rat(make_rat(1, 3), make_rat(1, 6))))\n",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "assert make_rat(2, 4) == (1, 2)"
-        },
-        {
-          "name": "t2",
-          "code": "assert rat_str(make_rat(1, -2)) == '-1/2'"
-        },
-        {
-          "name": "t3",
-          "code": "assert rat_str(add_rat(make_rat(1,3), make_rat(1,6))) == '1/2'"
-        }
-      ],
-      "hints": [
-        "Normalization means the *stored* pair might not match the inputs.",
-        "Reduction: divide numerator and denominator by gcd(n, d).",
-        "Sign rule: the denominator ends up positive; the sign (if any) goes on the numerator."
-      ],
-      "solution": "The prints are:\n(1, 2)\n-1/2\n1/2\n\nBecause make_rat(2,4) reduces to (1,2); make_rat(1,-2) normalizes sign to (-1,2); and 1/3 + 1/6 = 1/2, then make_rat reduces/normalizes."
+     "step": "Preserve the ratio, reduce, normalize signs and reject zero denominators",
+     "checks": [
+      "rational_laws"
+     ]
     },
     {
-      "exercise_id": "ex2_trace_pairs_as_closures",
-      "title": "Trace Message-Passing Pairs (SICP Ex 2.4)",
-      "slide_anchor": 7,
-      "prompt_md": "This is a *procedural* (closure) representation of pairs.\n\n1) **Predict** what the final `print` outputs.\n2) **Trace** the evaluation of `car(p)` using the substitution model: show what `p` is, what function gets called, and which value is returned.\n\n```python\ndef cons(x, y):\n    return lambda m: m(x, y)\n\ndef car(z):\n    return z(lambda p, q: p)\n\ndef cdr(z):\n    return z(lambda p, q: q)\n\np = cons(3, 4)\nprint(car(p) + cdr(p))\n```\n\nWrite your trace as comments in the starter code.",
-      "starter_code": "def cons(x, y):\n    return lambda m: m(x, y)\n\ndef car(z):\n    return z(lambda p, q: p)\n\ndef cdr(z):\n    return z(lambda p, q: q)\n\np = cons(3, 4)\n\n# Prediction:\n# print(...) will output: \n\n# Trace (substitution-style) for car(p):\n# 1. p is ...\n# 2. car(p) = p(lambda p,q: p)\n# 3. then ...\n# 4. returns ...\n\nprint(car(p) + cdr(p))\n",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "p = cons(3, 4)\nassert car(p) == 3\nassert cdr(p) == 4"
-        },
-        {
-          "name": "t2",
-          "code": "nested = cons(cons(1, 2), cons(10, 20))\nassert car(car(nested)) == 1\nassert cdr(car(nested)) == 2\nassert car(cdr(nested)) == 10\nassert cdr(cdr(nested)) == 20"
-        }
-      ],
-      "hints": [
-        "In this representation, a 'pair' is a function that takes a selector function `m`.",
-        "`car` passes in a function that returns its first argument; `cdr` passes in one that returns its second argument.",
-        "For tracing: expand `p = cons(3, 4)` into a lambda that closes over `x=3` and `y=4`."
-      ],
-      "solution": "Prediction: it prints 7.\n\nTrace sketch:\n- p = cons(3,4) = (lambda m: m(3,4)) with x=3,y=4 closed over.\n- car(p) = p(lambda p,q: p)\n- so (lambda m: m(3,4))(lambda p,q: p)\n- => (lambda p,q: p)(3,4)\n- => 3.\nSimilarly, cdr(p) => 4, so 3+4 = 7."
-    },
-    {
-      "exercise_id": "ex3_extend_sub_rat_survives_repr_swap",
-      "title": "Implement sub_rat and Swap Representations Without Breaking Users",
-      "slide_anchor": 10,
-      "prompt_md": "You will do two things:\n\n1) **Implement** `sub_rat(x, y)` using *only* `make_rat`, `numer`, and `denom` (stay above the abstraction barrier).\n2) **Extend** the system by implementing `install_closure_repr()` so rationals are represented using *closures*, not tuples — without changing `add_rat`, `mul_rat`, `sub_rat`, or `equal_rat`.\n\nRules:\n- `sub_rat` must not use tuple indexing like `x[0]`.\n- After calling `install_closure_repr()`, existing arithmetic functions must still work.\n\nStarter code already provides tuple-based rationals via `install_tuple_repr()`.\n\n**Goal:** The same rational arithmetic code works under both representations.",
-      "starter_code": "from math import gcd\n\n# --- Rational operations (ABOVE the barrier): do not change these. ---\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef mul_rat(x, y):\n    return make_rat(numer(x) * numer(y), denom(x) * denom(y))\n\ndef equal_rat(x, y):\n    return numer(x) * denom(y) == numer(y) * denom(x)\n\ndef sub_rat(x, y):\n    \"\"\"Return x - y using ONLY make_rat, numer, denom.\"\"\"\n    # YOUR CODE HERE\n    raise NotImplementedError\n\n# --- Representation installers (BELOW the barrier): you may change these. ---\n\ndef _normalize(n, d):\n    if d == 0:\n        raise ZeroDivisionError(\"denominator cannot be 0\")\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return n, d\n\n\ndef install_tuple_repr():\n    \"\"\"Install tuple-based representation (n, d).\"\"\"\n    global make_rat, numer, denom, rat_str\n\n    def make_rat(n, d):\n        n, d = _normalize(n, d)\n        return (n, d)\n\n    def numer(r):\n        return r[0]\n\n    def denom(r):\n        return r[1]\n\n    def rat_str(r):\n        return f\"{numer(r)}/{denom(r)}\"\n\n\ndef install_closure_repr():\n    \"\"\"Install closure-based representation.\n\n    After installing, a rational r should be a function (a closure) that\n    'remembers' its normalized numerator and denominator.\n\n    You must set the globals: make_rat, numer, denom, rat_str.\n    \"\"\"\n    # YOUR CODE HERE\n    raise NotImplementedError\n\n\n# Default to tuple repr for interactive experimenting\ninstall_tuple_repr()\n\n# Try it (after you implement):\n# x = make_rat(1, 3)\n# y = make_rat(1, 6)\n# print(rat_str(sub_rat(x, y)))  # expected 1/6\n# install_closure_repr()\n# x = make_rat(1, 3)\n# y = make_rat(1, 6)\n# print(rat_str(sub_rat(x, y)))  # expected 1/6\n",
-      "tests": [
-        {
-          "name": "t1_tuple_sub_and_normalize",
-          "code": "install_tuple_repr()\nx = make_rat(1, 3)\ny = make_rat(1, 6)\nassert rat_str(sub_rat(x, y)) == '1/6'\nassert rat_str(sub_rat(make_rat(1, -2), make_rat(1, 3))) == '-5/6'\nassert isinstance(make_rat(2, 4), tuple)\nassert rat_str(make_rat(6, -9)) == '-2/3'"
-        },
-        {
-          "name": "t2_tuple_ops_still_ok",
-          "code": "install_tuple_repr()\na = make_rat(2, 5)\nb = make_rat(1, 10)\nassert rat_str(add_rat(a, b)) == '1/2'\nassert rat_str(mul_rat(a, b)) == '1/25'\nassert equal_rat(make_rat(2, 4), make_rat(1, 2))"
-        },
-        {
-          "name": "t3_closure_repr_swap_does_not_break_ops",
-          "code": "install_closure_repr()\n# Representation check:\nr = make_rat(2, 4)\nassert callable(r), 'In closure repr, a rational should be callable (a function/closure)'\nassert rat_str(r) == '1/2'\n# Arithmetic still works:\nx = make_rat(1, 3)\ny = make_rat(1, 6)\nassert rat_str(add_rat(x, y)) == '1/2'\nassert rat_str(sub_rat(x, y)) == '1/6'\nassert equal_rat(make_rat(6, -9), make_rat(-2, 3))\nassert rat_str(mul_rat(make_rat(-2, 3), make_rat(3, 4))) == '-1/2'"
-        }
-      ],
-      "hints": [
-        "For subtraction: x - y = (n1/d1) - (n2/d2) = (n1*d2 - n2*d1) / (d1*d2). Build the result with make_rat.",
-        "For closure repr, you can use a dispatch function that returns n when asked for 0 and d when asked for 1 (like the lecture's pair).",
-        "Keep normalization in the constructor: make_rat should call _normalize before storing n and d.",
-        "Only the installer should know whether rationals are tuples or closures."
-      ],
-      "solution": "from math import gcd\n\n# --- Rational operations (ABOVE the barrier): unchanged from the starter. ---\n\ndef add_rat(x, y):\n    return make_rat(\n        numer(x) * denom(y) + numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\ndef mul_rat(x, y):\n    return make_rat(numer(x) * numer(y), denom(x) * denom(y))\n\ndef equal_rat(x, y):\n    return numer(x) * denom(y) == numer(y) * denom(x)\n\ndef sub_rat(x, y):\n    \"\"\"Return x - y using ONLY make_rat, numer, denom.\n\n    Part 1: the same shape as add_rat with a minus. No tuple indexing, so\n    this keeps working when the representation changes underneath it.\n    \"\"\"\n    return make_rat(\n        numer(x) * denom(y) - numer(y) * denom(x),\n        denom(x) * denom(y),\n    )\n\n# --- Representation installers (BELOW the barrier). ---\n\ndef _normalize(n, d):\n    if d == 0:\n        raise ZeroDivisionError(\"denominator cannot be 0\")\n    g = gcd(n, d)\n    n //= g\n    d //= g\n    if d < 0:\n        n, d = -n, -d\n    return n, d\n\n\ndef install_tuple_repr():\n    \"\"\"Install tuple-based representation (n, d).\"\"\"\n    global make_rat, numer, denom, rat_str\n\n    def make_rat(n, d):\n        n, d = _normalize(n, d)\n        return (n, d)\n\n    def numer(r):\n        return r[0]\n\n    def denom(r):\n        return r[1]\n\n    def rat_str(r):\n        return f\"{numer(r)}/{denom(r)}\"\n\n\ndef install_closure_repr():\n    \"\"\"Part 2: a rational becomes a closure that remembers n and d.\n\n    Only make_rat / numer / denom / rat_str change. add_rat, mul_rat,\n    sub_rat and equal_rat are never touched — that is the whole point of\n    the abstraction barrier.\n    \"\"\"\n    global make_rat, numer, denom, rat_str\n\n    def make_rat(n, d):\n        n, d = _normalize(n, d)\n\n        def dispatch(m):\n            if m == 0:\n                return n\n            if m == 1:\n                return d\n            raise ValueError('m must be 0 (numer) or 1 (denom)')\n\n        return dispatch\n\n    def numer(r):\n        return r(0)\n\n    def denom(r):\n        return r(1)\n\n    def rat_str(r):\n        return f\"{numer(r)}/{denom(r)}\"\n\n\ninstall_tuple_repr()\n"
+     "step": "Draw the input and the actual selected output",
+     "checks": [
+      "rational_frame"
+     ]
     }
-  ]
+   ],
+   "starter_code": "def make_rat(n,d):\n    result=(0,1)\n    show_rat(n,d,result)\n    return result\nfrom math import gcd\nfrom scimigo import canvas,figure,frame,text\n\ndef numer(r):return r[0]\ndef denom(r):return r[1]\n\ndef show_rat(n,d,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[n,d,numer(result),denom(result)],indices=False)\n    text(12,260,\"input numerator / denominator → selected numerator / denominator\",size=15)\n    frame()\n\nprint(make_rat(-8,-12))\n",
+   "tests": [
+    {
+     "name": "rational_laws",
+     "code": "from math import gcd\nimport random\nsaved=show_rat;show_rat=lambda *args:None\ntry:\n    rng=random.Random(204)\n    cases=[(0,7),(0,-7),(-8,-12),(8,-12),(-8,12),(27,9)]+[(rng.randrange(-150,151),rng.choice([i for i in range(-30,31) if i])) for _ in range(45)]\n    for n,d in cases:\n        result=make_rat(n,d);a,b=numer(result),denom(result)\n        assert isinstance(a,int) and isinstance(b,int),\"Keep selected numerator and denominator as integers.\"\n        assert a*d==n*b,\"Selected parts must preserve the original ratio.\"\n        assert b>0,\"Keep the denominator positive; put any negative sign on the numerator.\"\n        assert gcd(a,b)==1,\"Divide out all common factors.\"\n    rejected=False\n    try:make_rat(5,0)\n    except ZeroDivisionError:rejected=True\n    assert rejected,\"A zero denominator must raise ZeroDivisionError.\"\nfinally:show_rat=saved\n"
+    },
+    {
+     "name": "rational_frame",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();result=make_rat(15,-25)\nassert result==(-3,5),\"Normalize the demo ratio before drawing.\"\nassert _frame_count()-before==1,\"Record one completed construction.\"\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nassert fig['params']['values']==[15,-25,numer(result),denom(result)],\"Draw input parts and this returned fraction's selected parts.\"\n"
+    }
+   ],
+   "hints": [
+    "A representation may change its parts while preserving their ratio.",
+    "Reduction and sign placement are separate promises; include zero and both signs in your reasoning.",
+    "Divide both parts by their gcd, then move any denominator sign onto the numerator."
+   ],
+   "solution": "def make_rat(n,d):\n    if d==0:raise ZeroDivisionError(\"denominator must be nonzero\")\n    common=gcd(n,d)\n    top,bottom=n//common,d//common\n    if bottom<0:top,bottom=-top,-bottom\n    result=(top,bottom)\n    show_rat(n,d,result)\n    return result\nfrom math import gcd\nfrom scimigo import canvas,figure,frame,text\n\ndef numer(r):return r[0]\ndef denom(r):return r[1]\n\ndef show_rat(n,d,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[n,d,numer(result),denom(result)],indices=False)\n    text(12,260,\"input numerator / denominator → selected numerator / denominator\",size=15)\n    frame()\n\nprint(make_rat(-8,-12))\n"
+  },
+  {
+   "exercise_id": "rectangle_report",
+   "title": "Trace: keep geometry above its representation",
+   "prompt_md": "SICP exercise 2.3 asks for the same area and perimeter client to work with two rectangle representations. Complete `rectangle_report(rect)` using only the supplied `width(rect)` and `height(rect)` selectors. Dimensions are nonnegative numbers. Read width once, then height once; return `(area, perimeter)`. Call `show_dimensions(w, h, area, perimeter)` once. The demo uses a callable rectangle; checks also swap in a different selector package. Do not special-case storage layouts. Predict the report first.\n",
+   "questions": [
+    {
+     "step": "Predict the demo",
+     "prompt": "The demo rectangle has width 7 and height 3. What are area and perimeter?",
+     "choices": [
+      {
+       "text": "21 and 20",
+       "why": "Multiply dimensions for area; add all four sides for perimeter."
+      },
+      {
+       "text": "20 and 21",
+       "why": "This reverses the requested answer order."
+      },
+      {
+       "text": "21 and 10",
+       "why": "This counts only one width and one height."
+      }
+     ],
+     "answer": 0
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Use only the selectors across different rectangle representations",
+     "checks": [
+      "rectangle_clients"
+     ]
+    },
+    {
+     "step": "Show selected dimensions and the computed report",
+     "checks": [
+      "rectangle_picture"
+     ]
+    }
+   ],
+   "starter_code": "def rectangle_report(rect):\n    answer=(0,0)\n    show_dimensions(0,0,*answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef width(rect):return rect(\"width\")\ndef height(rect):return rect(\"height\")\n\ndef rectangle(w,h):\n    return lambda name:w if name==\"width\" else h\n\ndef show_dimensions(w,h,area,perimeter):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[w,h,area,perimeter],indices=False)\n    text(12,260,\"width / height / area / perimeter\",size=18)\n    frame()\n\nprint(rectangle_report(rectangle(7,3)))\n",
+   "tests": [
+    {
+     "name": "rectangle_clients",
+     "code": "saved_width,saved_height,saved_show=width,height,show_dimensions\nshow_dimensions=lambda *args:None\ntry:\n    for w,h in [(7,3),(0,8),(4,4),(2.5,1.5),(13,2)]:\n        for rect,readw,readh in [(rectangle(w,h),lambda r:r('width'),lambda r:r('height')),({'dimensions':(h,w)},lambda r:r['dimensions'][1],lambda r:r['dimensions'][0])]:\n            seen=[]\n            def width(r):seen.append('width');return readw(r)\n            def height(r):seen.append('height');return readh(r)\n            assert rectangle_report(rect)==(w*h,2*(w+h)),\"The same client must work through each supplied selector package.\"\n            assert seen==['width','height'],\"Read width once, then height once; do not reach into the representation.\"\nfinally:width,height,show_dimensions=saved_width,saved_height,saved_show\n"
+    },
+    {
+     "name": "rectangle_picture",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();result=rectangle_report(rectangle(9,2))\nassert result==(18,22),\"Return area and perimeter in that order.\"\nassert _frame_count()-before==1,\"Draw one completed rectangle report.\"\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nassert fig['params']['values']==[9,2,18,22],\"Draw the actual selected dimensions and computed answers.\"\n"
+    }
+   ],
+   "hints": [
+    "Geometry needs dimensions, not the place those dimensions are stored.",
+    "Read the two public operations and retain their answers for both calculations.",
+    "Area multiplies the dimensions; perimeter adds both widths and both heights."
+   ],
+   "solution": "def rectangle_report(rect):\n    w,h=width(rect),height(rect)\n    answer=(w*h,2*(w+h))\n    show_dimensions(w,h,*answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef width(rect):return rect(\"width\")\ndef height(rect):return rect(\"height\")\n\ndef rectangle(w,h):\n    return lambda name:w if name==\"width\" else h\n\ndef show_dimensions(w,h,area,perimeter):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[w,h,area,perimeter],indices=False)\n    text(12,260,\"width / height / area / perimeter\",size=18)\n    frame()\n\nprint(rectangle_report(rectangle(7,3)))\n"
+  },
+  {
+   "exercise_id": "cons",
+   "title": "Implement: a pair that accepts a chooser",
+   "prompt_md": "This is SICP exercise 2.4's alternative procedural pair. Implement `cons(x, y)` returning a callable pair. When called with a function `choose`, that pair must call `choose(x, y)` exactly once and return its result. Preserve the original objects and keep different pairs independent. Creating a pair must not select either part. The supplied first and second selectors pass their own chooser functions; the helper draws their returned values. Predict those two values before running.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Keep each pair independent and defer the choice until selection",
+     "checks": [
+      "pair_laws"
+     ]
+    },
+    {
+     "step": "Draw values obtained through the two selectors",
+     "checks": [
+      "pair_picture"
+     ]
+    }
+   ],
+   "starter_code": "def cons(x,y):\n    def dispatch(choose):\n        return None\n    return dispatch\nfrom scimigo import canvas,figure,frame,text\n\ndef select_first(p):return p(lambda x,y:x)\ndef select_second(p):return p(lambda x,y:y)\n\ndef show_pair(p):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[str(select_first(p)),str(select_second(p))],cell_width=100,indices=False)\n    text(12,260,\"first selector / second selector\",size=18)\n    frame()\n\np=cons(\"east\",\"west\")\nshow_pair(p)\n",
+   "tests": [
+    {
+     "name": "pair_laws",
+     "code": "saved=show_pair;show_pair=lambda *args:None\ntry:\n    for x,y in [(4,9),(None,False),(0,''),([],{}),('left','right')]:\n        p=cons(x,y)\n        assert callable(p),\"Return a function representing the pair.\"\n        assert select_first(p) is x and select_second(p) is y,\"Selectors must return the original objects, preserving identity.\"\n        calls=[]\n        def choose(a,b):calls.append((a,b));return 'chosen'\n        assert p(choose)=='chosen',\"Apply the chooser and return its result.\"\n        assert len(calls)==1 and calls[0][0] is x and calls[0][1] is y,\"Call the chooser once with this pair's two original parts.\"\n    a,b=cons(3,5),cons(7,11)\n    assert (select_first(a),select_second(b),select_second(a))==(3,11,5),\"Different pair creators keep separate captured bindings.\"\nfinally:show_pair=saved\n"
+    },
+    {
+     "name": "pair_picture",
+     "code": "from scimigo import _frame_count,_frame\np=cons('near','far');before=_frame_count();show_pair(p)\nassert _frame_count()-before==1,\"Draw one selector observation.\"\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nassert fig['params']['values']==['near','far'],\"The picture must show the values recovered from this pair.\"\n"
+    }
+   ],
+   "hints": [
+    "The pair keeps its parts, but selection supplies the operation to perform on them.",
+    "Which call creates bindings, and which later call receives a chooser?",
+    "Return a function that retains the creator’s two arguments and gives both to the chooser when called."
+   ],
+   "solution": "def cons(x,y):\n    def dispatch(choose):\n        return choose(x,y)\n    return dispatch\nfrom scimigo import canvas,figure,frame,text\n\ndef select_first(p):return p(lambda x,y:x)\ndef select_second(p):return p(lambda x,y:y)\n\ndef show_pair(p):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[str(select_first(p)),str(select_second(p))],cell_width=100,indices=False)\n    text(12,260,\"first selector / second selector\",size=18)\n    frame()\n\np=cons(\"east\",\"west\")\nshow_pair(p)\n"
+  },
+  {
+   "exercise_id": "measure",
+   "title": "Measure: move work across the interface",
+   "prompt_md": "The supplied eager package reduces once when constructed. Its lazy alternative reduces independently for each numerator and denominator selection. Implement `measure(solver, n, d, k)` returning `(solver_result, actual_gcd_calls)`. Temporarily wrap the supplied global `gcd`, count real calls, and restore it even if the solver raises. Keep each measurement fresh. The demo compares one fraction read 3, 7 and 12 times; the blue and purple bars must show your counts. Drawing is excluded from the measured work.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Count actual gcd calls and restore the helper even on errors",
+     "checks": [
+      "counted_gcd"
+     ]
+    },
+    {
+     "step": "Draw the measurements made by the supplied solvers",
+     "checks": [
+      "count_bars"
+     ]
+    }
+   ],
+   "starter_code": "def measure(solver,n,d,k):\n    return solver(n,d,k),0\nfrom math import gcd\nfrom scimigo import canvas,rectangle,text,frame\n\ndef normalize(n,d):\n    g=gcd(n,d)\n    return n//g,d//g\n\ndef eager(n,d,k):\n    top,bottom=normalize(n,d)\n    return [(top,bottom) for _ in range(k)]\n\ndef lazy(n,d,k):\n    return [(normalize(n,d)[0],normalize(n,d)[1]) for _ in range(k)]\n\ndef show_counts(rows):\n    canvas(600,370)\n    largest=max([1]+[count for k,a,b in rows for count in (a,b)])\n    for i,(k,a,b) in enumerate(rows):\n        y=i*115\n        text(12,y+20,\"selections=\"+str(k),size=18)\n        rectangle(145,y+25,400*a/largest,20,color=\"#276bb0\")\n        text(145,y+64,\"eager=\"+str(a),size=17)\n        rectangle(145,y+72,400*b/largest,20,color=\"#763aed\")\n        text(145,y+110,\"lazy=\"+str(b),size=17)\n    frame()\n\nrows=[]\nfor k in (3,7,12):\n    rows.append((k,measure(eager,21,35,k)[1],measure(lazy,21,35,k)[1]))\nshow_counts(rows)\n",
+   "tests": [
+    {
+     "name": "counted_gcd",
+     "code": "original=gcd\nfor k in (0,1,4,9):\n    expected=[(3,5)]*k\n    assert measure(eager,21,35,k)==(expected,1),\"Eager construction performs one gcd even if nothing is later selected.\"\n    assert measure(lazy,21,35,k)==(expected,2*k),\"Each lazy pair selection computes two gcd calls.\"\n    assert gcd is original,\"Restore the original gcd after measuring.\"\ndef unusual(n,d,k):\n    for _ in range(5):gcd(n,d)\n    return 'done'\nassert measure(unusual,12,18,3)==('done',5),\"Measure actual operations; do not infer a count from k or the solver name.\"\ndef broken(n,d,k):\n    gcd(n,d)\n    raise ValueError('expected')\nraised=False\ntry:measure(broken,4,6,2)\nexcept ValueError:raised=True\nassert raised and gcd is original,\"Propagate the solver error and still restore gcd.\"\n"
+    },
+    {
+     "name": "count_bars",
+     "code": "from scimigo import _frame_count,_frame\nrows=[(k,measure(eager,21,35,k)[1],measure(lazy,21,35,k)[1]) for k in (3,7,12)]\nassert rows==[(3,1,6),(7,1,14),(12,1,24)],\"Measure both strategies before drawing.\"\nbefore=_frame_count();show_counts(rows)\nassert _frame_count()-before==1,\"Draw one comparison frame.\"\nobjects=_frame(before)\nassert sum(o['kind']=='rectangle' for o in objects)==6,\"Draw two measured bars for each selection count.\"\nwords=[o['value'] for o in objects if o['kind']=='text']\nfor k,a,b in rows:\n    assert 'selections='+str(k) in words and 'eager='+str(a) in words and 'lazy='+str(b) in words,\"Label bars with the actual counted values.\"\n"
+    }
+   ],
+   "hints": [
+    "The same public values can require different work depending on where reduction happens.",
+    "Observe the gcd function used by the solver; an expected formula does not measure it.",
+    "Wrap gcd during one solver call, preserve its return value, and use finally to restore the original function."
+   ],
+   "solution": "def measure(solver,n,d,k):\n    original=globals()[\"gcd\"]\n    calls=0\n    def counted(a,b):\n        nonlocal calls\n        calls+=1\n        return original(a,b)\n    globals()[\"gcd\"]=counted\n    try:\n        answer=solver(n,d,k)\n        return answer,calls\n    finally:\n        globals()[\"gcd\"]=original\nfrom math import gcd\nfrom scimigo import canvas,rectangle,text,frame\n\ndef normalize(n,d):\n    g=gcd(n,d)\n    return n//g,d//g\n\ndef eager(n,d,k):\n    top,bottom=normalize(n,d)\n    return [(top,bottom) for _ in range(k)]\n\ndef lazy(n,d,k):\n    return [(normalize(n,d)[0],normalize(n,d)[1]) for _ in range(k)]\n\ndef show_counts(rows):\n    canvas(600,370)\n    largest=max([1]+[count for k,a,b in rows for count in (a,b)])\n    for i,(k,a,b) in enumerate(rows):\n        y=i*115\n        text(12,y+20,\"selections=\"+str(k),size=18)\n        rectangle(145,y+25,400*a/largest,20,color=\"#276bb0\")\n        text(145,y+64,\"eager=\"+str(a),size=17)\n        rectangle(145,y+72,400*b/largest,20,color=\"#763aed\")\n        text(145,y+110,\"lazy=\"+str(b),size=17)\n    frame()\n\nrows=[]\nfor k in (3,7,12):\n    rows.append((k,measure(eager,21,35,k)[1],measure(lazy,21,35,k)[1]))\nshow_counts(rows)\n"
+  },
+  {
+   "exercise_id": "manifest_report",
+   "title": "Mastery challenge: a manifest with limited reads",
+   "prompt_md": "A shipping manifest can arrive in several record formats. Implement `manifest_report(records, weight_of, label_of)` returning total weight and the label of the first heaviest record. Empty input returns `(0, None)`; weights are nonnegative integers and labels are strings. The supplied operations are the only way to read a record. **Each record permits at most one call to weight_of.** Handle up to 500 records, preserve their order and contents, and keep invocations independent. Call `show_report(total, heaviest)` once after computing the answer. The starter produces a correct report, but exceeds the read allowance for nonempty input.\n",
+   "questions": [
+    {
+     "step": "Explain the plan",
+     "prompt": "What must remain stable when a record format changes?",
+     "choices": [
+      {
+       "text": "The report’s meaning",
+       "why": "The required report describes weights and labels, independently of storage."
+      },
+      {
+       "text": "The record’s positions",
+       "why": "Positions are an implementation choice."
+      },
+      {
+       "text": "The record’s dictionary keys",
+       "why": "Keys are an implementation choice."
+      }
+     ],
+     "answer": 0
+    },
+    {
+     "step": "State the invariant",
+     "prompt": "What does the running total describe?",
+     "choices": [
+      {
+       "text": "Only the heaviest item",
+       "why": "The total must include lighter items too."
+      },
+      {
+       "text": "Exactly the items already read",
+       "why": "Each completed item contributes its weight once."
+      },
+      {
+       "text": "All items before reading",
+       "why": "Unread weights have not been supplied yet."
+      }
+     ],
+     "answer": 1
+    },
+    {
+     "step": "Predict the work",
+     "prompt": "What weight-access budget applies to n records?",
+     "choices": [
+      {
+       "text": "At most n calls",
+       "why": "Each record permits one weight read."
+      },
+      {
+       "text": "At least two n calls",
+       "why": "A second pass repeats forbidden weight reads."
+      },
+      {
+       "text": "Exactly one call total",
+       "why": "Different records can have different weights."
+      }
+     ],
+     "answer": 0
+    },
+    {
+     "step": "Explain a failure",
+     "prompt": "For weights 6, 9, 9, why is returning the last label wrong?",
+     "choices": [
+      {
+       "text": "The total must be 9",
+       "why": "The total includes all weights."
+      },
+      {
+       "text": "The input must be sorted",
+       "why": "Sorting is unnecessary and changes order."
+      },
+      {
+       "text": "Ties must keep the first maximum",
+       "why": "The second item is the first maximum; a later equal weight must not replace it."
+      }
+     ],
+     "answer": 2
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Return the total and the first heaviest label across storage packages",
+     "checks": [
+      "manifest_behavior"
+     ]
+    },
+    {
+     "step": "Read each record within its budget and draw the returned result",
+     "checks": [
+      "manifest_budget"
+     ]
+    }
+   ],
+   "starter_code": "def manifest_report(records,weight_of,label_of):\n    total=sum(weight_of(record) for record in records)\n    heaviest=None\n    if records:\n        best=max(records,key=weight_of)\n        heaviest=label_of(best)\n    show_report(total,heaviest)\n    return total,heaviest\nfrom scimigo import canvas,figure,frame,text\n\ndef weight_of(record):return record[1]\ndef label_of(record):return record[0]\n\ndef show_report(total,heaviest):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[total],indices=False)\n    text(12,250,\"total weight=\"+str(total),size=18)\n    text(12,280,\"heaviest label=\"+str(heaviest),size=18)\n    frame()\n\nprint(manifest_report([('birch',6),('cedar',9),('elm',9)],weight_of,label_of))\n",
+   "tests": [
+    {
+     "name": "manifest_behavior",
+     "code": "import random,copy\nsaved=show_report;show_report=lambda *args:None\ntry:\n    rng=random.Random(404)\n    for length in (0,1,2,7,30):\n        raw=[('item'+str(i),rng.randrange(20)) for i in range(length)]\n        expected=(sum(w for name,w in raw),max(raw,key=lambda x:x[1])[0] if raw else None)\n        for records,getw,getl in [(raw,lambda r:r[1],lambda r:r[0]),([{'payload':{'kg':w,'name':name}} for name,w in raw],lambda r:r['payload']['kg'],lambda r:r['payload']['name'])]:\n            before=copy.deepcopy(records)\n            assert manifest_report(records,getw,getl)==expected,\"Use the provided access operations and preserve the first label on a maximum-weight tie.\"\n            assert records==before,\"Do not modify records or their order.\"\n    assert manifest_report([('a',0),('b',0)],lambda r:r[1],lambda r:r[0])==(0,'a'),\"Zero weights are valid; ties retain the first record.\"\nfinally:show_report=saved\n"
+    },
+    {
+     "name": "manifest_budget",
+     "code": "from scimigo import _frame_count,_frame\nclass BudgetExceeded(BaseException):pass\nfor size in (1,8,500):\n    class Record:\n        def __init__(self,i):self.i=i\n        def __getitem__(self,key):raise AssertionError(\"These records have no public positional layout.\")\n    records=[Record(i) for i in range(size)];counts={id(r):0 for r in records}\n    def getweight(r):\n        counts[id(r)]+=1\n        if counts[id(r)]>1:raise BudgetExceeded()\n        return r.i%13\n    def getlabel(r):return 'tag'+str(r.i)\n    before=_frame_count()\n    try:answer=manifest_report(records,getweight,getlabel)\n    except BudgetExceeded:raise AssertionError(\"The weight accessor may be called only once per record; retain values already read.\")\n    expected=(sum(i%13 for i in range(size)),'tag'+str(min(size-1,12)))\n    assert answer==expected,\"Opaque records still need the correct total and first heaviest label.\"\n    assert _frame_count()-before==1,\"Draw one completed report after each invocation.\"\n    objects=_frame(before);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==[answer[0]],\"Draw this report's computed total.\"\n    assert any(o['kind']=='text' and o['value']=='heaviest label='+str(answer[1]) for o in objects),\"Draw this report's selected label.\"\n"
+    }
+   ],
+   "hints": [
+    "Which information is being requested again after it was already returned?",
+    "Distinguish the current record’s contribution from the best record seen so far.",
+    "Keep the running total and first best label as you consume the returned weights."
+   ],
+   "solution": "def manifest_report(records,weight_of,label_of):\n    total=0\n    best_weight=None\n    heaviest=None\n    for record in records:\n        weight=weight_of(record)\n        name=label_of(record)\n        total+=weight\n        if best_weight is None or weight>best_weight:\n            best_weight=weight\n            heaviest=name\n    show_report(total,heaviest)\n    return total,heaviest\nfrom scimigo import canvas,figure,frame,text\n\ndef weight_of(record):return record[1]\ndef label_of(record):return record[0]\n\ndef show_report(total,heaviest):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[total],indices=False)\n    text(12,250,\"total weight=\"+str(total),size=18)\n    text(12,280,\"heaviest label=\"+str(heaviest),size=18)\n    frame()\n\nprint(manifest_report([('birch',6),('cedar',9),('elm',9)],weight_of,label_of))\n"
+  }
+ ]
 }

@@ -1,0 +1,100 @@
+{
+  "title": "Mastery challenge: a manifest with limited reads",
+  "checklist": [
+    {
+      "step": "Return the total and the first heaviest label across storage packages",
+      "checks": [
+        "manifest_behavior"
+      ]
+    },
+    {
+      "step": "Read each record within its budget and draw the returned result",
+      "checks": [
+        "manifest_budget"
+      ]
+    }
+  ],
+  "hints": [
+    "Which information is being requested again after it was already returned?",
+    "Distinguish the current record\u2019s contribution from the best record seen so far.",
+    "Keep the running total and first best label as you consume the returned weights."
+  ],
+  "questions": [
+    {
+      "step": "Explain the plan",
+      "prompt": "What must remain stable when a record format changes?",
+      "choices": [
+        {
+          "text": "The report\u2019s meaning",
+          "why": "The required report describes weights and labels, independently of storage."
+        },
+        {
+          "text": "The record\u2019s positions",
+          "why": "Positions are an implementation choice."
+        },
+        {
+          "text": "The record\u2019s dictionary keys",
+          "why": "Keys are an implementation choice."
+        }
+      ],
+      "answer": 0
+    },
+    {
+      "step": "State the invariant",
+      "prompt": "What does the running total describe?",
+      "choices": [
+        {
+          "text": "Only the heaviest item",
+          "why": "The total must include lighter items too."
+        },
+        {
+          "text": "Exactly the items already read",
+          "why": "Each completed item contributes its weight once."
+        },
+        {
+          "text": "All items before reading",
+          "why": "Unread weights have not been supplied yet."
+        }
+      ],
+      "answer": 1
+    },
+    {
+      "step": "Predict the work",
+      "prompt": "What weight-access budget applies to n records?",
+      "choices": [
+        {
+          "text": "At most n calls",
+          "why": "Each record permits one weight read."
+        },
+        {
+          "text": "At least two n calls",
+          "why": "A second pass repeats forbidden weight reads."
+        },
+        {
+          "text": "Exactly one call total",
+          "why": "Different records can have different weights."
+        }
+      ],
+      "answer": 0
+    },
+    {
+      "step": "Explain a failure",
+      "prompt": "For weights 6, 9, 9, why is returning the last label wrong?",
+      "choices": [
+        {
+          "text": "The total must be 9",
+          "why": "The total includes all weights."
+        },
+        {
+          "text": "The input must be sorted",
+          "why": "Sorting is unnecessary and changes order."
+        },
+        {
+          "text": "Ties must keep the first maximum",
+          "why": "The second item is the first maximum; a later equal weight must not replace it."
+        }
+      ],
+      "answer": 2
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Build: normalize a rational number",
+  "checklist": [
+    {
+      "step": "Preserve the ratio, reduce, normalize signs and reject zero denominators",
+      "checks": [
+        "rational_laws"
+      ]
+    },
+    {
+      "step": "Draw the input and the actual selected output",
+      "checks": [
+        "rational_frame"
+      ]
+    }
+  ],
+  "hints": [
+    "A representation may change its parts while preserving their ratio.",
+    "Reduction and sign placement are separate promises; include zero and both signs in your reasoning.",
+    "Divide both parts by their gcd, then move any denominator sign onto the numerator."
+  ],
+  "questions": []
+}
