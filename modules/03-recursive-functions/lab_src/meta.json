@@ -1,0 +1,28 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "sicp-python-03-recursive-functions",
+  "title": "Recursion in three rounds",
+  "description": "Round 1: see calls descend and return. Round 2: write shrinking-window and nested-container recursions. Round 3: trace branches, reuse states, measure work, and transfer the idea.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 15000
+  },
+  "recap": {
+    "learned": [
+      "Justify a base case with a decreasing argument on the allowed domain.",
+      "Distinguish call occurrences from distinct subproblem states.",
+      "Reuse completed states without confusing a cache with stack removal.",
+      "Choose a dependency order that supports large Python inputs."
+    ],
+    "invariant": "Each completed stored state has the correct answer; earlier dependencies are available before a new state is completed.",
+    "complexity": "Count transitions and recurrence additions, not elapsed time. Memoized routes expand at most n positive states; ordered packing uses at most n times the number of allowed sizes additions, with modular residues and drawing excluded.",
+    "common_mistake": "Assuming that memoization or a tail-position call removes Python recursion depth.",
+    "in_real_programs": [
+      "Python exposes a recursion-depth limit; raising it does not remove recursive stack growth."
+    ],
+    "retrieval": {
+      "question": "Module 2: why can separate calls use the same parameter name independently?",
+      "answer": "Each invocation has its own local parameter binding; the same spelling does not imply the same binding."
+    }
+  }
+}

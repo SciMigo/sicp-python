@@ -1,0 +1,1 @@
+Archived pre-conversion lab and slide outline. The old prediction starter passed unchanged and the iterative check did not require a value at sufficiently large inputs. Current lesson/lab are separate; original reading remains optional background.

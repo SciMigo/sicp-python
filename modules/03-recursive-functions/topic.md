@@ -1,25 +1,17 @@
-# Recursive Functions
+# Recursive functions: author plan
 
-## SICP Reference
-- Chapter 1.2: Procedures and the Processes They Generate
+Seven beats: pending work in recursive sums; direct recursion and repeated branching work; call-stack descent/unwind and state windows; decreasing argument and dependency invariant; memoization and bottom-up iteration; actual non-base expansions; ordered packing schedules with unfamiliar step lengths.
+Lesson instances: sum through 4, strip tilings using pieces of length 1 or 2, table at lengths 4/8/12. Lab instances: sum through 3; routes with jumps 1 or 3, n=4, measurement sizes 5/9/13. Mastery: ordered packing plans with caller-supplied positive lengths and modulus, n up to 6000.
+Five exercises: Build actual recursive sum stack; Trace all postorder calls in a branching recurrence; Implement memoized route counts with one transition expansion per positive state; Measure actual expansions of supplied naive/cached solvers; Mastery compute large ordered plans under counted addition budgets without naming the technique.
+Operation model: count transition(k) calls for non-base expansions; count combine(a,b,m) calls for mastery additions. Full recursive entry count is separately named in the Trace task. No timing grades. Stop repeated-work starters with a BaseException operation budget, not a slow timeout.
+Qualifications: nonnegative integer inputs; recursive examples only small n. CPython/Pyodide retain recursive call depth, including tail-position calls; do not promise tail-call optimization. Integer arithmetic costs grow with bit length; constant-space iteration means a constant number of integer cells, not constant bits. Modular mastery uses bounded residues under the counted-operation model. Memoization does not remove deep call chains. Cache is per invocation and keys must describe all result-determining state; no global stale cache.
+Sources: SICP 1.2 informs the concepts, not copied examples/prose. Python sys.getrecursionlimit/setrecursionlimit documentation checked 2026-10-05: https://docs.python.org/3/library/sys.html#sys.getrecursionlimit. No external library performance claim.
+Oral anchors: decreasing measure and base cases; pending additions versus accumulator state; distinguish call occurrences from distinct subproblems; when cached answers remain valid; why memoization alone fails at large depth; exact versus unit-cost/bit-cost claims.
 
-## Core Concepts
-- Recursive function definition: a function that calls itself
-- Base case and recursive case
-- Linear recursion vs tree recursion
-- The substitution model / tracing recursive calls
-- Iteration as a special case of recursion (tail calls)
-- Memoization to tame exponential recursion
+## Three-round expansion — 2026-10-05
 
-## Key Examples (Python)
-1. **Factorial**: `fact(n)` — simplest linear recursion, trace the call stack
-2. **Fibonacci**: `fib(n)` — tree recursion, exponential blowup
-3. **Counting change**: Elegant tree recursion solving a real problem
-4. **Iterative Fibonacci**: `fib_iter(n)` — same result, O(n) time, O(1) space
+Owner requested more beginner practice and visualization. Keep one module, but recommend three sessions: (1) pending sum calls and returns; (2) two-boundary mirrored sequences and structural recursion over nested containers; (3) branching, cached states, counted work and packing transfer. Seven exercises deliberately extend the usual five-exercise format. Lesson examples differ from lab instances. The window diagram has inclusive boundaries 0..5, 1..4, 2..3, then the empty 3..2 interval; the container figure computes 4+(1+5)+2=12. Lab containers total 3+(2+0+5)+1=11.
 
-## Reference Files
-- `1.2-procedures-and-processes.md`
+New checks cover empty/odd/even windows, outside-match/inside-mismatch, explicit subwindows, negative leaves, empty nested containers, seeded inputs, preservation and exact postorder completion paths. Visual review fixed invalid environment binding shape and a long nested-list label; moving pointers and highlighted windows now identify the current interval.
 
-## Speaker Persona
-- Professor Dana: Patient, "Let's trace through this step by step"
-- Alex (student): Traces call stacks, surprised by exponential growth, appreciates memoization
+Oral anchors: matching outside values alone do not establish the inside; a parent owns its answer and combines child answers; branching across different children does not by itself imply repeated subproblems. Estimate expanded to 125–175 minutes, unmeasured, split over three sessions.
