@@ -14,4 +14,9 @@ def show_horner(index,coefficient,result):
     text(12,260,"index / coefficient / completed suffix value",size=17)
     frame()
 
+def show_nothing_yet():
+    canvas(600,300)
+    text(12,150,"no coefficient combined yet",size=18)
+    frame()
+
 print(horner(3,[2,-1,3,0,1]))

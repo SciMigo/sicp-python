@@ -29,7 +29,7 @@ assert tail(tail(tail(tail(numbers)))) is None, "Four links reach the empty term
 ```
 
 ```figure
-{"type":"array_state","params":{"values":[1,2,3,4],"indices":true},"caption":"The ordered values of the book's four-element sequence. In the linked representation, reaching position 3 requires following three tail links; this row shows order, not tuple storage."}
+{"type":"linked_list","params":{"type":"singly","nodes":[{"id":"n1","value":1},{"id":"n2","value":2},{"id":"n3","value":3},{"id":"n4","value":4}],"show_null":true,"pointers":[{"node":"n1","label":"numbers"}]},"caption":"The book's four-element sequence as a chain of pairs. Each pair holds one value and a link to the rest; the last link is the empty value. Reaching the fourth value means following three links."}
 ```
 
 Do not identify this teaching representation with a Python `list`. A Python list supports indexing and can contain arbitrary objects, but it is not this chain of nested pairs. The same abstract operation can have a different cost in a different representation. For a linked chain, reaching index `i` follows `i` links. Indexing a Python list does not walk such a chain.
@@ -94,7 +94,10 @@ assert map_list(abs, [-10, 2.5, -11.6, 17]) == [10, 2.5, 11.6, 17], "Map applies
 assert map_list(lambda x: x * x, [1, 2, 3, 4]) == [1, 4, 9, 16], "Mapping can change values without changing positions."
 ```
 
-Before each iteration, the result contains the transformed values of exactly the prefix already visited, in order. The empty prefix establishes this invariant. Appending the transformation of the next item extends it by one. When every input has been visited, the result is the complete mapping.
+!!! invariant "What map has built so far"
+    Before each iteration, the result holds the transformed values of exactly the items already visited, in their original order.
+
+The empty result satisfies this before the first iteration. Appending the transformation of the next item extends it by one. When every input has been visited, the result is the complete mapping.
 
 A filter has a related invariant: its result contains exactly the visited items that satisfy its predicate, in their original order. It may shorten a sequence, but it should not sort it, remove duplicates merely because they repeat, or change the surviving values. In Python a list comprehension can express either operation: `[f(x) for x in items]` maps, and `[x for x in items if keep(x)]` filters.
 
@@ -114,7 +117,7 @@ assert sum(squares) == 35, "Accumulation combines the mapped sequence."
 ```
 
 ```figure
-{"type":"environment_diagram","params":{"frames":[{"id":"input","label":"Enumerate","bindings":[{"name":"values","value":"1, 2, 3, 4, 5"}]},{"id":"keep","label":"Filter odd","bindings":[{"name":"values","value":"1, 3, 5"}]},{"id":"map","label":"Map square","bindings":[{"name":"values","value":"1, 9, 25"}]},{"id":"sum","label":"Accumulate sum","bindings":[{"name":"result","value":"35"}]}]},"caption":"Each record shows the output of one stage. These are pipeline records, not function environments or parent links."}
+{"type":"flow_diagram","params":{"steps":[{"label":"Enumerate","desc":"1, 2, 3, 4, 5"},{"label":"Filter odd","desc":"1, 3, 5"},{"label":"Map square","desc":"1, 9, 25"},{"label":"Accumulate +","desc":"35"}]},"caption":"The four stages of the odd-square sum. Under each stage is the sequence it passes on; the last stage passes on one number."}
 ```
 
 The book's second comparison is `even-fibs`: enumerate indices, compute each Fibonacci value, select even values, and collect them. The stages come in a different order because the predicate now concerns a computed value. Reversing map and filter without translating the predicate can change the answer.
@@ -157,6 +160,9 @@ assert fold_left(lambda a, b: a - b, 0, [2, 5, 8]) == -15, "Left grouping starts
 assert fold_right(lambda a, b: a + b, 0, [2, 5, 8]) == 15, "An associative operation with identity zero agrees."
 assert fold_left(lambda a, b: a + b, 0, [2, 5, 8]) == 15, "The same identity and associative operation agree here."
 ```
+
+??? predict "With subtraction and initial value 0, what do the right and left folds of [10, 4] give?"
+    The right fold is 10 - (4 - 0) = 6. The left fold is (0 - 10) - 4 = -14. The grouping and the place of the initial value both changed.
 
 For mathematical associative operations and a suitable identity, the two folds agree on finite inputs. Subtraction fails that condition. Floating-point addition also need not be associative because of rounding. Do not infer equivalence from one small sum.
 
@@ -211,6 +217,9 @@ assert list(pipeline) == [12], "Consuming the rest continues from its current po
 assert list(pipeline) == [], "The same iterator is exhausted, not automatically replayed."
 ```
 
+??? predict "A source yields 3, 7, 9, 12 and the filter keeps values above 8. How many source values are read to deliver the first result?"
+    Three. The values 3 and 7 are read and rejected before 9 is accepted. The 12 is not read until someone asks for a second result.
+
 The source may do work before yielding a value. A predicate may reject many values before the first result appears. Laziness limits demand; it does not make each request cheap. If no acceptable item ever occurs in an infinite source, asking for one cannot finish. A termination contract must account for that possibility.
 
 A list can be traversed again because it stores its elements. An iterator is a cursor through a computation and is commonly consumed once. A generator function can create a fresh iterator when called again, but that does not rewind an existing one. This distinction affects debugging: printing `list(pipeline)` may consume what a later caller expected to read.
@@ -221,6 +230,33 @@ Compare two designs: build all transformed results and then select a prefix, or 
 
 If finding `k` results requires inspecting `p` source values, a lazy filter performs `p` predicate calls and its downstream map performs `k` transformation calls. Under constant-time stages that is work proportional to `p`, not necessarily to `k`. The source itself may have additional production costs. If all input is eventually consumed, both designs may do comparable work; the advantage concerns intermediate storage or early stopping.
 
+The counts below come from a source that notes every value it hands over. Both designs return the squares of the first three multiples of five.
+
+```python
+def count_reads(n, k, lazy):
+    reads = 0
+    def numbers():
+        nonlocal reads
+        for value in range(1, n + 1):
+            reads += 1
+            yield value
+    wanted = (x * x for x in numbers() if x % 5 == 0)
+    result = list(islice(wanted, k)) if lazy else list(wanted)[:k]
+    return result, reads
+
+for n in (20, 40, 80):
+    assert count_reads(n, 3, lazy=False) == ([25, 100, 225], n), "Building everything reads the whole source."
+    assert count_reads(n, 3, lazy=True) == ([25, 100, 225], 15), "Asking for three stops at the third multiple of five."
+```
+
+| Source size | Reads, build everything | Reads, ask for three |
+|---:|---:|---:|
+| 20 | 20 | 15 |
+| 40 | 40 | 15 |
+| 80 | 80 | 15 |
+
+The lazy count is 15 in every row because the third multiple of five is the fifteenth value, wherever the source ends. Had the accepted values been rarer, the same three results would have cost more reads.
+
 For a prefix returned as a list, storage for those `k` output values is still required. A fixed number of generator stages can retain fixed-size cursor state under bounded-size values, but a generator may itself cache arbitrarily much data. Never conclude that any use of `yield` guarantees constant memory.
 
 ## A problem that looks different
@@ -229,7 +265,7 @@ A drawing program computes all candidate shapes, then shows just the first scree
 
 ## Practise
 
-Build the book's same-parity operation, trace requests through a lazy pipeline, evaluate a polynomial from ordered coefficients, and measure actual source pulls in two supplied designs. Finish with a separate preview task that has to preserve relationships between consecutive readings while obeying its consumption contract. Predict the frames first, then compare those predictions with your own program's recorded state.
+Build the book's same-parity operation, trace requests through a lazy pipeline, evaluate a polynomial from ordered coefficients, and measure actual source pulls in two supplied designs. The last exercise is a preview of a live feed; its prompt says what the preview must contain and how much of the feed it may consume, and leaves the method to you. Predict the frames first, then compare them with what your own program records.
 
 ## Recap
 
@@ -237,9 +273,11 @@ Build the book's same-parity operation, trace requests through a lazy pipeline, 
 
 **Invariant:** A completed prefix or suffix describes exactly the inputs already visited under the operation's stated ordering rule.
 
-**Cost:** A finite fold makes one callback per element. Lazy filtering to produce `k` outputs after `p` examined inputs makes `p` predicate calls and `k` downstream map calls, excluding drawing and assuming the stages return normally. Arithmetic and allocation costs remain separate.
+**Complexity achieved:** A finite fold makes one callback per element. Lazy filtering to produce `k` outputs after `p` examined inputs makes `p` predicate calls and `k` downstream map calls, excluding drawing and assuming the stages return normally. Arithmetic and allocation costs remain separate.
 
-**Common mistake:** Consuming a source too early, reading one item past a requested prefix, or mistaking an exhausted iterator for an empty original collection.
+**Failure mode:** Consuming a source too early, reading one item past a requested prefix, or mistaking an exhausted iterator for an empty original collection.
+
+**In real software:** Python's built-in `map` and `filter` return iterators that compute each value only when asked, and `itertools.islice` takes a prefix without reading past it.
 
 **Retrieval:** Module 4: how can callers use the same sequence meanings even when the representation changes?
 
@@ -247,8 +285,7 @@ Build the book's same-parity operation, trace requests through a lazy pipeline, 
 
 1. Why can filtering require several source reads for one output?
 2. What distinguishes a right fold from a left fold when the operation is subtraction?
-3. Does `yield` alone promise bounded memory or eventual output?
-4. Which part of a prefix cost depends on the positions of accepted items?
+3. Which part of a prefix cost depends on the positions of accepted items?
 
 ## Reference and licence
 

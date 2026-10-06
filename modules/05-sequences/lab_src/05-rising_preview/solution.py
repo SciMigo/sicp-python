@@ -8,11 +8,22 @@ def rising_preview(readings,k):
             for current in iterator:
                 if current>previous:
                     result.append((previous,current))
-                    if len(result)==k:break
+                show_step(previous,current,result)
+                if len(result)==k:break
                 previous=current
     show_preview(result)
     return result
 from scimigo import canvas,figure,frame,text
+
+def show_step(previous,current,result):
+    canvas(600,300)
+    rise=current>previous
+    figure("array_state",x=0,y=0,width=600,height=220,
+           values=[previous,current],indices=False,
+           highlights={"1":"found"} if rise else {})
+    text(12,255,str(previous)+" then "+str(current)+(": a rise" if rise else ": not a rise"),size=18)
+    text(12,285,"rises so far="+str(len(result)),size=17)
+    frame()
 
 def show_preview(result):
     canvas(600,300)

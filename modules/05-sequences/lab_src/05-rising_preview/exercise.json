@@ -1,100 +1,100 @@
 {
-  "title": "Mastery challenge: preview rises from a live feed",
-  "checklist": [
+ "title": "Mastery challenge: preview rises from a live feed",
+ "checklist": [
+  {
+   "step": "Return the first rises, each with the reading just before it",
+   "checks": [
+    "preview_behavior"
+   ]
+  },
+  {
+   "step": "Read no further than the last rise asked for, and show each step",
+   "checks": [
+    "preview_demand"
+   ]
+  }
+ ],
+ "hints": [
+  "Which information is needed to decide whether the next reading forms a result?",
+  "A rejected pair still changes which reading is immediately before the next one.",
+  "Retain the last source value and count completed results; stop before another request once the preview is full."
+ ],
+ "questions": [
+  {
+   "step": "Explain the plan",
+   "prompt": "What must a returned pair describe?",
+   "choices": [
     {
-      "step": "Return the first rising adjacent pairs, preserving source order",
-      "checks": [
-        "preview_behavior"
-      ]
+     "text": "Two largest readings",
+     "why": "The task concerns adjacent rises, not sorting."
     },
     {
-      "step": "Stop exactly at the requested rise, including on a guarded unbounded source",
-      "checks": [
-        "preview_demand"
-      ]
+     "text": "Any two accepted readings",
+     "why": "Filtering readings first could create pairs that were never adjacent."
+    },
+    {
+     "text": "Consecutive original readings",
+     "why": "Both readings must be neighbors in the source."
     }
-  ],
-  "hints": [
-    "Which information is needed to decide whether the next reading forms a result?",
-    "A rejected pair still changes which reading is immediately before the next one.",
-    "Retain the last source value and count completed results; stop before another request once the preview is full."
-  ],
-  "questions": [
+   ],
+   "answer": 2
+  },
+  {
+   "step": "State the invariant",
+   "prompt": "Which reading is needed when the next one arrives?",
+   "choices": [
     {
-      "step": "Explain the plan",
-      "prompt": "What must a returned pair describe?",
-      "choices": [
-        {
-          "text": "Two largest readings",
-          "why": "The task concerns adjacent rises, not sorting."
-        },
-        {
-          "text": "Any two accepted readings",
-          "why": "Filtering readings first could create pairs that were never adjacent."
-        },
-        {
-          "text": "Consecutive original readings",
-          "why": "Both readings must be neighbors in the source."
-        }
-      ],
-      "answer": 2
+     "text": "The immediately preceding reading",
+     "why": "Adjacency refers to the most recent input, even after a fall or equality."
     },
     {
-      "step": "State the invariant",
-      "prompt": "Which reading is needed when the next one arrives?",
-      "choices": [
-        {
-          "text": "The immediately preceding reading",
-          "why": "Adjacency refers to the most recent input, even after a fall or equality."
-        },
-        {
-          "text": "Only the first reading",
-          "why": "The first reading is not generally adjacent to later inputs."
-        },
-        {
-          "text": "Only the greatest reading",
-          "why": "A previous maximum can belong far earlier in the source."
-        }
-      ],
-      "answer": 0
+     "text": "Only the first reading",
+     "why": "The first reading is not generally adjacent to later inputs."
     },
     {
-      "step": "Predict consumption",
-      "prompt": "What determines how many source values are needed?",
-      "choices": [
-        {
-          "text": "Exactly twice k",
-          "why": "Rejected pairs can occur between returned ones."
-        },
-        {
-          "text": "Where the kth rise occurs",
-          "why": "Demand ends at that rise, or at finite exhaustion if fewer exist."
-        },
-        {
-          "text": "The largest value seen",
-          "why": "The magnitude of values does not determine their positions."
-        }
-      ],
-      "answer": 1
-    },
-    {
-      "step": "Explain a counterexample",
-      "prompt": "On readings 4, 1, 3, comparing every value with the first reading misses which result?",
-      "choices": [
-        {
-          "text": "The pair (4, 3)",
-          "why": "Those values are not adjacent."
-        },
-        {
-          "text": "The pair (4, 1)",
-          "why": "That pair falls."
-        },
-        {
-          "text": "The pair (1, 3)",
-          "why": "The last value rises from its immediate predecessor, despite being below the first value."
-        }
-      ],
-      "answer": 2
+     "text": "Only the greatest reading",
+     "why": "A previous maximum can belong far earlier in the source."
     }
-  ]
+   ],
+   "answer": 0
+  },
+  {
+   "step": "Predict consumption",
+   "prompt": "What determines how many source values are needed?",
+   "choices": [
+    {
+     "text": "Exactly twice k",
+     "why": "Rejected pairs can occur between returned ones."
+    },
+    {
+     "text": "Where the kth rise occurs",
+     "why": "Demand ends at that rise, or at finite exhaustion if fewer exist."
+    },
+    {
+     "text": "The largest value seen",
+     "why": "The magnitude of values does not determine their positions."
+    }
+   ],
+   "answer": 1
+  },
+  {
+   "step": "Explain a counterexample",
+   "prompt": "On readings 4, 1, 3, comparing every value with the first reading misses which result?",
+   "choices": [
+    {
+     "text": "The pair (4, 3)",
+     "why": "Those values are not adjacent."
+    },
+    {
+     "text": "The pair (4, 1)",
+     "why": "That pair falls."
+    },
+    {
+     "text": "The pair (1, 3)",
+     "why": "The last value rises from its immediate predecessor, despite being below the first value."
+    }
+   ],
+   "answer": 2
+  }
+ ]
 }
