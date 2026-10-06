@@ -63,7 +63,7 @@
       "exercise_id": "ex3_implement_extend_sicp_1_11_iterative",
       "title": "Recursive and Iterative Processes for `f` (SICP Ex 1.11)",
       "slide_anchor": 10,
-      "prompt_md": "Implement the SICP Exercise 1.11 function in two ways.\n\nThe function is defined as:\n\n```python\nf(n) = n                                      if n < 3\nf(n) = f(n - 1) + 2*f(n - 2) + 3*f(n - 3)    if n >= 3\n```\n\nPart A: Implement `f_rec(n)` using the direct recursive definition.\n\nPart B: Implement `f_iter(n)` as an iterative process: carry the last three values as state, similar to iterative Fibonacci.\n\nBefore coding `f_iter`, predict the state updates starting from:\n\n```python\nf(0) = 0, f(1) = 1, f(2) = 2\n```\n\nThe next value should be:\n\n```python\nf(3) = f(2) + 2*f(1) + 3*f(0)\n```",
+      "prompt_md": "Implement the SICP Exercise 1.11 function in two ways.\n\nThe function is defined as:\n\n```python\nf(n) = n                                      if n < 3\nf(n) = f(n - 1) + 2*f(n - 2) + 3*f(n - 3)    if n >= 3\n```\n\nPart A: Implement `f_rec(n)` using the direct recursive definition.\n\nPart B: Implement `f_iter(n)` as an iterative process: carry the last three values as state, similar to iterative Fibonacci.\n\nBefore coding `f_iter`, predict the state updates starting from:\n\n```python\nf(0) = 0, f(1) = 1, f(2) = 2\n```\n\nThe next value should be:\n\n```python\nf(3) = f(2) + 2*f(1) + 3*f(0)\n```\n\nThe tests also check *how* each version computes, not only what it returns: `f_rec` must call itself, and `f_iter` must work without `f_rec` and without building up calls — it is checked on `f_iter(3000)`, far deeper than Python's call stack goes.",
       "starter_code": "def f_rec(n):\n    \"\"\"Return f(n) using the direct recursive process.\n\n    >>> f_rec(4)\n    11\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef f_iter(n):\n    \"\"\"Return f(n) using an iterative process.\n\n    Carry three consecutive values as state:\n    a = f(k - 2), b = f(k - 1), c = f(k)\n\n    >>> f_iter(4)\n    11\n    >>> f_iter(5)\n    25\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\n# Try these after implementing:\nprint(f_rec(4))   # Expected: 11\nprint(f_iter(4))  # Expected: 11\nprint(f_iter(5))  # Expected: 25",
       "tests": [
         {
@@ -81,13 +81,22 @@
         {
           "name": "t4_larger_iterative_value",
           "code": "assert f_iter(10) == 1892"
+        },
+        {
+          "name": "t5_f_rec_follows_the_definition",
+          "code": "assert 'f_rec' in f_rec.__code__.co_names, 'f_rec should follow the definition by calling itself'"
+        },
+        {
+          "name": "t6_f_iter_is_an_iterative_process",
+          "code": "_real_f_rec = f_rec\ndef f_rec(n):\n    raise AssertionError('f_iter should carry its own state, not call f_rec')\ntry:\n    assert f_iter(10) == 1892\n    try:\n        f_iter(3000)\n    except RecursionError:\n        raise AssertionError(\n            'f_iter(3000) ran out of stack. An iterative process keeps a fixed '\n            'amount of state; Python does not turn tail calls into a loop, '\n            'so write the state update as a loop') from None\nfinally:\n    f_rec = _real_f_rec"
         }
       ],
       "hints": [
         "For `f_rec`, translate the mathematical definition directly into an `if` expression or `if` statement.",
         "For `f_iter`, start with `a, b, c = 0, 1, 2`.",
         "The next value is `c + 2*b + 3*a`.",
-        "After computing the next value, slide the window forward: old `b` becomes new `a`, old `c` becomes new `b`, and `next_value` becomes new `c`."
+        "After computing the next value, slide the window forward: old `b` becomes new `a`, old `c` becomes new `b`, and `next_value` becomes new `c`.",
+        "In Scheme a tail-recursive helper is an iterative process. Python keeps every call on the stack, so here the iterative version is a `for` or `while` loop."
       ],
       "solution": "def f_rec(n):\n    if n < 3:\n        return n\n    return f_rec(n - 1) + 2 * f_rec(n - 2) + 3 * f_rec(n - 3)\n\n\ndef f_iter(n):\n    if n < 3:\n        return n\n    a, b, c = 0, 1, 2\n    for k in range(3, n + 1):\n        next_value = c + 2 * b + 3 * a\n        a, b, c = b, c, next_value\n    return c"
     }
