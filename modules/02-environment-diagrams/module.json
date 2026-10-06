@@ -24,5 +24,5 @@
   "format": "lesson-visual-lab",
   "publicationStatus": "draft",
   "estimateNote": "Author estimate, not learner-measured: lesson 20-25 minutes (about 2,400 words of prose, eight code blocks, three figures); lab 40-55 minutes (five exercises written from stubs, about 6-15 minutes each). Reference reading excluded.",
-  "sourceAttribution": "Follows section 3.2 (The Environment Model of Evaluation) of Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman with Julie Sussman, using the book's examples (sum-of-squares, make-withdraw, sqrt with internal definitions) translated to Python; prose, figures and exercises are original. Independent course; not endorsed by MIT or UC Berkeley."
+  "sourceAttribution": "Follows section 3.2 (The Environment Model of Evaluation) of Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman with Julie Sussman, using the book's examples (sum-of-squares, make-withdraw, sqrt with internal definitions) translated to Python; prose, figures and exercises are original. Independent course; not endorsed by MIT or UC Berkeley. The lesson is shared under CC BY-SA 4.0."
 }

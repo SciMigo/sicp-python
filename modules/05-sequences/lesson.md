@@ -250,7 +250,7 @@ Build the book's same-parity operation, trace requests through a lazy pipeline, 
 3. Does `yield` alone promise bounded memory or eventual output?
 4. Which part of a prefix cost depends on the positions of accepted items?
 
-## References and licence
+## Reference and licence
 
 The lesson follows SICP §§2.2.1 and 2.2.3 by Harold Abelson and Gerald Jay Sussman with Julie Sussman. The shared [book reference](../../reading/05-sequences.html) also contains other sections; §2.2.2 is taught in Module 6. Examples are translated to Python, with new prose and figures. This lesson is shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); it is an independent course, not endorsed by MIT or UC Berkeley.
 

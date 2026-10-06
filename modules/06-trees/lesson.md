@@ -319,6 +319,8 @@ The lab uses a different hierarchy and asks for functions this lesson has not wr
 2. How can a transformation preserve leaf count while changing shape?
 3. Why does the linear bound for processing `fib_tree(5)` say nothing by itself about the cost of constructing `fib_tree(n)`?
 
-## Optional background
+## Reference and licence
 
-The [SICP reading for this module](../../reading/06-trees.html) is the book's own section 2.2, kept as a reference. This lesson does not depend on it.
+This lesson follows section 2.2.2 of the book. The [book's own text for section 2.2](../../reading/06-trees.html) is kept as a reference; the lesson does not depend on it. The labelled-tree vocabulary (`tree`, `label`, `branches`, `is_leaf`, `fib_tree`) follows John DeNero's *Composing Programs* (CC BY-SA 3.0).
+
+The examples and exercise statements are adapted from *Structure and Interpretation of Computer Programs*, second edition, by Harold Abelson and Gerald Jay Sussman with Julie Sussman. This lesson is shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); its prose, Python translations and figures are this course's changes. Independent course; not endorsed by MIT or UC Berkeley.

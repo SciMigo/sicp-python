@@ -286,6 +286,8 @@ The lab runs on the frame model from this lesson, with different numbers. You wi
 2. After `W1 = make_withdraw(100)` returns, which frame is still reachable, and through what?
 3. What changes in your diagram of `withdraw` if the `nonlocal` line is removed?
 
-## Optional background
+## Reference and licence
 
-This lesson follows section 3.2 of *Structure and Interpretation of Computer Programs*; the [book's text with Python translations](../../reading/02-environment-diagrams.html) is kept as a reference.
+This lesson follows section 3.2 of the book. The [book's text with Python translations](../../reading/02-environment-diagrams.html) is kept as a reference.
+
+The examples and exercise statements are adapted from *Structure and Interpretation of Computer Programs*, second edition, by Harold Abelson and Gerald Jay Sussman with Julie Sussman. This lesson is shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); its prose, Python translations and figures are this course's changes. Independent course; not endorsed by MIT or UC Berkeley.

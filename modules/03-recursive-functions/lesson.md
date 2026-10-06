@@ -289,6 +289,8 @@ The lab has three rounds, like the lesson, on different functions. In round 1 yo
 2. Why does `count_change` not count "dime then nickel" and "nickel then dime" as two ways?
 3. Which resource does memoizing `fib` improve, and which one stays proportional to $n$?
 
-## Optional background
+## Reference and licence
 
-The [SICP reading for this module](../../reading/03-recursive-functions.html) is the book's own section 1.2, with the Scheme originals. This lesson uses its examples; the reading goes further, into testing for primality.
+This lesson follows section 1.2 of the book and uses its examples. The [book's own text](../../reading/03-recursive-functions.html), with the Scheme originals, is kept as a reference; it goes further, into testing for primality.
+
+The examples and exercise statements are adapted from *Structure and Interpretation of Computer Programs*, second edition, by Harold Abelson and Gerald Jay Sussman with Julie Sussman. This lesson is shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); its prose, Python translations and figures are this course's changes. Independent course; not endorsed by MIT or UC Berkeley.
