@@ -1,0 +1,23 @@
+{
+  "title": "Build: preserve a selected subsequence",
+  "checklist": [
+    {
+      "step": "Retain matching parity in order, including zero and duplicates",
+      "checks": [
+        "parity_values"
+      ]
+    },
+    {
+      "step": "Show each visited prefix and its retained subsequence",
+      "checks": [
+        "parity_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "Filtering changes which values remain, not their relative order or their multiplicity.",
+    "The first value establishes the parity rule and is itself part of the input.",
+    "Visit each argument once, append matching values, and draw only the prefix that has actually been visited."
+  ],
+  "questions": []
+}

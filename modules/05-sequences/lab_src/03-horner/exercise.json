@@ -1,0 +1,23 @@
+{
+  "title": "Implement: evaluate from ordered coefficients",
+  "checklist": [
+    {
+      "step": "Evaluate varied coefficient sequences without mutation",
+      "checks": [
+        "polynomial_values"
+      ]
+    },
+    {
+      "step": "Record each completed suffix from highest coefficient to lowest",
+      "checks": [
+        "polynomial_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "The already completed higher terms can be reused instead of evaluating each power independently.",
+    "Check which end of the coefficient sequence represents the highest power.",
+    "Carry one suffix result from right to left, extending it with the current coefficient before drawing."
+  ],
+  "questions": []
+}

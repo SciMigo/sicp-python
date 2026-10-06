@@ -1,0 +1,1 @@
+Previous lab and slide outline archived. The shared book reading at reading/05-sequences.html remains an optional reference. The new module covers only SICP §§2.2.1 and 2.2.3 plus a Python generator extension; Module 6 owns §2.2.2.

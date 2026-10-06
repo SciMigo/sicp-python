@@ -21,6 +21,13 @@
     "subtitle": "Follow SICP 1.2 in Python: factorial as a recursive and an iterative process, Fibonacci and counting change as tree recursion, orders of growth, exponentiation by squaring and Euclid's algorithm. Then trace waiting calls, compute each state once, and handle inputs too deep to recurse on."
   },
   {
+    "id": "05-sequences",
+    "label": "5 · Sequences",
+    "eyebrow": "MODULE 05 · SEQUENCES",
+    "heading": "Lists, conventional sequence stages and Python generators",
+    "subtitle": "Represent ordered sequences, map and filter while preserving order, distinguish fold direction, and trace how generators respond to demand. Measure actual source reads and stop a preview at its requested boundary."
+  },
+  {
     "id": "06-trees",
     "label": "6 · Trees",
     "eyebrow": "MODULE 06 · TREES",
