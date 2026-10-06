@@ -1,218 +1,283 @@
 # Higher-order functions: pass the rule, keep the process
 
-## The same work, a different rule
+## Three sums that are one sum
 
-A community workshop receives contributions in units of effort: 2, 5, and 3. One sponsor credits three points per unit plus one point for each contribution. The individual credits are 7, 16, and 10; the total is 33. Another sponsor credits the square of each contribution. Its total is 38. The list stays the same, and the process of visiting each contribution and adding its credit stays the same. Only the rule changes.
+Add the integers from 1 to 10 and you get 55. Add their cubes and you get 3025. Add the terms $\frac{1}{1\cdot 3} + \frac{1}{5\cdot 7} + \frac{1}{9\cdot 11} + \dots$ up to a first factor of 1000, multiply by 8, and you get 3.1395…, which creeps towards $\pi$. These are the three sums that open section 1.3 of *Structure and Interpretation of Computer Programs*, and they are the same program written three times.
 
 ```figure
-{"type":"array_state","params":{"values":[2,5,3],"indices":true},"caption":"Workshop contributions, in their original order. A credit rule supplies the meaning of each contribution."}
+{"type":"array_state","params":{"values":[1,8,27,64],"indices":false,"brackets":[{"from":0,"to":2,"label":"added so far: 36"}]},"caption":"The cubes of 1, 2, 3 and 4. After three terms the running total is 36; the fourth term, 64, has not been added yet."}
 ```
 
-This module assumes you can define a Python function, call it, write a loop, and return a value. It does not assume knowledge of closures or recursion. The goal is to recognize which part of a program is a reusable process and which part is a choice of behavior. You will also distinguish creating a function from executing it, trace the order of composed operations, and explain how much work a returned function performs when called.
+This module assumes you can define a Python function, call it, write a loop and return a value. It does not assume closures or recursion. By the end you will be able to pass a function to another function, return a function from a function, say which of the two is happening in a line of code, and count how much work a returned function does when it is finally called.
 
-A **higher-order function** accepts a function as an argument or returns a function as its result. This is a capability of ordinary Python functions, rather than a separate kind of object you must learn to construct. The name describes the role a function plays in a program.
+A **higher-order function** takes a function as an argument or returns one as its result. It is an ordinary Python function; the name describes what it does with other functions.
 
-## The obvious approach duplicates the process
+## Writing it three times
 
-We could write one loop that computes sponsor credits and another loop that computes squares. Both initialize a total, visit each element, compute a contribution, add it, and return the total. When we discover a bug in the visit order or need to support an empty list, we have two places to repair.
+Here are the three sums as a first draft.
 
 ```python
-units = [2, 5, 3]
-
-def sponsor_total(values):
+def sum_integers(a, b):
     total = 0
-    for value in values:
-        total += 3 * value + 1
+    while a <= b:
+        total += a
+        a += 1
     return total
 
-def square_total(values):
+def sum_cubes(a, b):
     total = 0
-    for value in values:
-        total += value * value
+    while a <= b:
+        total += a * a * a
+        a += 1
     return total
 
-assert sponsor_total(units) == 33
-assert square_total(units) == 38
+def pi_sum(a, b):
+    total = 0
+    while a <= b:
+        total += 1 / (a * (a + 2))
+        a += 4
+    return total
+
+assert sum_integers(1, 10) == 55
+assert sum_cubes(1, 10) == 3025
+assert abs(8 * pi_sum(1, 1000) - 3.139592655589782) < 1e-12
 ```
 
-Copying a loop is sometimes a sensible first draft. It helps us see the common structure before choosing an interface. But the differences here are small and precise: two expressions compute the contribution of one value. We can give each expression a function name, then pass that function into one shared process.
+Lay the three bodies side by side. Each starts a total at zero, visits points from `a` while `a <= b`, adds something computed from the current point, and moves to the next point. Only two things differ: **what is added** (`a`, `a * a * a`, `1 / (a * (a + 2))`) and **how to step** (`a + 1` or `a + 4`).
 
-This does not automatically make the process faster. We are separating responsibilities so that the rule can change without duplicating the traversal. An abstraction should earn its place by naming a real shared pattern; turning every line into a callback would make the program harder to follow.
+Copying a loop is a reasonable way to find out what the copies share. Leaving it copied means a mistake in the loop, such as `<` where `<=` was meant, has to be found and fixed three times. Mathematicians saw the same pattern long ago and gave it a name, the sigma notation $\sum_{n=a}^{b} f(n)$, so that they could talk about sums in general. We want the same thing in code: one function that is the sum, with the two differences passed in.
 
 ## A function value is not its result
 
-The name of a function refers to a callable object. Adding parentheses asks Python to invoke that object on arguments. Those are different operations. If a process needs a rule to apply to future values, give it the callable, not a number that one call happened to return.
+To pass "what is added" into a function, we have to hand over the rule itself, not a number the rule once produced. In Python a function's name refers to a callable object. Putting parentheses after it calls the object. Those are different things.
 
 ```python
-def sponsor_credit(value):
-    return 3 * value + 1
+def cube(x):
+    return x * x * x
 
-rule = sponsor_credit
+rule = cube
 assert callable(rule)
-assert rule(2) == 7
-result = sponsor_credit(2)
-assert result == 7
+assert rule(3) == 27
+
+result = cube(3)
+assert result == 27
 assert not callable(result)
 ```
 
-Assigning `rule` does not copy the function's source or run its body. It gives another name to the same function object. A parameter can hold that value just as it can hold a number or a list. Inside a higher-order function, a call such as `rule(value)` uses whichever callable was supplied by the caller.
+`rule = cube` does not run `cube` and does not copy it. It gives the same function object a second name. A parameter can hold a function in exactly the way it can hold a number or a list.
 
-??? predict "What changes if we pass sponsor_credit(2) instead of sponsor_credit?"
-    We pass the integer 7. A later attempt to call that value as a rule raises TypeError. The problem is the argument's role, not the spelling of its name.
+??? predict "What happens if a function that expects a rule is given cube(3) instead of cube?"
+    It receives the integer 27. The first time it tries `term(a)` Python raises `TypeError: 'int' object is not callable`. The call that built the argument ran too early.
 
-## Follow the processed prefix
+## One process, two parameters
 
-For the sponsor rule, the total begins at zero. After visiting the first contribution it is 7; after the second it is 23; after the third it is 33. At each point, the total describes exactly the part of the input already processed.
-
-```figure
-{"type":"array_state","params":{"values":[7,16,10],"brackets":[{"from":0,"to":1,"label":"processed"}],"indices":true},"caption":"Credits after applying the rule. After two contributions, the processed prefix totals 23; the final contribution has not yet been added."}
-```
-
-!!! invariant "The processed-prefix rule"
-    Before each iteration, the total is the sum of the credits for exactly the values already visited, with each visited value credited once.
-
-Initially there are no visited values, so zero satisfies the invariant. Suppose it holds before an iteration. Applying the rule to the next value and adding its result extends the total to the next prefix. When no values remain, the processed prefix is the whole input, so the invariant gives the required answer.
-
-Termination has its own reason: a loop over a finite list finishes after one iteration per element, assuming each callback finishes. The invariant proves the meaning of the answer. A loop that terminates but adds each contribution twice would still be wrong.
-
-Here is an alternative way to express the same process using a generator expression and Python's `sum`. The lab asks you to write an explicit loop and expose its intermediate state; this expression is a compact oracle for the lesson's totals.
+Give the two differences names, `term` for what is added and `next` for how to step, and the three loops collapse into one.
 
 ```python
-def credit_total(values, rule):
-    return sum(rule(value) for value in values)
+def summation(term, a, next, b):
+    total = 0
+    while a <= b:
+        total += term(a)
+        a = next(a)
+    return total
 
-assert credit_total(units, sponsor_credit) == 33
-assert credit_total(units, lambda value: value * value) == 38
-assert credit_total([], sponsor_credit) == 0
+def identity(x):
+    return x
+
+def inc(x):
+    return x + 1
+
+assert summation(identity, 1, inc, 10) == 55
+assert summation(cube, 1, inc, 10) == 3025
+assert summation(cube, 5, inc, 4) == 0      # an empty range adds nothing
 ```
 
-A **lambda expression** creates a function whose body is one expression. It is useful for a short rule used at one call site. It does not change the rules of evaluation or make a function faster. Prefer a named `def` when the rule needs explanation, multiple statements, or reuse.
+!!! invariant "The running total"
+    Before each test of `a <= b`, `total` is the sum of `term(x)` over exactly the points already visited, each counted once.
 
-## The interface carries a promise
+Before the first test no point has been visited and the total is zero, so the statement holds. If it holds before an iteration, the body adds `term(a)` for the one new point and moves on, so it holds before the next test. When the test fails, every point from the start up to `b` has been visited, and the invariant says the total is the answer.
 
-The shared process expects a rule that accepts one input value and returns a numeric contribution. Not every callable meets that contract. A two-argument function is callable but cannot be used here without adapting its interface. A function returning a string is also callable, but its results cannot be added to the initial numeric zero.
+Termination is a separate question, and here it is the caller's responsibility: `next` has to move `a` past `b` eventually. Pass `identity` as `next` and the loop never ends, although the invariant stays true the whole time.
 
-Call order can matter. A callback may append to a log, read a changing external value, or raise an exception. Our process visits inputs in order and calls the rule once per visited element. If the rule raises on the second input, the process stops there and propagates the exception; it does not promise a total for the remaining inputs.
+## Lambda: a rule without a name
 
-For explanations and basic examples we prefer rules without side effects. For checks, an instrumented rule that records its calls is useful: it can expose accidental repeated evaluation that a final numeric result would hide. Correct output on a few inputs is weaker evidence than correct output plus the promised call sequence.
-
-## Return a configured rule
-
-Sometimes the caller wants to set up a rule now and use it later. A workshop might charge at least a minimum amount, while still charging larger contributions at their face value. A factory receives that minimum and returns the rule.
+`pi_sum` needs a term and a step that nothing else will use. Naming them `pi_term` and `pi_next` would work. A **lambda expression** writes a small function in place, with no name.
 
 ```python
-def make_minimum_charge(minimum):
-    def charge(value):
-        return max(minimum, value)
-    return charge
+def pi_sum(a, b):
+    return summation(lambda x: 1 / (x * (x + 2)), a, lambda x: x + 4, b)
 
-small_event = make_minimum_charge(4)
-large_event = make_minimum_charge(9)
-assert callable(small_event) and callable(large_event)
-assert small_event(2) == 4
-assert large_event(2) == 9
-assert small_event(11) == 11
-assert small_event(2) == 4  # another factory did not overwrite its setting
+assert abs(8 * pi_sum(1, 1000) - 3.139592655589782) < 1e-12
+assert (lambda x: x + 4)(1) == 5
 ```
 
-The outer call creates the inner function and returns it. The inner body has not yet processed a contribution. When we call `small_event(2)`, its parameter is 2 and its free variable `minimum` refers to the binding associated with the outer call that created it. Each invocation of the factory creates its own such binding.
+`lambda x: x + 4` is a function whose body is the single expression `x + 4`. It behaves like the `def` version in every way except that it has no name and can hold only one expression. Use `def` when the rule needs several statements, a docstring, or a second caller.
 
-A function together with access to its enclosing bindings is called a **closure**. An environment diagram can show those bindings surviving for use by a returned function. That is a semantic model; CPython does not need to preserve an entire old call frame. In CPython, captured variables use cells referenced by the closure.
+Once the sum exists as a function, other ideas can be built on it. The area under a curve between `a` and `b` is close to the sum of the curve's height at the middle of each small strip, times the strip's width `dx`:
 
-Closures capture bindings, rather than making an automatic deep copy of every object. If a captured binding refers to a mutable list, changing that list can change the returned function's behavior. A factory that promises a snapshot must copy or summarize the relevant settings deliberately. Module 7 will examine mutation and identity in detail.
+```python
+def integral(f, a, b, dx):
+    return summation(f, a + dx / 2, lambda x: x + dx, b) * dx
+
+assert abs(integral(cube, 0, 1, 0.01) - 0.2499875) < 1e-9
+assert abs(integral(cube, 0, 1, 0.001) - 0.249999875) < 1e-9
+```
+
+The exact area under $x^3$ from 0 to 1 is $\frac14$. Notice that `integral` is itself higher-order: it takes the curve `f` as an argument.
+
+## Functions as general methods
+
+Passing a function is more than a way to shorten sums. A number $x$ is a **fixed point** of $f$ when $f(x) = x$. For some functions you can find one by guessing and applying $f$ again and again until the value stops moving.
+
+```python
+import math
+
+def fixed_point(f, guess, tolerance=1e-5):
+    while True:
+        new = f(guess)
+        if abs(new - guess) < tolerance:
+            return new
+        guess = new
+
+assert abs(fixed_point(math.cos, 1.0) - 0.7390822985224024) < 1e-9
+```
+
+`fixed_point` knows nothing about cosines. It is a method for a whole family of problems, and the function you pass selects the problem.
+
+The square root of 2 is a fixed point of $y \mapsto 2/y$, because $y = 2/y$ means $y^2 = 2$. But the search fails: from a guess of 1 the next guess is 2, then 1, then 2, for ever. The repair is to move only half-way each time, replacing $y$ by the average of $y$ and $2/y$.
+
+??? predict "Starting from 1.0, what are the first two guesses when each new guess is the average of y and 2/y?"
+    1.5, then about 1.4167. The average of 1 and 2 is 1.5; the average of 1.5 and 2/1.5 = 1.333… is 1.41666….
+
+## Returning a function
+
+Averaging a value with $f$ of that value is a transformation that works for any $f$. So write it as a function that takes $f$ and returns the averaged function.
+
+```python
+def average_damp(f):
+    def damped(x):
+        return (x + f(x)) / 2
+    return damped
+
+def square(x):
+    return x * x
+
+assert average_damp(square)(10) == 55.0
+
+def sqrt(x):
+    return fixed_point(average_damp(lambda y: x / y), 1.0)
+
+assert abs(sqrt(2) - math.sqrt(2)) < 1e-9
+```
+
+Read `average_damp(square)(10)` from the left. `average_damp(square)` runs the outer body, which defines `damped` and returns it without calling it. The trailing `(10)` then calls `damped`, which computes the average of 10 and `square(10)`: 55.
+
+When `damped` finally runs, long after `average_damp` has returned, it still finds `f`. A function that keeps access to the variables of the call that created it is a **closure**. Each call of `average_damp` creates its own `f`, so two damped functions do not interfere. Module 2 draws this as a diagram and explains exactly which variable a name refers to.
+
+The same move gives the derivative. The derivative of a function is another function, so `deriv` takes one and returns one; and Newton's method for solving $g(x) = 0$ is then a fixed-point search on a function built from `g`.
+
+```python
+def deriv(g, dx=1e-5):
+    return lambda x: (g(x + dx) - g(x)) / dx
+
+assert abs(deriv(cube)(5) - 75) < 1e-3
+
+def newtons_method(g, guess):
+    return fixed_point(lambda x: x - g(x) / deriv(g)(x), guess)
+
+assert abs(newtons_method(lambda y: y * y - 2, 1.0) - math.sqrt(2)) < 1e-9
+```
+
+The body of `newtons_method` uses three ideas from this page: a function passed in (`g`), a function returned (`deriv(g)`), and a general method (`fixed_point`) that neither knows nor cares what it is searching for.
 
 ## Order is part of composition
 
-Suppose one operation doubles a value and another adds five. Doubling after adding five to 4 gives 18. Adding five after doubling 4 gives 13. The same two operations produce different answers because composition is ordered.
+Writing `f(g(x))` means: call `g` first, then give its result to `f`. The name that appears first runs last.
 
 ```python
-def double(value):
-    return 2 * value
-
-def add_five(value):
-    return value + 5
-
-assert double(add_five(4)) == 18
-assert add_five(double(4)) == 13
+assert square(inc(6)) == 49
+assert inc(square(6)) == 37
 ```
 
-The notation `f(g(x))` means evaluate `g(x)` first, then give its returned value to `f`. It does not mean that `f` runs first because its name appears first. If a factory constructs the composed operation, construction should store or capture the operations without calling them on a made-up input.
+??? predict "Would inc and a function that adds 5 show which of two compositions was reversed?"
+    No. Adding 1 then 5 gives the same result as adding 5 then 1. To test order, use two operations that do not commute, such as `square` and `inc`.
 
-??? predict "Would two adders expose reversed composition order?"
-    Usually not: adding two fixed constants gives the same result in either order. Test with operations that do not commute, such as doubling and adding five.
+Applying one function several times is composition with itself. Zero applications should return the input untouched and call nothing. One practical point for Python: building "apply `f` 3000 times" as 3000 nested calls can exceed the interpreter's recursion limit (about 1000 frames by default in CPython), while a loop inside the returned function has no such limit.
 
-That is a general testing lesson. An example should distinguish the behavior you intend from the plausible mistake you fear. Testing only two adders makes a reversed implementation look correct.
+## Count calls, not seconds
 
-## Repeated behavior and identity
-
-A returned function can also represent a request to apply one rule a chosen number of times. Define the zero case before coding: zero applications should return the original input and should not call the rule. This is the **identity** behavior. It works even when the input is a string, tuple, or object rather than a number.
-
-Each use of the returned function should begin a fresh sequence. Calling it twice must not keep increasing the repetition count or carry the previous result into the next call. The configuration belongs to the factory; the current input and current intermediate result belong to each invocation.
-
-It is tempting to build a chain of nested composed functions. That is mathematically valid, but calling a sufficiently long chain in Python may exceed the recursion limit. An ordinary loop inside the returned function can perform many applications with constant auxiliary storage for the intermediate value. That approach also gives a straightforward place to count calls.
-
-## Count callbacks, not stopwatch readings
-
-Let $n$ be the number of input values. The total-credit process makes exactly $n$ callback calls on a successful traversal. If callback $i$ costs $c_i$, total work includes the traversal plus all of those callback costs. Calling an expensive function through an abstraction does not make its computation constant-time.
-
-Under the teaching model of constant-time callbacks and bounded-size numeric arithmetic, traversal takes $\Theta(n)$ time. An explicit loop needs $O(1)$ auxiliary storage when it keeps only a running total. Recording every prefix for visualization adds storage and drawing work, which is excluded from this bound. The input list's storage is also separate.
+How much work does a higher-order function do? Count the calls it makes to the function it was given. `summation` calls `term` once per point, so `integral` with strip width `dx` over an interval of length 1 makes about $1/dx$ calls. Wrapping the function in a counter measures it without changing the answer.
 
 ```python
-def count_credit_calls(values):
-    calls = []
-    def recorded_rule(value):
-        calls.append(value)
-        return value + 2
-    answer = credit_total(values, recorded_rule)
-    assert calls == list(values)
-    return answer, len(calls)
+def counted(f):
+    calls = [0]
+    def wrapper(x):
+        calls[0] += 1
+        return f(x)
+    return wrapper, calls
 
-for size in (6, 18, 54):
-    answer, calls = count_credit_calls(list(range(size)))
-    assert calls == size
-    assert answer == size * (size - 1) // 2 + 2 * size
+rows = []
+for dx in (0.1, 0.01, 0.001):
+    f, calls = counted(cube)
+    area = integral(f, 0, 1, dx)
+    rows.append((dx, calls[0], abs(area - 0.25)))
+
+assert [calls for _, calls, _ in rows] == [10, 100, 1000]
+assert [round(error / dx ** 2, 3) for dx, _, error in rows] == [0.125, 0.125, 0.125]
 ```
 
-| Input values | Callback calls | Calls per value |
+| Strip width `dx` | Calls to `f` | Error |
 |---:|---:|---:|
-| 6 | 6 | 1 |
-| 18 | 18 | 1 |
-| 54 | 54 | 1 |
+| 0.1 | 10 | 0.00125 |
+| 0.01 | 100 | 0.0000125 |
+| 0.001 | 1000 | 0.000000125 |
 
-These counts illustrate the invariant and call contract; three measurements do not prove a bound for every input. The loop argument supplies that proof. Python integer arithmetic can take more time as integers grow, so the unit-cost model should not be mistaken for a guarantee about arbitrarily large numeric values.
+Ten times the calls buys a hundred times less error on this curve: the error is $0.125\,dx^2$ in all three rows. That is a measurement on $x^3$ over $[0, 1]$, not a theorem about every function.
 
-A repeated operation configured for $k$ applications similarly makes exactly $k$ callback calls each time it is invoked. Creating the returned function can be constant-time if it stores the rule and count, while invoking it has work proportional to $k$ under the same callback model. Always say whether a cost describes setup or later execution.
+For `summation` the count is exact. With $n$ points it makes $n$ calls to `term` and $n$ to `next`, so its running time is $\Theta(n)$ when each of those calls takes constant time and the numbers stay small enough for arithmetic to be constant-time. It keeps one running total, so it needs $O(1)$ extra space.
+
+`fixed_point` is different: nothing in its code says how many calls it will make. That depends on the function and the tolerance.
+
+```python
+def calls_to_converge(f, guess, tolerance=1e-5):
+    g, calls = counted(f)
+    fixed_point(g, guess, tolerance)
+    return calls[0]
+
+assert calls_to_converge(math.cos, 1.0) == 29
+assert calls_to_converge(average_damp(lambda y: 2 / y), 1.0) == 4
+```
+
+Cosine needs 29 calls from a guess of 1.0; the damped square-root search needs 4. Always say whether a cost belongs to building a function or to calling it: `average_damp(f)` does a constant amount of work, and all the cost arrives when the function it returned is called.
 
 ## A problem that looks different
 
-A display system accepts a formatting rule from each caller. One caller wants a compact label, another wants a verbose label, and another wants to conceal personal information. The system must preserve the order of records and apply the chosen rule once per displayed record. Which responsibility belongs in the shared process, and which belongs in the caller's rule?
-
-This is also the role of Python's `sorted` key argument: the caller supplies a way to obtain a comparison key for each element. A key function computes a value; it does not directly decide the whole ordering process. Recognizing this interface is more useful than memorizing a special syntax for one example.
+A contact list has to be shown sorted three ways: by surname, by most recent message, and by distance from the viewer. The sorting procedure is the same each time. What would you pass in so that one sort serves all three, and how many times would you expect it to be called for a list of $n$ contacts?
 
 ## Practise
 
-In the visual lab, your own code will expose intermediate totals and the inputs and outputs of composed operations. You will construct a callable, check that repeated invocations remain independent, and measure actual callback calls on unfamiliar sizes. The final task uses fixed settings and later incoming readings; its prompt asks for the behavior and budget without naming the technique.
+In the lab your own code generalises the sum one step further, traces which function runs first in a composition, builds a function that applies another one $n$ times, and measures the calls a fixed-point search really makes. The last exercise describes a service with a work budget and does not say which idea from this page meets it.
 
 ## Recap
 
-**You can now:** Pass behavior as a function value, return configured behavior, distinguish creation from invocation, and trace ordered composition.
+**You can now:** Pass a function as an argument, return a function configured by its creator, tell creating a function from calling it, and count the calls a higher-order function makes.
 
-**Invariant:** A processed prefix includes exactly one contribution from each visited input.
+**Invariant:** Before each test, the running total is the sum of `term` over exactly the points already visited.
 
-**Complexity achieved:** A successful traversal makes exactly $n$ callback calls; it is $\Theta(n)$ time with constant-time callbacks and bounded-size arithmetic. Setup and execution costs are separate.
+**Complexity achieved:** `summation` over $n$ points makes exactly $n$ calls to `term` and $n$ to `next`: $\Theta(n)$ time with constant-time callbacks and bounded-size numbers, $O(1)$ extra space. Building a function and calling it are costed separately.
 
-**Failure mode:** Supplying a function's result instead of the function, reversing composition, or keeping invocation state across calls.
+**Failure mode:** Passing `f(x)` where `f` was meant; reading `f(g(x))` left to right; a `next` that never passes `b`.
 
-**In real software:** Python's `sorted` accepts a key function. This is a standard example of separating caller-supplied behavior from a shared process.
+**In real software:** Python's `sorted(items, key=f)` takes the rule as an argument and calls it once per item.
 
-**Retrieval:** From prerequisite Python: how does `return` differ from `print`, and which one lets a caller use a computed value?
+**Retrieval:** From your earlier Python: how does `return` differ from `print`, and which one lets a caller use the value?
 
 ## Check yourself
 
-1. Why can two functions that both add constants be a weak composition test?
-2. Does a callback that terminates guarantee that its enclosing traversal computes the intended total?
-3. Which costs change if a callback begins sorting a large list internally?
+1. In `average_damp(square)(10)`, which call runs the body of `damped`, and what has already finished by then?
+2. `summation` terminates on your input. Does that tell you its total is right?
+3. Why can the number of calls made by `fixed_point` not be read off its code the way `summation`'s can?
 
-## Optional background
+## Reference
 
-The [original SICP-derived reading](../../reading/01-higher-order-functions.html) is preserved separately. It ranges more widely, including numerical examples not required for this module. This is an independent Python learning module, not an endorsed university offering.
+This lesson follows section 1.3 of *Structure and Interpretation of Computer Programs* (Abelson, Sussman and Sussman), with its examples rewritten in Python. The [book's own text for this section](../../reading/01-higher-order-functions.html) is kept as a reference; it also covers the half-interval method and `let`, which this lesson leaves out.

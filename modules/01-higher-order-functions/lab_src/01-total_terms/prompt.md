@@ -1,1 +1,0 @@
-Repair `total_terms(values, term)` to add `term(value)` for every input, exactly once and in order. Empty input returns 0 without calling `term`. After each input, call `show(values, processed, total)` to record the processed prefix and its actual total. The supplied loop currently adds raw values, so changing the rule has no effect.

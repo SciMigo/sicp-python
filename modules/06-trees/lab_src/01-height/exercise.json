@@ -1,0 +1,22 @@
+{
+ "title": "Build: how deep does it go?",
+ "checklist": [
+  {
+   "step": "Return the height on varied shapes and labels",
+   "checks": [
+    "structural_height"
+   ]
+  },
+  {
+   "step": "Record each completed subtree with its true height",
+   "checks": [
+    "completion_frames"
+   ]
+  }
+ ],
+ "hints": [
+  "Decide what one completed call promises: the height of exactly its own subtree.",
+  "Look at a leaf first. It has no children, so what must it return, and does its label matter?",
+  "An internal node is one node taller than its tallest child. Ask every child, keep the largest answer, then count the node itself."
+ ]
+}

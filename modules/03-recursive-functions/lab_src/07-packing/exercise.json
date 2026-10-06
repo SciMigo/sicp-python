@@ -15,9 +15,9 @@
     }
   ],
   "hints": [
-    "What does the largest request require from the order in which smaller answers are completed?",
-    "All permitted batch sizes reduce the requested unit count. Can those dependencies already be available?",
-    "Complete answers for increasing unit counts and reuse the preceding answers needed by each batch size."
+    "Try n = 6 with sizes 1 and 4 on paper. Which amounts does the starter work out more than once?",
+    "Every permitted size makes the amount smaller. So what does the answer for an amount depend on, and could all of that be finished before you reach it?",
+    "Choose an order for the amounts in which nothing an amount needs is still unfinished, and keep each finished count where a later amount can find it."
   ],
   "questions": [
     {

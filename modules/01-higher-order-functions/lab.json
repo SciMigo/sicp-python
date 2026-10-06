@@ -1,87 +1,87 @@
 {
  "schema_version": "lab_v1",
  "lab_spec_id": "sicp-python-01-higher-order-functions",
- "title": "Functions as behavior",
- "description": "Build a callback-driven total, trace ordered calls, return repeated behavior, count calls, then prepare a reading service.",
+ "title": "Functions as arguments and results",
+ "description": "Fold a range with any combiner, trace a composition, apply a function n times, count the calls a fixed-point search makes, then prepare a reading service within a budget.",
  "runtime": {
   "engine": "pyodide",
   "timeout_ms": 15000
  },
  "recap": {
   "learned": [
-   "Pass a callable instead of its computed result.",
-   "Trace composition with operations whose order matters.",
-   "Return independent functions with fresh state for each invocation.",
-   "Separate setup work from the cost of using configured behavior."
+   "Pass a function where a rule is needed, not the value one call returned.",
+   "Read f(g(x)) inside out, and test order with functions that do not commute.",
+   "Return a function that keeps its settings and starts afresh on every call.",
+   "Count the calls a higher-order function makes by wrapping what you pass it."
   ],
-  "invariant": "After i inputs, the running total contains exactly one callback result for each of those i inputs.",
-  "complexity": "n inputs require n callback calls; k repetitions require k calls per invocation. Bounds assume constant-time callbacks and bounded-size arithmetic, excluding drawing.",
-  "common_mistake": "Returning a value where a callable is required, or reversing f(g(x)).",
+  "invariant": "Before each step, the running result is the fold of term over exactly the points already visited.",
+  "complexity": "A fold over n points makes n calls each to term, next and combiner; repeated(f, n) makes n calls per use. Bounds assume constant-time callbacks and bounded-size numbers; drawing is excluded.",
+  "common_mistake": "Passing f(x) where f was meant, or reading f(g(x)) left to right.",
   "in_real_programs": [
-   "Python sorted accepts a caller-supplied key function."
+   "Python's sorted(items, key=f) takes the rule as an argument and calls it once per item."
   ],
   "retrieval": {
-   "question": "Prerequisite Python: return or print—which gives a value to the caller?",
-   "answer": "return supplies the value; print writes text as a side effect."
+   "question": "From your earlier Python: return or print — which hands a value back to the caller?",
+   "answer": "return hands the value back; print only writes text."
   }
  },
  "exercises": [
   {
-   "exercise_id": "total_terms",
-   "title": "Build: pass the credit rule",
-   "prompt_md": "Repair `total_terms(values, term)` to add `term(value)` for every input, exactly once and in order. Empty input returns 0 without calling `term`. After each input, call `show(values, processed, total)` to record the processed prefix and its actual total. The supplied loop currently adds raw values, so changing the rule has no effect.\n",
+   "exercise_id": "accumulate",
+   "title": "Build: one fold for sums and products",
+   "prompt_md": "This is SICP's exercise 1.32. A sum starts at 0 and adds each term; a product starts at 1 and multiplies. Implement `accumulate(combiner, null_value, term, a, next, b)`, which does either. Start `result` at `null_value`. Visit the points `a`, `next(a)`, and so on while the point is at most `b`; at each one compute `term(point)` once and set `result = combiner(result, that_term)`. An empty range returns `null_value` and calls none of the three functions.\n\nKeep the visited points in `xs` and their terms in `terms`, and call `show(xs, terms, result)` after each point. The starter already shows the state before the first point. The demo multiplies 1 to 5; predict the last frame before you press Run.",
    "checklist": [
     {
-     "step": "Use the supplied callback once per input",
+     "step": "Fold every term in, once each, in order",
      "checks": [
-      "callback_contract"
+      "fold_contract"
      ]
     },
     {
-     "step": "Show the invariant after every input",
+     "step": "Show the running result after every point",
      "checks": [
-      "prefix_frames"
+      "running_frames"
      ]
     }
    ],
-   "starter_code": "def total_terms(values, term):\n    total=0\n    for i,value in enumerate(values):\n        total+=value  # apply the caller's rule instead\n        show(values, i+1, total)\n    return total\nfrom scimigo import canvas, figure, frame, text\n\ndef show(values, processed, total):\n    canvas(600, 360)\n    if values:\n        brackets=[{\"from\":0,\"to\":processed-1,\"label\":\"processed\"}] if processed else []\n        figure(\"array_state\", x=0, y=0, width=600, height=300,\n               values=list(values), indices=True, brackets=brackets)\n    text(15, 335, \"Processed=\"+str(processed)+\", total=\"+str(total), size=18)\n    frame()\nprint(total_terms([4,-1,3], lambda v:v*v))\n",
+   "starter_code": "def accumulate(combiner, null_value, term, a, next, b):\n    result = null_value\n    xs, terms = [], []\n    show(xs, terms, result)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef show(xs, terms, result):\n    canvas(600, 360)\n    if terms:\n        figure(\"array_state\", x=0, y=0, width=600, height=290, values=list(terms), indices=False)\n    points = \", \".join(str(x) for x in xs) if xs else \"none\"\n    text(15, 335, \"visited x = \" + points + \"   result = \" + str(result), size=18)\n    frame()\n\ndef inc(x):\n    return x + 1\n\ndef identity(x):\n    return x\n\ndef times(result, term):\n    return result * term\n\nprint(accumulate(times, 1, identity, 1, inc, 5))\n",
    "tests": [
     {
-     "name": "callback_contract",
-     "code": "show=lambda *args: None\nimport random\nrng=random.Random(101)\nfor _ in range(40):\n    values=[rng.randrange(-8,9) for _ in range(rng.randrange(10))]\n    calls=[]\n    def rule(v):\n        calls.append(v)\n        return v*v+3\n    assert total_terms(values,rule)==sum(v*v+3 for v in values), \"Sum the caller's rule results, including duplicates and negative inputs.\"\n    assert calls==values, \"Apply the rule exactly once per value, in input order.\"\nassert total_terms([],lambda v: (_ for _ in ()).throw(AssertionError('called on empty input'))) == 0\n\n"
+     "name": "fold_contract",
+     "code": "show = lambda *args: None\nimport random\nrng = random.Random(132)\nfor _ in range(40):\n    start = rng.randrange(-6, 7)\n    step = rng.randrange(1, 4)\n    stop = start + rng.randrange(-2, 12)\n    points = list(range(start, stop + 1, step))\n    term_calls, next_calls, pairs = [], [], []\n    def term(x):\n        term_calls.append(x)\n        return x * x - 3\n    def step_by(x):\n        next_calls.append(x)\n        return x + step\n    def keep(result, value):\n        assert isinstance(result, list), \"Call combiner(result, term): the running result first, the new term second.\"\n        pairs.append((tuple(result), value))\n        return result + [value]\n    got = accumulate(keep, [], term, start, step_by, stop)\n    want = [x * x - 3 for x in points]\n    assert got == want, f\"From {start} to {stop} in steps of {step} the terms are {want}; your fold returned {got}.\"\n    assert term_calls == points, f\"Call term once per point, in order: expected {points}, saw {term_calls}.\"\n    assert next_calls == points, f\"Call next once per visited point to find the following one: expected {points}, saw {next_calls}.\"\n    assert pairs == [(tuple(want[:i]), want[i]) for i in range(len(want))], \"Call combiner(result, term) with the running result first and the new term second, once per point.\"\nassert accumulate(lambda r, t: r + t, 0, lambda x: x, 1, lambda x: x + 1, 10) == 55, \"With + and 0 this is the sum of 1..10, which is 55.\"\nassert accumulate(lambda r, t: r * t, 1, lambda x: x, 1, lambda x: x + 1, 6) == 720, \"With * and 1 this is 6 factorial, 720.\"\ndef never(*args):\n    raise AssertionError(\"An empty range must not call term, next or combiner.\")\nmarker = object()\nassert accumulate(never, marker, never, 5, never, 4) is marker, \"An empty range (a > b) returns null_value itself.\"\n"
     },
     {
-     "name": "prefix_frames",
-     "code": "from scimigo import _frame_count, _frame\nbefore=_frame_count()\nvalues=[4,-1,3]\nassert total_terms(values,lambda v:v*v)==26, \"The final square total must include all three inputs.\"\nassert _frame_count()-before==3, \"Record one frame after each processed input.\"\nfor i,total in enumerate([16,17,26]):\n    objects=_frame(before+i)\n    fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==values, \"Draw the actual input values.\"\n    assert fig['params']['brackets']==[{'from':0,'to':i,'label':'processed'}], \"The bracket must cover exactly the processed prefix.\"\n    assert any(o['kind']=='text' and o['value']==f'Processed={i+1}, total={total}' for o in objects), \"Show the true total for this prefix.\"\n\n"
+     "name": "running_frames",
+     "code": "from scimigo import _frame_count, _frame\nbefore = _frame_count()\ngot = accumulate(lambda r, t: r + t, 0, lambda x: x * x, 2, lambda x: x + 1, 5)\nassert got == 54, f\"4 + 9 + 16 + 25 is 54; your fold returned {got}.\"\nrecorded = _frame_count() - before\nassert recorded == 5, f\"Four points need one frame before the first point and one after each: 5 frames, recorded {recorded}.\"\nxs, terms, results = [2, 3, 4, 5], [4, 9, 16, 25], [0, 4, 13, 29, 54]\nfor i in range(5):\n    objects = _frame(before + i)\n    figures = [o for o in objects if o['kind'] == 'figure']\n    if i == 0:\n        assert not figures, \"The first frame shows the state before any point: no terms yet.\"\n    else:\n        assert figures and figures[0]['params']['values'] == terms[:i], f\"Frame {i + 1} must show the terms folded in so far, {terms[:i]}.\"\n    points = \", \".join(str(x) for x in xs[:i]) if i else \"none\"\n    label = \"visited x = \" + points + \"   result = \" + str(results[i])\n    assert any(o['kind'] == 'text' and o['value'] == label for o in objects), f\"Frame {i + 1} must read '{label}': pass show the points visited so far and the running result.\"\n"
     }
    ],
    "hints": [
-    "Separate the behavior supplied by the caller from the process that uses it.",
-    "Write down when each callback should run and what each call returns.",
-    "Keep configuration in the factory and per-invocation state inside the returned function."
+    "A sum and a product differ in two places only: the value they start from and how one term is folded in.",
+    "Look at what result must be before any point is visited, and what visiting one point does to it.",
+    "Loop while the point is at most b: compute the term once, combine it with result on the left, record the point and the term, show, then step with next."
    ],
-   "solution": "def total_terms(values, term):\n    total=0\n    for i,value in enumerate(values):\n        total+=term(value)\n        show(values, i+1, total)\n    return total\nfrom scimigo import canvas, figure, frame, text\n\ndef show(values, processed, total):\n    canvas(600, 360)\n    if values:\n        brackets=[{\"from\":0,\"to\":processed-1,\"label\":\"processed\"}] if processed else []\n        figure(\"array_state\", x=0, y=0, width=600, height=300,\n               values=list(values), indices=True, brackets=brackets)\n    text(15, 335, \"Processed=\"+str(processed)+\", total=\"+str(total), size=18)\n    frame()\nprint(total_terms([4,-1,3], lambda v:v*v))\n"
+   "solution": "def accumulate(combiner, null_value, term, a, next, b):\n    result = null_value\n    xs, terms = [], []\n    show(xs, terms, result)\n    while a <= b:\n        value = term(a)\n        result = combiner(result, value)\n        xs.append(a)\n        terms.append(value)\n        show(xs, terms, result)\n        a = next(a)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef show(xs, terms, result):\n    canvas(600, 360)\n    if terms:\n        figure(\"array_state\", x=0, y=0, width=600, height=290, values=list(terms), indices=False)\n    points = \", \".join(str(x) for x in xs) if xs else \"none\"\n    text(15, 335, \"visited x = \" + points + \"   result = \" + str(result), size=18)\n    frame()\n\ndef inc(x):\n    return x + 1\n\ndef identity(x):\n    return x\n\ndef times(result, term):\n    return result * term\n\nprint(accumulate(times, 1, identity, 1, inc, 5))\n"
   },
   {
-   "exercise_id": "chain",
+   "exercise_id": "compose",
    "title": "Trace: which function runs first?",
-   "prompt_md": "Implement `chain(f, g)` so its returned function computes `f(g(x))`. Creating it must not execute either callback. When invoked, record the actual `g` stage and then the actual `f` stage with `show_stage`. Predict the demo result before Run; the starter currently reverses the order.\n",
+   "prompt_md": "This is SICP's exercise 1.42. Before you write anything, answer the question below: what should `compose(square, inc)(6)` return?\n\nThen implement `compose(f, g)`. It returns a function of one argument that computes `f(g(x))`. Building that function must call neither `f` nor `g`; they run only when the returned function is called. Inside the returned function, call `show_stage(\"g\", input, output)` after `g` has run and `show_stage(\"f\", input, output)` after `f` has run, so the frames show which ran first and what it was given.",
    "questions": [
     {
      "step": "Predict the output",
-     "prompt": "Subtract four after multiplying 2 by three: what is returned?",
+     "prompt": "square multiplies a number by itself and inc adds one. What is compose(square, inc)(6)?",
      "choices": [
       {
-       "text": "-6",
-       "why": "This applies subtraction first, reversing the requested order."
+       "text": "37",
+       "why": "That squares first and then adds one, which is inc(square(6)): the order is reversed."
       },
       {
-       "text": "6",
-       "why": "This stops after the inner operation."
+       "text": "7",
+       "why": "That stops after the inner function. Its result still has to go through square."
       },
       {
-       "text": "2",
-       "why": "The inner operation returns 6; the outer operation then returns 2."
+       "text": "49",
+       "why": "inc runs first and gives 7; square then gives 49."
       }
      ],
      "answer": 2
@@ -89,133 +89,133 @@
    ],
    "checklist": [
     {
-     "step": "Create a callable and invoke callbacks in the right order",
+     "step": "Return a function; call g, then f, only when it runs",
      "checks": [
       "ordered_calls"
      ]
     },
     {
-     "step": "Record correct inputs and outputs for both stages",
+     "step": "Show each stage with its real input and output",
      "checks": [
       "stage_frames"
      ]
     }
    ],
-   "starter_code": "def chain(f,g):\n    def run(x):\n        middle=f(x)  # order is reversed\n        show_stage(\"f\", x, middle)\n        result=g(middle)\n        show_stage(\"g\", middle, result)\n        return result\n    return run\nfrom scimigo import canvas, figure, frame, text\n\ndef show_stage(name, value, result):\n    canvas(600, 360)\n    figure(\"array_state\", x=0, y=0, width=600, height=290,\n           values=[value,result], indices=False)\n    text(15, 335, name+\": \"+str(value)+\" -> \"+str(result), size=18)\n    frame()\nh=chain(lambda x:x-4, lambda x:3*x)\nprint(h(2))\n",
+   "starter_code": "def compose(f, g):\n    def composed(x):\n        return x\n    return composed\n\nfrom scimigo import canvas, figure, frame, text\n\ndef show_stage(name, value, result):\n    canvas(600, 360)\n    figure(\"array_state\", x=0, y=0, width=600, height=290, values=[value, result], indices=False)\n    text(15, 335, name + \": \" + str(value) + \" -> \" + str(result), size=18)\n    frame()\n\ndef square(x):\n    return x * x\n\ndef inc(x):\n    return x + 1\n\nh = compose(square, inc)\nanswer = h(6)\nshow_stage(\"compose(square, inc)\", 6, answer)\nprint(answer)\n",
    "tests": [
     {
      "name": "ordered_calls",
-     "code": "show_stage=lambda *args: None\ncalls=[]\nf=lambda x:calls.append(('f',x)) or (x-4)\ng=lambda x:calls.append(('g',x)) or (3*x)\nh=chain(f,g)\nassert callable(h) and calls==[], \"Constructing the operation must not invoke its callbacks.\"\nassert h(2)==2 and calls==[('g',2),('f',6)], \"Evaluate g first, then feed its result into f.\"\ncalls.clear()\nassert h(-3)==-13 and calls==[('g',-3),('f',-9)], \"Each invocation starts with its own input.\"\n\n"
+     "code": "show_stage = lambda *args: None\ncalls = []\ndef f(x):\n    calls.append(('f', x))\n    return x - 4\ndef g(x):\n    calls.append(('g', x))\n    return 3 * x\nh = compose(f, g)\nassert callable(h), \"compose must return a function.\"\nassert calls == [], f\"Building the composition must not call f or g; it called {calls}.\"\ngot = h(2)\nassert got == 2, f\"g(2) is 6 and f(6) is 2; your function returned {got}.\"\nassert calls == [('g', 2), ('f', 6)], f\"Call g on the input, then f on g's result: expected [('g', 2), ('f', 6)], saw {calls}.\"\ncalls.clear()\ngot = h(-3)\nassert got == -13 and calls == [('g', -3), ('f', -9)], f\"A second call starts from its own input: expected -13 via [('g', -3), ('f', -9)], got {got} via {calls}.\"\nk = compose(g, f)\nassert (h(5), k(5)) == (11, 3), \"Two compositions built from the same functions in different orders must stay independent: f(g(5)) is 11 and g(f(5)) is 3.\"\n"
     },
     {
      "name": "stage_frames",
-     "code": "from scimigo import _frame_count, _frame\nbefore=_frame_count()\nassert chain(lambda x:x-4,lambda x:3*x)(2)==2\nassert _frame_count()-before==2, \"Record two actual callback stages.\"\nfor i,(name,a,b) in enumerate([('g',2,6),('f',6,2)]):\n    objects=_frame(before+i)\n    fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==[a,b], \"The two cells must show this stage's input and output.\"\n    assert any(o['kind']=='text' and o['value']==f'{name}: {a} -> {b}' for o in objects), \"Label the callback that actually ran.\"\n\n"
+     "code": "from scimigo import _frame_count, _frame\nh = compose(lambda x: x - 4, lambda x: 3 * x)\nbefore = _frame_count()\ngot = h(2)\nassert got == 2, f\"g(2) is 6 and f(6) is 2; your function returned {got}.\"\nrecorded = _frame_count() - before\nassert recorded == 2, f\"One call of the composed function has two stages, so two frames; recorded {recorded}.\"\nfor i, (name, a, b) in enumerate([('g', 2, 6), ('f', 6, 2)]):\n    objects = _frame(before + i)\n    fig = next((o for o in objects if o['kind'] == 'figure'), None)\n    assert fig and fig['params']['values'] == [a, b], f\"Frame {i + 1} must show stage {name} taking {a} to {b}.\"\n    assert any(o['kind'] == 'text' and o['value'] == f'{name}: {a} -> {b}' for o in objects), f\"Frame {i + 1} must be labelled '{name}: {a} -> {b}': name the function that actually ran.\"\n"
     }
    ],
    "hints": [
-    "Separate the behavior supplied by the caller from the process that uses it.",
-    "Write down when each callback should run and what each call returns.",
-    "Keep configuration in the factory and per-invocation state inside the returned function."
+    "In f(g(x)) the function written last is the one called first.",
+    "Look at what runs while compose itself is running: it should only define a function and return it.",
+    "Inside the returned function: call g on x and keep the result, show that stage, call f on the kept result, show that stage, return it."
    ],
-   "solution": "def chain(f,g):\n    def run(x):\n        middle=g(x)\n        show_stage(\"g\", x, middle)\n        result=f(middle)\n        show_stage(\"f\", middle, result)\n        return result\n    return run\nfrom scimigo import canvas, figure, frame, text\n\ndef show_stage(name, value, result):\n    canvas(600, 360)\n    figure(\"array_state\", x=0, y=0, width=600, height=290,\n           values=[value,result], indices=False)\n    text(15, 335, name+\": \"+str(value)+\" -> \"+str(result), size=18)\n    frame()\nh=chain(lambda x:x-4, lambda x:3*x)\nprint(h(2))\n"
+   "solution": "def compose(f, g):\n    def composed(x):\n        middle = g(x)\n        show_stage(\"g\", x, middle)\n        result = f(middle)\n        show_stage(\"f\", middle, result)\n        return result\n    return composed\n\nfrom scimigo import canvas, figure, frame, text\n\ndef show_stage(name, value, result):\n    canvas(600, 360)\n    figure(\"array_state\", x=0, y=0, width=600, height=290, values=[value, result], indices=False)\n    text(15, 335, name + \": \" + str(value) + \" -> \" + str(result), size=18)\n    frame()\n\ndef square(x):\n    return x * x\n\ndef inc(x):\n    return x + 1\n\nh = compose(square, inc)\nanswer = h(6)\nshow_stage(\"compose(square, inc)\", 6, answer)\nprint(answer)\n"
   },
   {
-   "exercise_id": "repeat",
-   "title": "Implement: configure repeated behavior",
-   "prompt_md": "Return a callable from `repeat(f, n)` that applies `f` exactly `n` times to its input. Assume `n` is a nonnegative integer. Zero applications preserve the input without calling `f`; each invocation starts fresh. It must handle 3,000 applications without a deeply nested call chain. For demos with `n <= 12`, call `show_step` after each application; for zero, show step 0. Larger runs skip drawing.\n",
+   "exercise_id": "repeated",
+   "title": "Implement: apply a function n times",
+   "prompt_md": "This is SICP's exercise 1.43. Implement `repeated(f, n)`: it returns a function that applies `f` to its input `n` times, so `repeated(square, 2)(5)` is 625. `n` is a whole number, zero or more. With `n` equal to 0 the returned function gives back its input and never calls `f`. Calling the returned function twice gives two independent runs.\n\nIt must cope with `n = 3000`. Python allows only about 1000 nested calls by default, so 3000 functions wrapped inside one another will fail; find another way.\n\nWhen `n` is at most 12, call `show_step(i, value)` after the i-th application. The starter already shows step 0, the input. For larger `n`, draw nothing.",
    "checklist": [
     {
-     "step": "Handle zero, independent invocations, and long repetition",
+     "step": "Apply f exactly n times, afresh on every call, even for n = 3000",
      "checks": [
       "repeat_contract"
      ]
     },
     {
-     "step": "Draw each small-demo intermediate result",
+     "step": "Show the value after every application",
      "checks": [
       "repetition_frames"
      ]
     }
    ],
-   "starter_code": "def repeat(f,n):\n    def run(x):\n        value=f(x)  # currently applies f once, even when n is zero\n        show_step(1,value)\n        return value\n    return run\nfrom scimigo import canvas, figure, frame, text\n\ndef show_step(step,value):\n    canvas(600, 320)\n    figure(\"array_state\", x=0, y=0, width=600, height=250, values=[value], indices=False)\n    text(15, 295, \"After \"+str(step)+\" applications: \"+str(value), size=18)\n    frame()\nprint(repeat(lambda x:x+2,5)(3))\n",
+   "starter_code": "def repeated(f, n):\n    def run(x):\n        if n <= 12:\n            show_step(0, x)\n        return x\n    return run\n\nfrom scimigo import canvas, figure, frame, text\n\ndef show_step(step, value):\n    canvas(600, 320)\n    figure(\"array_state\", x=0, y=0, width=600, height=250, values=[value], indices=False)\n    text(15, 295, \"After \" + str(step) + \" applications: \" + str(value), size=18)\n    frame()\n\ndef square(x):\n    return x * x\n\nprint(repeated(square, 2)(5))\n",
    "tests": [
     {
      "name": "repeat_contract",
-     "code": "show_step=lambda *args: None\ncalls=[]\nf=lambda x:calls.append(x) or (x+2)\nh=repeat(f,5)\nassert callable(h) and calls==[], \"Factory setup must not run f.\"\nassert h(3)==13 and calls==[3,5,7,9,11], \"Apply f exactly n times.\"\ncalls.clear()\nassert h(0)==10 and calls==[0,2,4,6,8], \"Reset the intermediate result on every invocation.\"\nmarker=object()\nassert repeat(lambda x: (_ for _ in ()).throw(AssertionError('zero called f')),0)(marker) is marker, \"Zero applications preserve the input object without a callback.\"\nassert repeat(lambda x:x+1,3000)(0)==3000, \"Handle long repetition without deeply nested calls.\"\nassert repeat(lambda x:x+'!',3)('a')=='a!!!', \"The operation need not work on numbers only.\"\n\n"
+     "code": "show_step = lambda *args: None\ncalls = []\ndef f(x):\n    calls.append(x)\n    return x + 2\nh = repeated(f, 5)\nassert callable(h), \"repeated must return a function.\"\nassert calls == [], f\"Building the repeated function must not call f; it called f on {calls}.\"\ngot = h(3)\nassert got == 13, f\"Five applications of 'add 2' to 3 give 13; got {got}.\"\nassert calls == [3, 5, 7, 9, 11], f\"Each application takes the previous result: expected f called on [3, 5, 7, 9, 11], saw {calls}.\"\ncalls.clear()\ngot = h(0)\nassert got == 10 and calls == [0, 2, 4, 6, 8], f\"A second call starts again from its own input: expected 10 via [0, 2, 4, 6, 8], got {got} via {calls}.\"\ndef never(x):\n    raise AssertionError(\"With n = 0 the function f must not be called.\")\nmarker = object()\nassert repeated(never, 0)(marker) is marker, \"Zero applications return the input itself.\"\ngot = repeated(lambda x: x * x, 2)(5)\nassert got == 625, f\"repeated(square, 2)(5) squares twice: 625; got {got}.\"\ngot = repeated(lambda s: s + '!', 3)('a')\nassert got == 'a!!!', f\"The input need not be a number: three applications of 'append !' to 'a' give 'a!!!'; got {got!r}.\"\ntry:\n    got = repeated(lambda x: x + 1, 3000)(0)\nexcept RecursionError:\n    raise AssertionError(\"3000 applications overflowed Python's call stack. Apply f in a loop instead of nesting 3000 calls.\")\nassert got == 3000, f\"3000 applications of 'add 1' to 0 give 3000; got {got}.\"\n"
     },
     {
      "name": "repetition_frames",
-     "code": "from scimigo import _frame_count, _frame\nbefore=_frame_count()\nassert repeat(lambda x:x-3,4)(20)==8\nassert _frame_count()-before==4, \"For a small demo, record one frame after each application.\"\nfor i,value in enumerate([17,14,11,8]):\n    objects=_frame(before+i)\n    fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==[value], \"Draw the actual intermediate result.\"\n\n"
+     "code": "from scimigo import _frame_count, _frame\nh = repeated(lambda x: x - 3, 4)\nbefore = _frame_count()\ngot = h(20)\nassert got == 8, f\"Four applications of 'subtract 3' to 20 give 8; got {got}.\"\nrecorded = _frame_count() - before\nassert recorded == 5, f\"n = 4 needs the input frame and one frame per application: 5 frames, recorded {recorded}.\"\nfor i, value in enumerate([20, 17, 14, 11, 8]):\n    objects = _frame(before + i)\n    fig = next((o for o in objects if o['kind'] == 'figure'), None)\n    assert fig and fig['params']['values'] == [value], f\"Frame {i + 1} must show the value after {i} applications, {value}.\"\n    assert any(o['kind'] == 'text' and o['value'] == f'After {i} applications: {value}' for o in objects), f\"Frame {i + 1} must read 'After {i} applications: {value}'.\"\nbefore = _frame_count()\nrepeated(lambda x: x, 0)(7)\nrecorded = _frame_count() - before\nassert recorded == 1, f\"With n = 0 there is only the input frame; recorded {recorded}.\"\nbefore = _frame_count()\nrepeated(lambda x: x + 1, 40)(0)\nrecorded = _frame_count() - before\nassert recorded == 0, f\"For n above 12 draw nothing; n = 40 recorded {recorded} frames.\"\n"
     }
    ],
    "hints": [
-    "Separate the behavior supplied by the caller from the process that uses it.",
-    "Write down when each callback should run and what each call returns.",
-    "Keep configuration in the factory and per-invocation state inside the returned function."
+    "Applying f several times means the output of one application is the input of the next.",
+    "The count n belongs to repeated; the value that changes belongs to one call of the function it returns.",
+    "Inside the returned function start from x and loop n times, replacing the value with f(value). A loop, not n functions nested inside one another."
    ],
-   "solution": "def repeat(f,n):\n    def run(x):\n        value=x\n        for i in range(n):\n            value=f(value)\n            if n<=12: show_step(i+1,value)\n        if n==0: show_step(0,value)\n        return value\n    return run\nfrom scimigo import canvas, figure, frame, text\n\ndef show_step(step,value):\n    canvas(600, 320)\n    figure(\"array_state\", x=0, y=0, width=600, height=250, values=[value], indices=False)\n    text(15, 295, \"After \"+str(step)+\" applications: \"+str(value), size=18)\n    frame()\nprint(repeat(lambda x:x+2,5)(3))\n"
+   "solution": "def repeated(f, n):\n    def run(x):\n        value = x\n        if n <= 12:\n            show_step(0, value)\n        for i in range(n):\n            value = f(value)\n            if n <= 12:\n                show_step(i + 1, value)\n        return value\n    return run\n\nfrom scimigo import canvas, figure, frame, text\n\ndef show_step(step, value):\n    canvas(600, 320)\n    figure(\"array_state\", x=0, y=0, width=600, height=250, values=[value], indices=False)\n    text(15, 295, \"After \" + str(step) + \" applications: \" + str(value), size=18)\n    frame()\n\ndef square(x):\n    return x * x\n\nprint(repeated(square, 2)(5))\n"
   },
   {
-   "exercise_id": "profile",
-   "title": "Measure: count the calls that happened",
-   "prompt_md": "Implement `profile(f, n, x)` returning `(final_value, actual_call_count)` while invoking the supplied `run_steps`. Wrap the callback to observe its invocations; do not guess the count from `n`. The checks also substitute a process that wastes calls, so honest instrumentation must expose that waste. The three-size demo draws your measured calls per application.\n",
+   "exercise_id": "converge",
+   "title": "Measure: what does a fixed point cost?",
+   "prompt_md": "The supplied `fixed_point(f, guess, tolerance)` applies `f` again and again until two successive values differ by less than `tolerance`. Nothing in its code says how many calls that takes. Implement `measure(f, guess, tolerance)`: run the supplied `fixed_point` and return `(answer, calls)`, where `calls` is the number of times `f` was really called during that run.\n\nDo not rewrite the search and do not work the count out from the tolerance: the checks swap in a different `fixed_point` that wastes calls, and your count has to follow it. The demo measures the fixed point of cosine at three tolerances and draws your counts as bars.",
    "questions": [
     {
-     "step": "Explain the ratio",
-     "prompt": "Why is calls/n equal to one for the supplied process?",
+     "step": "Explain the growth",
+     "prompt": "The tolerance shrank ten-thousand-fold between your first and last bar, yet the calls only about tripled. Why?",
      "choices": [
       {
-       "text": "Every function costs one second",
-       "why": "The model counts invocations, not elapsed time."
+       "text": "fixed_point reuses its earlier values",
+       "why": "It keeps only the latest guess; every step is a fresh call to f."
       },
       {
-       "text": "The wrapper ignores extra calls",
-       "why": "A correct wrapper must count extra calls too."
+       "text": "Each call shrinks the gap by a steady factor",
+       "why": "So every further factor of ten in accuracy costs about the same handful of extra calls."
       },
       {
-       "text": "Each iteration invokes f once",
-       "why": "There are n iterations and one callback per iteration."
+       "text": "Python evaluates cos in constant time",
+       "why": "True, but the bars count calls, not seconds, so the speed of one call cannot explain them."
       }
      ],
-     "answer": 2
+     "answer": 1
     }
    ],
    "checklist": [
     {
-     "step": "Measure fresh runs and expose wasted callbacks",
+     "step": "Count the calls that really happen, on any search",
      "checks": [
-      "actual_counts"
+      "actual_calls"
      ]
     },
     {
-     "step": "Draw the counts produced by your instrumentation",
+     "step": "Draw your measured counts",
      "checks": [
       "measured_bars"
      ]
     }
    ],
-   "starter_code": "def profile(f,n,x):\n    return x,0  # run the process and count its actual callback calls\nfrom scimigo import canvas, rectangle, text, frame\n\ndef run_steps(f,n,x):\n    for _ in range(n): x=f(x)\n    return x\n\ndef show_measure(rows):\n    canvas(600, 300)\n    largest=max(c for n,c in rows) or 1\n    for i,(n,c) in enumerate(rows):\n        rectangle(120,25+75*i,430*c/largest,35,color=\"#276bb0\")\n        text(12,48+75*i,\"n=\"+str(n),size=17)\n        ratio=round(c/n,2) if n else 0\n        text(125,85+75*i,\"calls=\"+str(c)+\", ratio=\"+str(ratio),size=17)\n    frame()\nrows=[(n,profile(lambda x:x+1,n,0)[1]) for n in [10,40,160]]\nshow_measure(rows)\n",
+   "starter_code": "def measure(f, guess, tolerance):\n    return None, 0\n\nimport math\nfrom scimigo import canvas, rectangle, text, frame\n\ndef fixed_point(f, guess, tolerance):\n    for _ in range(100000):\n        new = f(guess)\n        if abs(new - guess) < tolerance:\n            return new\n        guess = new\n    raise ValueError(\"no fixed point found after 100000 steps\")\n\ndef show_measure(rows):\n    canvas(600, 300)\n    largest = max(calls for label, calls in rows) or 1\n    for i, (label, calls) in enumerate(rows):\n        rectangle(170, 25 + 90 * i, 380 * calls / largest, 35, color=\"#276bb0\")\n        text(12, 48 + 90 * i, \"tolerance \" + str(label), size=17)\n        text(175, 85 + 90 * i, \"calls = \" + str(calls), size=17)\n    frame()\n\nrows = [(tolerance, measure(math.cos, 1.0, tolerance)[1]) for tolerance in (0.01, 0.0001, 0.000001)]\nshow_measure(rows)\n",
    "tests": [
     {
-     "name": "actual_counts",
-     "code": "show_measure=lambda *args: None\nfor n in [0,7,23,67,211]:\n    calls=[]\n    f=lambda v:calls.append(v) or (v+3)\n    result,reported=profile(f,n,-2)\n    assert result==-2+3*n, \"Return the actual final value.\"\n    assert reported==len(calls)==n, \"Reported counts must match actual supplied callback calls on fresh sizes.\"\n# The meter must still observe a deliberately wasteful run_steps.\ndef wasteful(f,n,x):\n    for _ in range(n):\n        f(x)\n        x=f(x)\n    return x\nrun_steps=wasteful\ncalls=[]\nresult,reported=profile(lambda v:calls.append(v) or (v+1),9,0)\nassert result==9 and reported==len(calls)==18, \"Instrument real calls, including wasted calls; do not return n as the count.\"\n\n"
+     "name": "actual_calls",
+     "code": "show_measure = lambda *args: None\nimport math\ndef search(f, guess, tolerance):\n    for _ in range(100000):\n        new = f(guess)\n        if abs(new - guess) < tolerance:\n            return new\n        guess = new\ncases = [(math.cos, 1.0, 1e-3), (lambda x: 1 + 1 / x, 1.0, 1e-5),\n         (lambda y: (y + 10 / y) / 2, 1.0, 1e-7), (lambda x: (x + 3) / 2, 0.0, 1e-4)]\nfor f, guess, tolerance in cases:\n    seen = []\n    def watched(x, f=f):\n        seen.append(x)\n        return f(x)\n    want_answer = search(f, guess, tolerance)\n    result = measure(watched, guess, tolerance)\n    assert isinstance(result, tuple) and len(result) == 2, \"measure returns a pair: (answer, calls).\"\n    answer, reported = result\n    assert answer is not None and abs(answer - want_answer) < 1e-12, f\"Return the answer fixed_point found ({want_answer}); got {answer}.\"\n    assert reported == len(seen), f\"f was really called {len(seen)} times during your run but you reported {reported}.\"\n    assert len(seen) > 0, \"Your run never called f: pass a function that calls it to fixed_point.\"\n# A search that wastes one call per step. An honest count follows it.\ndef wasteful(f, guess, tolerance):\n    for _ in range(100000):\n        f(guess)\n        new = f(guess)\n        if abs(new - guess) < tolerance:\n            return new\n        guess = new\nfixed_point = wasteful\nseen = []\ndef watched(x):\n    seen.append(x)\n    return math.cos(x)\nanswer, reported = measure(watched, 1.0, 1e-3)\nplain = []\nsearch(lambda x: plain.append(x) or math.cos(x), 1.0, 1e-3)\nassert len(seen) == 2 * len(plain), f\"Use the supplied fixed_point, not your own loop: with the wasteful search swapped in, f should be called {2 * len(plain)} times, but it was called {len(seen)} times.\"\nassert reported == len(seen), f\"The wasteful search called f {len(seen)} times and you reported {reported}: count calls as they happen instead of deriving the number.\"\n"
     },
     {
      "name": "measured_bars",
-     "code": "from scimigo import _frame_count, _frame\nbefore=_frame_count()\nrows=[(n,profile(lambda x:x+1,n,0)[1]) for n in [8,24,72]]\nshow_measure(rows)\nobjects=_frame(before)\nassert len([o for o in objects if o['kind']=='rectangle'])==3, \"Draw three measured bars.\"\nfor n,c in rows:\n    assert any(o['kind']=='text' and o['value']==f'n={n}' for o in objects)\n    assert any(o['kind']=='text' and o['value'].startswith(f'calls={c},') for o in objects), \"Draw your measured callback counts.\"\n\n"
+     "code": "from scimigo import _frame_count, _frame\ngolden = lambda x: 1 + 1 / x\ndef count(tolerance):\n    calls, guess = 0, 1.0\n    while True:\n        new = golden(guess); calls += 1\n        if abs(new - guess) < tolerance:\n            return calls\n        guess = new\ntolerances = (0.001, 0.00001, 0.0000001)\nrows = [(t, measure(golden, 1.0, t)[1]) for t in tolerances]\nwant = [(t, count(t)) for t in tolerances]\nassert rows == want, f\"On x -> 1 + 1/x at three new tolerances your counts {[c for _, c in rows]} do not match the calls that really happen.\"\nbefore = _frame_count()\nshow_measure(rows)\nobjects = _frame(before)\nbars = [o for o in objects if o['kind'] == 'rectangle']\nassert len(bars) == 3, f\"Draw one bar per tolerance; found {len(bars)}.\"\nfor t, calls in want:\n    assert any(o['kind'] == 'text' and o['value'] == 'calls = ' + str(calls) for o in objects), f\"The picture must show your measured count for tolerance {t}: 'calls = {calls}'.\"\n"
     }
    ],
    "hints": [
-    "Separate the behavior supplied by the caller from the process that uses it.",
-    "Write down when each callback should run and what each call returns.",
-    "Keep configuration in the factory and per-invocation state inside the returned function."
+    "You can watch calls to a function by handing over a different function that makes a note and then passes the work on.",
+    "fixed_point only ever sees the function you give it; it cannot tell f from a stand-in that behaves the same.",
+    "Inside measure define a function that adds one to a counter and returns f(x). Pass that to fixed_point, and return its answer together with the counter."
    ],
-   "solution": "def profile(f,n,x):\n    calls=0\n    def counted(value):\n        nonlocal calls\n        calls+=1\n        return f(value)\n    result=run_steps(counted,n,x)\n    return result,calls\nfrom scimigo import canvas, rectangle, text, frame\n\ndef run_steps(f,n,x):\n    for _ in range(n): x=f(x)\n    return x\n\ndef show_measure(rows):\n    canvas(600, 300)\n    largest=max(c for n,c in rows) or 1\n    for i,(n,c) in enumerate(rows):\n        rectangle(120,25+75*i,430*c/largest,35,color=\"#276bb0\")\n        text(12,48+75*i,\"n=\"+str(n),size=17)\n        ratio=round(c/n,2) if n else 0\n        text(125,85+75*i,\"calls=\"+str(c)+\", ratio=\"+str(ratio),size=17)\n    frame()\nrows=[(n,profile(lambda x:x+1,n,0)[1]) for n in [10,40,160]]\nshow_measure(rows)\n"
+   "solution": "def measure(f, guess, tolerance):\n    calls = 0\n    def counted(x):\n        nonlocal calls\n        calls += 1\n        return f(x)\n    answer = fixed_point(counted, guess, tolerance)\n    return answer, calls\n\nimport math\nfrom scimigo import canvas, rectangle, text, frame\n\ndef fixed_point(f, guess, tolerance):\n    for _ in range(100000):\n        new = f(guess)\n        if abs(new - guess) < tolerance:\n            return new\n        guess = new\n    raise ValueError(\"no fixed point found after 100000 steps\")\n\ndef show_measure(rows):\n    canvas(600, 300)\n    largest = max(calls for label, calls in rows) or 1\n    for i, (label, calls) in enumerate(rows):\n        rectangle(170, 25 + 90 * i, 380 * calls / largest, 35, color=\"#276bb0\")\n        text(12, 48 + 90 * i, \"tolerance \" + str(label), size=17)\n        text(175, 85 + 90 * i, \"calls = \" + str(calls), size=17)\n    frame()\n\nrows = [(tolerance, measure(math.cos, 1.0, tolerance)[1]) for tolerance in (0.01, 0.0001, 0.000001)]\nshow_measure(rows)\n"
   },
   {
    "exercise_id": "calibrator",
    "title": "Mastery challenge: prepare a reading service",
-   "prompt_md": "A sensor receives fixed adjustment records during setup. Each `(scale, offset)` record changes a reading to `scale * reading + offset`, in the supplied order. Setup must return a callable accepting later readings. Its behavior must remain fixed if the original settings list changes, and separately prepared services must stay independent. The supplied version is correct on unchanged settings but does too much arithmetic for every reading. For 240 records, setup may use at most four additions or multiplications per record; each later reading may use at most four, regardless of record count. Empty settings preserve the input. Use integer arithmetic without converting the supplied numbers to plain ints or floats. The demo shows the actual input and returned reading.\n",
+   "prompt_md": "A sensor receives fixed adjustment records during setup. Each `(scale, offset)` record changes a reading to `scale * reading + offset`, in the supplied order. Setup must return a callable accepting later readings. Its behavior must remain fixed if the original settings list changes, and separately prepared services must stay independent. The supplied version is correct on unchanged settings but does too much arithmetic for every reading. For 240 records, setup may use at most four arithmetic operations per record; each later reading may use at most four, however many records there are. Empty settings preserve the input. Use integer arithmetic without converting the supplied numbers to plain ints or floats. The demo shows the actual input and returned reading.\n",
    "questions": [
     {
      "step": "Name the plan",
@@ -316,13 +316,13 @@
     },
     {
      "name": "arithmetic_budget",
-     "code": "import ast\nfor node in ast.walk(ast.parse(__source__)):\n    if isinstance(node,ast.Name) and isinstance(node.ctx,ast.Load):\n        assert node.id not in {'int','float'}, \"Do not convert the supplied numeric values: preserve the arithmetic meter.\"\nshow_stage=lambda *args: None\nops=[0]\nclass BudgetExceeded(BaseException): pass\nlimit=[100000]\ndef tick():\n    ops[0]+=1\n    if ops[0]>limit[0]: raise BudgetExceeded()\nclass Number(int):\n    def __mul__(self,other): tick();return Number(int.__mul__(self,other))\n    def __rmul__(self,other): tick();return Number(int.__mul__(self,other))\n    def __add__(self,other): tick();return Number(int.__add__(self,other))\n    def __radd__(self,other): tick();return Number(int.__add__(self,other))\nspec=[(Number(1),Number((i%5)-2)) for i in range(240)]\nops[0]=0;limit[0]=4*len(spec)\ntry: service=make_service(spec)\nexcept BudgetExceeded: raise AssertionError('Setup exceeds four arithmetic operations per adjustment.')\nops[0]=0;limit[0]=4*80\ntry:\n    answers=[service(Number(x)) for x in range(80)]\nexcept BudgetExceeded:\n    raise AssertionError('Later readings repeat too much arithmetic: use no more than four operations per reading.')\nassert answers==list(range(80)), \"These fixed adjustments cancel; prepared readings must remain correct.\"\n\n"
+     "code": "import ast\nfor node in ast.walk(ast.parse(__source__)):\n    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):\n        assert node.id not in {'int', 'float'}, \"Do not convert the supplied numbers with int() or float(): the check counts arithmetic on them.\"\nshow_stage = lambda *args: None\nops = [0]\nclass BudgetExceeded(BaseException): pass\nlimit = [100000]\ndef tick():\n    ops[0] += 1\n    if ops[0] > limit[0]: raise BudgetExceeded()\nclass Number(int):\n    # Every arithmetic result stays a Number, so the count cannot be shed by a detour through -, abs or .real.\n    def __mul__(self, other): tick(); return Number(int.__mul__(self, other))\n    def __rmul__(self, other): tick(); return Number(int.__mul__(self, other))\n    def __add__(self, other): tick(); return Number(int.__add__(self, other))\n    def __radd__(self, other): tick(); return Number(int.__add__(self, other))\n    def __sub__(self, other): tick(); return Number(int.__sub__(self, other))\n    def __rsub__(self, other): tick(); return Number(int.__rsub__(self, other))\n    def __neg__(self): tick(); return Number(int.__neg__(self))\n    def __pos__(self): return self\n    def __abs__(self): tick(); return Number(int.__abs__(self))\n    real = property(lambda self: self)\n    numerator = property(lambda self: self)\nspec = [(Number(1), Number((i % 5) - 2)) for i in range(240)]\nops[0] = 0; limit[0] = 4 * len(spec)\ntry:\n    service = make_service(spec)\nexcept BudgetExceeded:\n    raise AssertionError('Setup used more than four arithmetic operations per record (240 records, budget 960).')\nops[0] = 0; limit[0] = 4 * 80\ntry:\n    answers = [service(Number(x)) for x in range(80)]\nexcept BudgetExceeded:\n    raise AssertionError('80 readings used more than 320 arithmetic operations: each reading is redoing work that depends on the number of records.')\nassert answers == list(range(80)), \"These 240 records cancel out, so every reading should come back unchanged.\"\n"
     }
    ],
    "hints": [
-    "Which part of the setup stays identical across all future readings?",
-    "Describe the relationship between one input reading and its output after fixed settings.",
-    "Combining fixed scale-and-offset adjustments preserves a scale-and-offset relationship."
+    "Which part of the work is identical for every future reading?",
+    "Write out what two records in a row do to a reading x, and look at the shape of the result.",
+    "Two scale-and-offset steps in a row are again one scale and one offset."
    ],
    "solution": "def make_service(settings):\n    scale,offset=1,0\n    for a,b in settings:\n        scale,offset=a*scale,a*offset+b\n    def service(value):\n        return scale*value+offset\n    return service\nfrom scimigo import canvas, figure, frame, text\n\ndef show_stage(name, value, result):\n    canvas(600, 360)\n    figure(\"array_state\", x=0, y=0, width=600, height=290,\n           values=[value,result], indices=False)\n    text(15, 335, name+\": \"+str(value)+\" -> \"+str(result), size=18)\n    frame()\nsettings=[(2,1),(-1,4)]\nservice=make_service(settings)\nshow_stage(\"service\",3,service(3))\n"
   }

@@ -1,9 +1,6 @@
 def nested_total(node,path=()):
-    if isinstance(node,int):
-        answer=node
-    else:
-        answer=sum(child for child in node if isinstance(child,int))
-        # Nested children contribute too; visit each one separately.
+    answer=0
+    # Your code goes here: work out this node's own answer.
     show_node(path,node,answer)
     return answer
 from scimigo import canvas,figure,frame,text

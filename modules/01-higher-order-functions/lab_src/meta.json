@@ -1,28 +1,28 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "sicp-python-01-higher-order-functions",
-  "title": "Functions as behavior",
-  "description": "Build a callback-driven total, trace ordered calls, return repeated behavior, count calls, then prepare a reading service.",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 15000
-  },
-  "recap": {
-    "learned": [
-      "Pass a callable instead of its computed result.",
-      "Trace composition with operations whose order matters.",
-      "Return independent functions with fresh state for each invocation.",
-      "Separate setup work from the cost of using configured behavior."
-    ],
-    "invariant": "After i inputs, the running total contains exactly one callback result for each of those i inputs.",
-    "complexity": "n inputs require n callback calls; k repetitions require k calls per invocation. Bounds assume constant-time callbacks and bounded-size arithmetic, excluding drawing.",
-    "common_mistake": "Returning a value where a callable is required, or reversing f(g(x)).",
-    "in_real_programs": [
-      "Python sorted accepts a caller-supplied key function."
-    ],
-    "retrieval": {
-      "question": "Prerequisite Python: return or print\u2014which gives a value to the caller?",
-      "answer": "return supplies the value; print writes text as a side effect."
-    }
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-01-higher-order-functions",
+ "title": "Functions as arguments and results",
+ "description": "Fold a range with any combiner, trace a composition, apply a function n times, count the calls a fixed-point search makes, then prepare a reading service within a budget.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "Pass a function where a rule is needed, not the value one call returned.",
+   "Read f(g(x)) inside out, and test order with functions that do not commute.",
+   "Return a function that keeps its settings and starts afresh on every call.",
+   "Count the calls a higher-order function makes by wrapping what you pass it."
+  ],
+  "invariant": "Before each step, the running result is the fold of term over exactly the points already visited.",
+  "complexity": "A fold over n points makes n calls each to term, next and combiner; repeated(f, n) makes n calls per use. Bounds assume constant-time callbacks and bounded-size numbers; drawing is excluded.",
+  "common_mistake": "Passing f(x) where f was meant, or reading f(g(x)) left to right.",
+  "in_real_programs": [
+   "Python's sorted(items, key=f) takes the rule as an argument and calls it once per item."
+  ],
+  "retrieval": {
+   "question": "From your earlier Python: return or print \u2014 which hands a value back to the caller?",
+   "answer": "return hands the value back; print only writes text."
   }
+ }
 }

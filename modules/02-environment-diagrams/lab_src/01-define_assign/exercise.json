@@ -1,0 +1,29 @@
+{
+  "title": "Build: define and assign in the frame model",
+  "checklist": [
+    {
+      "step": "define changes only the current frame",
+      "checks": [
+        "define_first_frame"
+      ]
+    },
+    {
+      "step": "assign changes the nearest binding, or raises NameError",
+      "checks": [
+        "assign_nearest"
+      ]
+    },
+    {
+      "step": "Every frame assign visits is drawn, in order, and no others",
+      "checks": [
+        "assign_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "Definition and assignment differ in which frame they are allowed to change.",
+    "For assign, compare the frame you are standing in with the frames lookup would pass on its way to the same name.",
+    "define writes into one table and is done. assign repeats the lesson's walk: test the current table for the name, write and stop on a hit, otherwise move to that frame's parent; falling off the end is the error case."
+  ],
+  "questions": []
+}

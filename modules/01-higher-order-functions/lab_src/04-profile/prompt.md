@@ -1,1 +1,0 @@
-Implement `profile(f, n, x)` returning `(final_value, actual_call_count)` while invoking the supplied `run_steps`. Wrap the callback to observe its invocations; do not guess the count from `n`. The checks also substitute a process that wastes calls, so honest instrumentation must expose that waste. The three-size demo draws your measured calls per application.

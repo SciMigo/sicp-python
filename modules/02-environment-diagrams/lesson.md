@@ -1,77 +1,107 @@
 # Environment Diagrams
 
-A name tells you which object a program uses only when you know where that name is bound. Two functions can contain the same spelling and refer to different bindings. Two other functions can use different local parameters while reading and changing one shared binding. An environment diagram makes these relationships explicit, so a prediction becomes a sequence of justified steps rather than a guess about whichever value was assigned most recently.
+A name tells you which value a program uses only once you know where that name is bound. This module builds the model SICP uses to answer that question: the environment model of evaluation. It replaces "substitute the argument into the body", which stops working as soon as a function can remember something between calls.
 
-This module assumes you can call functions, return functions, use dictionaries, and follow a loop. Module 1 introduced configured behavior. Here we explain why that behavior keeps the settings it needs and what changes when a setting can be rebound. We use small ordinary Python functions, not classes, comprehensions, annotation scopes, or dynamic evaluation. Our drawn frames are a semantic model; they are not a literal picture of Python's memory layout.
+You should be able to define and call functions, return a function from a function (module 1), use a dictionary, and follow a loop. We stay with ordinary nested functions: no classes, comprehensions or `exec`. The frames we draw are a model for predicting behaviour. They are not a picture of Python's memory.
 
-## The problem: which offset is used?
+## The problem: three functions, two values of x
 
-A calibration function adds a configured offset to a reading. A caller happens to have its own variable with the same name. Does the caller's variable override the calibration setting? Work through this program before looking at the assertion. The important question is not which value appears latest in the source file, but which binding the function's expression refers to.
+Here is SICP's first example for the model, in Python. Two of the three functions have a parameter called `x`.
 
 ```python
-def configure_offset(offset):
-    def adjust(reading):
-        return reading + offset
-    return adjust
+def square(x):
+    return x * x
 
-adjust = configure_offset(8)
+def sum_of_squares(x, y):
+    return square(x) + square(y)
 
-def report(fn):
-    offset = 60
-    return fn(5)
+def f(a):
+    return sum_of_squares(a + 1, a * 2)
 
-assert report(adjust) == 13
+assert f(5) == 136
 ```
 
-The reading is 5, the configured offset is 8, and the result is 13. The caller's 60 does not participate. Calling a function from somewhere does not redefine where the function's free names come from. This distinction explains many bugs in callbacks: a function can be called much later, by code that knows nothing about the place where it was created.
+The answer is 36 + 100 = 136. On the way there, `x` is 6 inside `sum_of_squares`, 6 again inside the first call to `square`, and 10 inside the second, while the `x` of `sum_of_squares` is still 6 and still needed. That is three separate bindings of one name, two of them alive at the same moment. The question for this module is where each of them lives, and how the program finds the right one.
 
-## The tempting approach: substitute the caller's values
+## The tempting approach: one table, or the caller's names
 
-A tempting prediction is to look around the current caller for every name. In `report`, an offset of 60 is easy to see; substituting it would give 65. That rule would make a function's meaning depend on arbitrary local names introduced by callers. Renaming a caller's private variable could change the behavior of an otherwise unchanged function. Ordinary Python functions do not work that way.
+The simplest picture is a single table from names to values. It fails on this program at once. The second call to `square` would write `x = 10` over the `x = 6` that `sum_of_squares` owns. Here that happens to be harmless, because `sum_of_squares` has already read its `x`; swap the two calls and the answer would change. A model that is right only by luck is not a model.
 
-Another tempting shortcut is to keep one table of all names. This loses information as soon as two calls bind the same parameter. One invocation can use reading 5 while another uses reading 9, without overwriting each other's parameters. The same spelling is not evidence of the same storage location. We need separate contexts and explicit relationships between them.
+A second picture gives every call its own table, and resolves a name that is missing there by looking at whoever made the call. That sounds reasonable, and it is wrong for Python.
 
-Our model therefore has a table of bindings for each relevant context. A binding associates one name with one object. A parent link describes an enclosing lexical context. The word lexical means that nesting in the program determines the relationship, rather than the sequence of callers at runtime. For the subset we draw, those relationships give us a useful route for resolving free names.
+```python
+x = 3
 
-## A visual trace
+def scale(y):
+    return x * y
 
-First, calling the configuration function binds its parameter to 8. Defining the nested adjustment function establishes which enclosing binding its free name uses. Returning the function gives the caller a function value; it does not replace that binding with the caller's local values. Later, calling the adjustment function binds its own reading parameter to 5.
+def run():
+    x = 100
+    return scale(2)
+
+assert run() == 6
+```
+
+??? predict "Before reading on: why 6 and not 200?"
+    `scale` was defined at the top level, so its free name `x` is looked up there, where `x` is 3. The `x = 100` inside `run` belongs to the call of `run`. Calling `scale` from inside `run` does not put `run`'s names on the path.
+
+If the caller's names were used, renaming a private variable inside `run` could change what `scale` returns. No function could then be understood by reading it. The rule we need ties a function to the place where it was defined.
+
+## The rules: frames, parents and function values
+
+The environment model has three parts.
+
+A **frame** is a table of bindings, each pairing one name with one value, plus a link to a parent frame. The global frame has no parent. An **environment** is a frame together with the chain of parents behind it.
+
+A **function value** is a pair: the code (parameters and body) and the environment in which the `def` was evaluated. SICP draws it as two circles side by side, one pointing at the code and one at the environment. Evaluating `def square(x): ...` creates that pair and binds the name `square` to it in the current frame. Nothing in the body runs.
+
+**Calling** a function creates a new frame. The frame binds the parameters to the argument values, which the caller has already computed. Its parent is the environment stored in the function value. The body then runs in this new environment.
+
+The parent is the function's own environment, not the caller's frame. That one choice is what makes `run()` return 6. It is called **lexical scope**: the nesting of the program text decides where names are found, and the order of calls at run time does not.
+
+## A visual trace of f(5)
+
+Evaluating `f(5)` creates four frames. All three functions were defined at the top level, so every one of the four has the global frame as its parent.
+
+| Frame | Call | Bindings |
+|---|---|---|
+| E1 | `f(5)` | a = 5 |
+| E2 | `sum_of_squares(6, 10)` | x = 6, y = 10 |
+| E3 | `square(6)` | x = 6 |
+| E4 | `square(10)` | x = 10 |
 
 ```figure
-{"type":"environment_diagram","params":{"frame_width":240,"frames":[{"id":"global","label":"Module","bindings":[{"name":"adjust","value":"configured function"}]},{"id":"settings","label":"Configuration context","parent":"global","bindings":[{"name":"offset","value":"8"}]},{"id":"call","label":"Adjustment call","parent":"settings","bindings":[{"name":"reading","value":"5"}]}],"highlights":{"bindings":{"settings.offset":"found","call.reading":"found"}}},"caption":"The adjustment uses its own reading binding and the enclosing offset binding. The caller's offset is outside this lookup path."}
+{"type":"environment_diagram","params":{"frame_width":270,"frame_padding":16,"row_height":22,"frames":[{"id":"global","label":"Global","bindings":[{"name":"square","value":"function"},{"name":"sum_of_squares","value":"function"},{"name":"f","value":"function"}]},{"id":"e2","label":"E2: sum_of_squares(6, 10)","parent":"global","bindings":[{"name":"x","value":"6"},{"name":"y","value":"10"}]}],"highlights":{"frames":{"e2":"current"}}},"caption":"E2 while sum_of_squares runs. Its parent is the global frame, where sum_of_squares was defined. E1, E3 and E4 hang off the global frame in the same way."}
 ```
 
-For reading, the current call supplies the binding. For offset, the relevant enclosing function supplies it. Adding those values produces 13. The arrows point toward the contexts used to interpret free names. They are not return addresses, and they do not represent the whole call stack. The reporting function may still be running, but its private offset is not on the adjustment function's lexical lookup path.
+E2 is created while E1 is still in use, and E3 while E2 is still in use, yet neither is the other's parent. The three `x` bindings sit in three frames, so none can overwrite another. When the body of `sum_of_squares` needs `square`, it does not find it in E2 and follows the parent link to the global frame.
 
-Now compare two separate calls to the configuration function. They create separate bindings for the same parameter name. Configuring one adjustment with 8 and another with negative 2 gives different behavior without requiring different function bodies. The code is reusable; the remembered bindings distinguish the two configurations.
+??? predict "Suppose square were defined inside sum_of_squares instead. What would the parent of E3 be?"
+    E2. The `def` would run while E2 is the current frame, so the function value would store E2 as its environment, and each call would hang its frame there.
 
-```python
-first = configure_offset(8)
-second = configure_offset(-2)
-assert (first(5), second(5)) == (13, 3)
-assert first(9) == 17
-```
+## The invariant: the nearest binding owns the name
 
-## The invariant: the nearest eligible binding owns the name
+To look a name up, begin at the current frame. If its table contains the name, stop. Otherwise move to its parent and repeat, until a binding is found or the chain ends. A nearer binding **shadows** one farther away. Shadowing does not delete or change the farther binding; it only decides which one this lookup selects.
 
-In our explicit frame model, begin at the current frame. If its binding table contains the requested name, stop. Otherwise follow its parent. Keep going until a binding is found or the chain ends. A nearer binding shadows one farther away. Shadowing does not delete or change the farther binding; it changes which one this lookup selects.
+!!! invariant "Every frame already passed lacks the name"
+    At each step of a lookup, every frame visited so far has been tested and does not bind the requested name.
 
-The invariant is that every frame already passed has been checked and contains no binding for the requested name. Initially none has been passed, so the statement is true. Moving to a parent preserves it because the current frame was tested before moving. If a binding is found, all nearer frames have already been ruled out; it is therefore the nearest binding on this chain. If the chain ends, every eligible frame has been checked, so reporting an unbound name is justified.
+Before the first test no frame has been passed, so the statement holds. Moving to a parent keeps it true, because the frame being left was tested first. So when a binding is found, every nearer frame has been ruled out, and the binding is the nearest one on the chain. When the chain ends, every frame on it has been ruled out, and reporting the name as unbound is justified.
+
+The argument assumes a finite chain with no cycles. Those are conditions on the input. The loop does not check them, and the invariant does not make a cyclic chain terminate.
 
 !!! note "Presence is different from truth"
-    A binding can legitimately hold zero, False, or None. Test whether the name is present, not whether its value is truthy. A missing name and a present name holding None are different states.
-
-This reasoning assumes a finite chain without cycles and valid parent links. The invariant does not make an invalid cyclic model terminate. Those are input conditions, not consequences of the loop. When reasoning about a program, state which relationships you assume before using a traversal proof.
+    A binding may hold zero, `False` or `None`. Test whether the name is present, not whether its value is truthy. A missing name and a name bound to `None` are different states.
 
 ## Implement a small model
 
-The following model uses a list of frame records. Each record has a bindings dictionary and a parent index; None marks the end. It returns both the value and the owning frame index, because ownership is often what a debugging question asks. It deliberately leaves out Python's builtins and many language features.
+The model is small enough to run. A frame is a record with a `bindings` dictionary and a `parent` index, where `None` marks the end of the chain. The lookup returns the value and the index of the frame that owns it, because ownership is usually what a debugging question is about.
 
 ```python
 frames = [
-    {"bindings": {"offset": 40, "empty": None}, "parent": None},
-    {"bindings": {"offset": 8}, "parent": 0},
-    {"bindings": {"reading": 5}, "parent": 1},
+    {"bindings": {"x": 3, "unset": None}, "parent": None},
+    {"bindings": {"x": 100}, "parent": 0},
+    {"bindings": {"y": 2}, "parent": 1},
 ]
 
 def find_owner(frames, current, name):
@@ -82,18 +112,19 @@ def find_owner(frames, current, name):
         current = frames[current]["parent"]
     raise NameError(name)
 
-assert find_owner(frames, 2, "offset") == (8, 1)
-assert find_owner(frames, 2, "reading") == (5, 2)
-assert find_owner(frames, 2, "empty") == (None, 0)
+assert find_owner(frames, 2, "x") == (100, 1)
+assert find_owner(frames, 2, "y") == (2, 2)
+assert find_owner(frames, 2, "unset") == (None, 0)
+assert find_owner(frames, 0, "x") == (3, 0)
 ```
 
-The root's offset of 40 remains present, but the middle frame shadows it. Reading is local to the innermost frame. Empty is present in the root even though its value is None. A good test includes all three cases; testing only a positive local integer can let a wrong lookup rule look correct.
+From frame 2 the name `x` resolves to 100, because frame 1 shadows the root. From frame 0 the same name resolves to 3. `unset` is found at the root although its value is `None`.
 
-A call in this model creates a fresh parameter table and uses the function's definition environment as its parent. It does not reuse the caller's table. Reusing that table would confuse separate invocations, while linking to the caller would confuse lexical scope with calling order. Argument values are evaluated by the caller before parameter binding; this is distinct from the later resolution of free names inside the function body.
+SICP's evaluator has two more operations on environments. **Definition** adds a binding to the first frame of the environment, or replaces the binding that frame already has; it never touches a parent. **Assignment** finds the nearest frame that already binds the name and changes that binding; if no frame binds it, that is an error. Lookup, definition and assignment are the whole interface. The lab asks you to build the last two.
 
 ## Where Python needs a more precise rule
 
-The dictionary-chain model is useful, but Python does not perform this exact traversal for every variable read. Python determines which names are local to a function from binding operations in its body. An assignment can make a name local even when the assignment appears after a read. A read before that local binding has received a value raises UnboundLocalError; it does not simply fall back to an outer name.
+Python does not walk a chain of dictionaries on every variable read. It decides, when it compiles a function, which names are local to it: any name the body assigns is local, for the whole body. A read that comes before the local has a value raises `UnboundLocalError`. It does not fall back to an outer binding.
 
 ```python
 level = 11
@@ -108,97 +139,153 @@ try:
 except UnboundLocalError:
     pass
 else:
-    raise AssertionError("The early local read must fail")
+    raise AssertionError("the early read of a local must fail")
 ```
 
-This example is a boundary of the simple lookup model, not an exception to be hidden. When drawing real Python, first classify the name: parameter or local, enclosing function name, module global, or builtin. Then apply the appropriate rule. Our lab's frame traversal is an explicit little model with a stated contract; it should not be mistaken for a complete Python interpreter.
+This is the boundary of the simple model, and worth knowing. When you draw real Python, first classify each name as local (a parameter or an assigned name), enclosing, global or builtin. Then the nearest-binding rule tells you which binding it is.
 
-A closure likewise does not need to retain an entire finished execution frame. Python functions can retain cells associated with the enclosing variables they use. Our persistent configuration box represents those bindings and their relationships. It says what must remain accessible for the behavior to work, not how much interpreter memory remains allocated. A finished call and an accessible captured binding are different ideas.
+## Frames as the home of local state
 
-## Shared state without global state
-
-Read-only settings are one case. Two returned functions can also share a changing binding. Consider a small register that starts at 12. One operation changes it and another reports it. The modifying operation declares the binding nonlocal, so rebinding affects the enclosing function's variable rather than creating an unrelated local variable.
+Substitution cannot explain a function whose answers change from call to call. The environment model can. This is SICP's bank-withdrawal example.
 
 ```python
-def make_register(start):
-    value = start
-    def change(delta):
-        nonlocal value
-        value += delta
-        return value
-    def read():
-        return value
-    return change, read
+def make_withdraw(balance):
+    def withdraw(amount):
+        nonlocal balance
+        if amount > balance:
+            return "Insufficient funds"
+        balance = balance - amount
+        return balance
+    return withdraw
 
-change_a, read_a = make_register(12)
-change_b, read_b = make_register(30)
-assert change_a(4) == 16
-assert change_a(-7) == 9
-assert (read_a(), read_b()) == (9, 30)
+W1 = make_withdraw(100)
+assert W1(50) == 50
+assert W1(60) == "Insufficient funds"
+assert W1(40) == 10
 ```
 
-The two functions from the first factory call share its value binding. The second factory call supplies another binding. Changing the first register cannot affect the second simply because both functions spell the variable `value`. Independence comes from distinct binding ownership, not from different variable names.
+Follow the frames. Calling `make_withdraw(100)` creates a frame E1 that binds `balance` to 100, with the global frame as parent. The inner `def` runs while E1 is current, so the function value it creates stores E1 as its environment. That value is returned and bound to `W1` in the global frame.
+
+Calling `W1(50)` creates a frame that binds `amount` to 50. Its parent is E1, the environment stored in the function value. The body finds `amount` in the new frame and `balance` one step up, in E1. The assignment changes the binding in E1 to 50.
 
 ```figure
-{"type":"environment_diagram","params":{"frame_width":240,"frames":[{"id":"a","label":"Register A: captured bindings","bindings":[{"name":"start","value":"12"},{"name":"value","value":"9"}]},{"id":"b","label":"Register B: captured bindings","bindings":[{"name":"start","value":"30"},{"name":"value","value":"30"}]}],"highlights":{"bindings":{"a.value":"found"}}},"caption":"After changes of +4 and -7 to A, its value is 9. B still reads 30. These are independent captured bindings; unrelated details are omitted."}
+{"type":"environment_diagram","params":{"frame_width":270,"frame_padding":16,"row_height":22,"frames":[{"id":"global","label":"Global","bindings":[{"name":"make_withdraw","value":"function"},{"name":"W1","value":"function, env E1"}]},{"id":"e1","label":"E1: make_withdraw(100)","parent":"global","bindings":[{"name":"balance","value":"50"}]},{"id":"call","label":"W1(50)","parent":"e1","bindings":[{"name":"amount","value":"50"}]}],"highlights":{"frames":{"e1":"found"}}},"caption":"At the end of W1(50). The call frame's parent is E1, so the assignment changed balance in E1 from 100 to 50."}
 ```
 
-Without nonlocal, assigning to value in the modifying function would make it local there. The read needed by the augmented assignment would then fail before the update. Nonlocal is not a search through callers: it refers to an existing binding in an enclosing function scope. It cannot create an arbitrary outer variable that does not exist.
+When the call returns, its frame is no longer needed: nothing refers to it. E1 is still needed, because the function value bound to `W1` points at it. The next call to `W1` creates a fresh frame for `amount` and finds `balance` at 50. `balance` is a local state variable of this one function value.
 
-## Complexity: measure the model you actually built
+The `nonlocal` line is Python's way of asking for assignment in the model's sense: change the nearest enclosing function's binding. Without it, the assignment would make `balance` a local of `withdraw`, and the comparison on the line above would raise `UnboundLocalError`. `nonlocal` cannot create a binding; the enclosing function must already have one.
 
-Suppose a requested binding lies in the seventh frame visited. Our loop performs seven membership tests. If a chain has twelve frames and the name is absent, it performs twelve membership tests and then raises an error. A local hit performs one test regardless of how many parents exist. These are exact counts for the explicit loop, not timing estimates for Python closures.
+Now make a second withdrawal function.
 
 ```python
-def count_probes(depth, owner):
-    tables = [{} for _ in range(depth)]
-    if owner is not None:
-        tables[owner]["key"] = 1
-    probes = 0
-    for table in tables:
-        probes += 1
-        if "key" in table:
-            return probes
-    return probes
-
-assert count_probes(12, 6) == 7
-assert count_probes(12, None) == 12
-assert count_probes(12, 0) == 1
-assert [count_probes(d, None) for d in (3, 6, 12)] == [3, 6, 12]
+W2 = make_withdraw(100)
+assert W2(70) == 30
+assert W1(5) == 5
 ```
 
-For a chain of depth $d$, there are at most $d$ membership tests and parent steps. Under a model where a dictionary membership test and a parent step each have unit cost, this gives worst-case linear work in the chain depth. We are counting those operations rather than asserting that every real dictionary access has a deterministic constant running time. Drawing and copying whole diagrams add costs that are excluded from this measurement.
+??? predict "W1 had 10 left. Why did W2(70) return 30 rather than refuse?"
+    The second call to `make_withdraw` created its own frame E2, with its own `balance` of 100. `W2`'s environment is E2. `W1` and `W2` share their code and nothing else.
+
+```figure
+{"type":"environment_diagram","params":{"frame_width":270,"frame_padding":16,"row_height":22,"frames":[{"id":"e1","label":"E1: environment of W1","bindings":[{"name":"balance","value":"5"}]},{"id":"e2","label":"E2: environment of W2","bindings":[{"name":"balance","value":"30"}]}]},"caption":"After the calls above: W1 has 5 left and W2 has 30. Each call to make_withdraw made one frame; both frames have the global frame as parent (not drawn)."}
+```
+
+Two things made the accounts independent: each call to `make_withdraw` created a frame, and each returned function stored the frame it was created in. The two frames spell the variable the same way and that does not matter.
+
+One caution about the picture. Python does not keep the whole frame of a finished call alive for a closure. It keeps a cell for each variable the inner function uses. The diagram says which bindings stay reachable, and that is all a prediction needs.
+
+## Internal definitions
+
+The same rules explain helper functions defined inside a function. This is SICP's square-root procedure, with a loop where the book uses recursion (module 3).
+
+```python
+def sqrt(x):
+    def good_enough(guess):
+        return abs(guess * guess - x) < 0.001
+
+    def improve(guess):
+        return (guess + x / guess) / 2
+
+    guess = 1.0
+    while not good_enough(guess):
+        guess = improve(guess)
+    return guess
+
+assert abs(sqrt(2) - 1.4142) < 0.001
+assert abs(sqrt(9) - 3) < 0.001
+```
+
+Calling `sqrt(2)` creates a frame that binds `x` to 2. The two inner `def`s run in that frame, so `good_enough` and `improve` are bound there, and both function values store that frame as their environment. This gives two properties the model predicts. The helper names are local to the call, so they cannot collide with a `good_enough` defined elsewhere in the program. And the helpers can use `x` without receiving it as an argument: a call to `improve` gets a frame whose parent is the `sqrt` frame, where `x` is found.
+
+## Complexity: count the probes
+
+How much work is a lookup in the explicit model? Count **probes**, the membership tests on binding tables. The check below wraps each table in an instrumented dictionary that counts those tests. It is a stand-in for measuring; in the lab you will count inside a loop you write yourself.
+
+```python
+class CountingTable(dict):
+    probes = 0
+    def __contains__(self, name):
+        CountingTable.probes += 1
+        return super().__contains__(name)
+
+def probes_for(depth, owner):
+    chain = [{"bindings": CountingTable(), "parent": i - 1 if i else None}
+             for i in range(depth)]
+    if owner is not None:
+        chain[owner]["bindings"]["key"] = 1
+    CountingTable.probes = 0
+    try:
+        find_owner(chain, depth - 1, "key")
+    except NameError:
+        pass
+    return CountingTable.probes
+
+assert probes_for(12, 11) == 1
+assert probes_for(12, 5) == 7
+assert probes_for(12, None) == 12
+assert [probes_for(d, None) for d in (3, 6, 12)] == [3, 6, 12]
+```
+
+| Chain depth | Name bound in | Probes |
+|---:|---|---:|
+| 12 | the starting frame | 1 |
+| 12 | the seventh frame visited | 7 |
+| 12 | no frame | 12 |
+| 3, 6, 12 | no frame | 3, 6, 12 |
+
+A lookup visits each frame on the chain at most once, so a chain of depth $d$ costs at most $d$ probes, and a miss costs exactly $d$. If a probe and a parent step each count as one unit, lookup is linear in the depth of the chain in the worst case and constant for a local name. This is a statement about the dictionary-chain model. It is not the cost of a variable read in CPython, which resolves locals and closure variables to fixed slots at compile time.
 
 ## A problem that looks different
 
-Imagine saving callbacks while configuring several display panels. Each callback must later report that panel's own label. The callbacks may all run after configuration has finished. If they all read one changing loop variable, they can end up reporting the final label rather than the label from their own setup. The key debugging question is whether the callbacks refer to distinct bindings or one shared binding.
+A test suite uses a helper, `next_ticket()`, that returns 1, 2, 3 and so on. Two test files call it. Each file passes when run alone. Run together, the second file fails: its first ticket is 4, not 1. Nobody edited either file.
 
-Creating behavior now is different from evaluating it now. Saving a function does not automatically save a separate snapshot of every object it might later read. Default argument values and separate factory calls can establish different semantics, and mutable objects need additional care. Explain which binding or object is retained before choosing a repair. Renaming the loop variable alone cannot change sharing.
+Which frame holds the count? Which function values have that frame on their chain? What would have to be true of the environments for each test file to get a sequence of its own? Answer in terms of frames and parents before you think about code.
 
 ## Practise
 
-The lab makes lookup ownership visible, distinguishes a function's defining environment from its caller, and builds a shared-state service with independent instances. You will instrument actual membership tests at several depths. A final deferred-callback task asks you to preserve distinct behavior after setup ends without naming the method you should use.
+The lab runs on the frame model from this lesson, with different numbers. You will build definition and assignment, create the frame for a call and decide its parent, write a small account whose two operations share one binding, and count probes in a lookup you write. The last task describes a dashboard whose panels misbehave, and leaves the diagnosis to you.
 
 ## Recap
 
-**You can now:** Identify a name's owner, trace definition-linked calls, distinguish shared bindings from independent factory calls, and explain a read before local assignment.
+**You can now:** Draw the frames a call creates, say which frame owns a name, explain why a function finds its free names where it was defined, and explain how a returned function keeps private state.
 
-**Invariant:** Every frame already passed lacks the requested binding; the first hit is the nearest owner on the model's chain.
+**Invariant:** During a lookup, every frame already passed lacks the name, so the first hit is the nearest binding.
 
-**Complexity:** At most $d$ membership probes for depth $d$ in the explicit model, excluding drawing. This is not CPython's variable-access cost.
+**Complexity achieved:** At most $d$ probes for a chain of depth $d$ in the explicit model, and exactly $d$ on a miss. This is not CPython's variable-access cost.
 
-**Failure mode:** Using caller locals for free names, testing values rather than presence, or accidentally sharing one binding among deferred callbacks.
+**Failure mode:** Resolving a free name in the caller's frame, testing a value's truth when you meant the name's presence, or expecting an assignment to reach an outer binding without `nonlocal`.
 
-**In real programs:** Python's nonlocal statement lets nested functions rebind an existing enclosing function variable. Its scope is lexical, even when callbacks are invoked elsewhere.
+**In real software:** Python's `nonlocal` statement rebinds a variable of the nearest enclosing function, and a function's `__closure__` holds one cell per captured variable.
 
-**Retrieval:** Module 1: why is returning a function different from returning the result of calling that function?
+**Retrieval:** Module 1: why is returning a function different from returning the result of calling it?
 
 ## Check yourself
 
-1. What does shadowing change, and what does it leave untouched?
-2. Why can a captured variable remain usable after its creating call returns?
-3. Which part of your explanation changes when an inner function assigns to a name that it previously only read?
+1. `f(5)` creates four frames. Which of them is the parent of the frame for `square(10)`, and why is it not the frame for `sum_of_squares`?
+2. After `W1 = make_withdraw(100)` returns, which frame is still reachable, and through what?
+3. What changes in your diagram of `withdraw` if the `nonlocal` line is removed?
 
 ## Optional background
 
-The [original SICP-derived reading](../../reading/02-environment-diagrams.html) remains separate. This independent Python module is not an endorsed university offering.
+This lesson follows section 3.2 of *Structure and Interpretation of Computer Programs*; the [book's text with Python translations](../../reading/02-environment-diagrams.html) is kept as a reference.

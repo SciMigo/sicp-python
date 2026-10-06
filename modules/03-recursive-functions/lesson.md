@@ -1,205 +1,294 @@
 # Recursive Functions
 
-A recursive function can be short and still generate a large process. A few lines may create a chain of waiting calls, branch into thousands of repeated requests, or visit only a small collection of distinct states. Reading the function definition tells you how answers depend on other answers. Understanding the process tells you how much work and storage those dependencies create.
+A recursive function can be six lines long and still start a process that makes two million calls. The definition tells you how one answer depends on other answers. The **process** is what actually unfolds when the definition runs: how many calls are waiting at once, how many are made in total, and how those numbers grow with the input. This module is about reading a definition and seeing its process.
 
-This module assumes that you can follow function calls, loops, and dictionaries, and that you understand separate call contexts from module 2. We will start with a small sum, then count ways of filling a strip. The goal is to justify termination, identify repeated work, and choose an evaluation order that fits Python's runtime. Our drawings expose semantic state; they do not show the interpreter's literal memory layout.
+It follows section 1.2 of *Structure and Interpretation of Computer Programs* and uses that section's examples, written in Python: factorial, Fibonacci numbers, counting change, fast exponentiation and Euclid's algorithm. You should be able to define and call functions, write a loop, and explain why two calls to one function have separate parameters (module 2).
 
 ## Learn recursion in three rounds
 
-Take this module in three sessions if recursion is new. Repetition helps when each pass asks a different question. In the first round, ask **what is waiting?** Follow a single chain down to its base case, then follow the answers back up. In the second, ask **what smaller input can I trust?** Write functions over different shapes of data. In the third, ask **which work repeats?** Compare a branching call tree with the distinct states it computes.
+If recursion is new, take the module in three sittings. Each round asks one question.
 
-After each round, close the code and explain one trace aloud. If you cannot say what one call returns, revisit that round before adding another feature. Getting an answer from Run is useful feedback; predicting a return before pressing Run is stronger evidence of understanding.
+1. **What is still waiting?** Follow one chain of calls down to its base case and back.
+2. **What smaller input can I trust?** Inputs shrink in more than one way.
+3. **Which work repeats?** A branching definition can ask the same question many times.
+
+After each round, close the code and say one trace aloud. Predicting what a call returns before pressing Run tells you more than reading the output afterwards.
 
 ## Round 1: what is still waiting?
 
-Suppose a workshop numbers its trays from 1 through n and wants the total of their numbers. One definition says that the total through n is n plus the total through n minus one. The total through zero is zero. This description gives both a base case and a dependency on a smaller instance.
+The factorial of $n$ is $n \cdot (n-1) \cdots 2 \cdot 1$, and the factorial of 0 is 1. One observation turns that into a program: $n!$ is $n$ times $(n-1)!$.
 
 ```python
-def tray_total(n):
+def factorial(n):
     if n == 0:
-        return 0
-    return n + tray_total(n - 1)
+        return 1
+    return n * factorial(n - 1)
 
-assert tray_total(0) == 0
-assert tray_total(4) == 10
+assert [factorial(n) for n in range(6)] == [1, 1, 2, 6, 24, 120]
+assert factorial(6) == 720
 ```
 
-For input 4, the outer call cannot perform its addition until the call for 3 returns. That call waits for 2, which waits for 1, which waits for 0. The answer eventually comes back through the waiting additions: zero becomes 1, then 3, then 6, then 10. The arithmetic is easy; the ordering of work is the new idea.
-
-The contract matters. This function accepts nonnegative integers. On that domain, subtracting one reaches zero. A negative input would keep decreasing away from the base case, while some noninteger inputs would never equal zero. A base case written in the source is not by itself a termination argument. We must show that every permitted recursive step moves toward it.
-
-## The direct approach: save pending work in calls
-
-For the small sum, direct recursion is reasonable. Each call remembers its own n and waits to add it after receiving the smaller answer. The program's control flow stores the unfinished computation. This is a linear recursive process: the number of active calls grows with the input, even though every call has only one recursive child.
-
-The recursive definition is not automatically inefficient. It performs one addition per positive tray number, just as a straightforward loop does. Its extra cost is the chain of pending calls. Time and storage are different questions; a program can have reasonable arithmetic work and still reach Python's recursion limit on a large input.
+Run `factorial(4)` by hand. The outer call cannot multiply until `factorial(3)` returns. That call waits for `factorial(2)`, which waits for `factorial(1)`, which waits for `factorial(0)`. Then the answers come back up: 1, 1, 2, 6, 24.
 
 ```figure
-{"type":"environment_diagram","params":{"frame_width":240,"frames":[{"id":"a","label":"Call for n = 4","bindings":[{"name":"pending addition","value":"4 + child"}]},{"id":"b","label":"Call for n = 3","bindings":[{"name":"pending addition","value":"3 + child"}]},{"id":"c","label":"Call for n = 2","bindings":[{"name":"pending addition","value":"2 + child"}]},{"id":"d","label":"Call for n = 1","bindings":[{"name":"pending addition","value":"1 + child"}]},{"id":"e","label":"Base call for n = 0","bindings":[{"name":"returned value","value":"0"}]}]},"caption":"At the deepest point, four additions are waiting. These boxes show pending calls, not lexical parent links; no parent arrows are drawn."}
+{"type":"environment_diagram","params":{"frame_width":240,"frames":[{"id":"a","label":"Call for n = 4","bindings":[{"name":"waiting to compute","value":"4 * child"}]},{"id":"b","label":"Call for n = 3","bindings":[{"name":"waiting to compute","value":"3 * child"}]},{"id":"c","label":"Call for n = 2","bindings":[{"name":"waiting to compute","value":"2 * child"}]},{"id":"d","label":"Call for n = 1","bindings":[{"name":"waiting to compute","value":"1 * child"}]},{"id":"e","label":"Base call for n = 0","bindings":[{"name":"returns","value":"1"}]}]},"caption":"The deepest moment of factorial(4): four multiplications are waiting. The boxes are active calls, not the lexical parents of module 2, so no arrows are drawn."}
 ```
 
-Notice the distinction from the environment diagrams in module 2. A lexical parent relationship answers where a free name comes from. Pending call work answers what must happen after a child returns. Those relationships need not have the same shape. Calling a globally defined function from another call does not make the caller its lexical parent.
+This shape is a **linear recursive process**. The number of waiting multiplications grows in step with $n$, and the interpreter has to remember every one of them.
 
-## A visual trace and a correctness argument
+??? predict "Predict: what does factorial(-1) do?"
+    It never reaches the base case: -1, -2, -3, ... move away from 0. Python stops it with a RecursionError. A base case in the source is not a termination argument. You also need every permitted input to move toward it, which is why the contract says "nonnegative integer".
 
-A reliable trace records two kinds of event: entry into a smaller problem and return of a completed answer. On entry, n identifies the requested prefix. On return, the result must equal the sum of the integers from 1 through that n. The same call can therefore appear once while waiting and again when its answer is ready.
+## The same answer from a different process
 
-Correctness follows by induction on the permitted integer input. At zero, the empty sum is zero. Assume the recursive call correctly returns the sum through n minus one. Adding n includes the remaining tray exactly once and changes none of the earlier contributions, so the returned value is the sum through n. Termination and correctness are separate: the decreasing argument shows that a base case is reached, while the induction shows that the reached answers have the intended meaning.
-
-A bad implementation can terminate and return the wrong answer. For example, returning n at every level avoids waiting but discards the smaller sum. Conversely, the mathematical recurrence can be correct while its implementation fails on a large input because the runtime cannot maintain the required depth. Tests should distinguish the numerical contract, the trace, and the resource assumptions.
-
-## Turn pending work into explicit state
-
-The sum also has a compact iterative process. Keep the total already processed and the next tray number. At the start of each iteration, total contains exactly the numbers smaller than next_tray. Adding next_tray extends that completed prefix by one; advancing next_tray preserves the relationship.
+There is another way to compute $n!$: keep a running product and a counter, and multiply from 1 upward.
 
 ```python
-def tray_total_loop(n):
-    total = 0
-    next_tray = 1
-    while next_tray <= n:
-        total += next_tray
-        next_tray += 1
-    return total
+def factorial_loop(n):
+    product, counter = 1, 1
+    while counter <= n:
+        product, counter = product * counter, counter + 1
+    return product
 
-assert [tray_total_loop(n) for n in range(7)] == [0, 1, 3, 6, 10, 15, 21]
-assert all(tray_total_loop(n) == tray_total(n) for n in range(20))
+assert all(factorial_loop(n) == factorial(n) for n in range(20))
 ```
 
-When the loop ends, next_tray is n plus one, so the invariant says that total covers the whole requested prefix. The loop has a constant number of integer state variables and no growing Python call chain. This does not mean constant storage in bits: the integers become larger as n grows. We must say which resource model a space claim describes.
+!!! invariant "Invariant"
+    Before each test of the loop condition, `product` equals the factorial of `counter - 1`.
 
-An accumulator written with a recursive tail call can describe similarly compact logical state. In a language implementation with suitable tail-call optimization, that need not create a growing stack. CPython and the Python runtime used in these labs do not provide that optimization for these functions. A tail-position call still consumes recursive depth here. Use a loop when you need the corresponding large-input process in Python; raising the recursion limit does not remove the underlying stack growth.
+It holds at the start, because $0! = 1$. One pass multiplies by `counter` and then advances it, so it still holds afterwards. The loop stops when `counter` is $n + 1$, and the invariant then says `product` is $n!$.
+
+Here nothing is waiting. Two variables describe the whole computation at every moment; you could stop the machine, write the two numbers on a card, and resume later. SICP calls this a **linear iterative process**: the steps still grow with $n$, but the state does not.
+
+SICP makes a further point that Python changes. In Scheme, a function whose last act is to call itself runs as an iterative process, because the implementation reuses the frame (tail-call optimization). CPython does not, and neither does the Python that runs in these labs: every call, in tail position or not, adds a frame. In Python, write the loop when you want the iterative process.
+
+Correctness of the recursive version is an induction. `factorial(0)` returns 1, which is right. If `factorial(n - 1)` returns $(n-1)!$, then multiplying by $n$ gives $n!$. Termination is a separate fact: the argument decreases by one and is never negative, so it reaches 0. A function can terminate and be wrong (return `n` at every level), and it can be right on paper and still fail on a deep input.
 
 ## Round 2: the input can shrink in different ways
 
-The sum example decreases a number by one. That is only one way to make progress. Consider a sequence whose outside values match: the remaining question concerns its inside window. Two indices can move toward each other while the original sequence stays unchanged. An empty window or a one-element window needs no pair comparison. A mismatching pair settles the whole answer immediately.
+Subtracting one is only one way to make an input smaller.
 
-For a mirrored sequence, trusting the smaller call means trusting its Boolean answer, not assuming it returns True. Matching outside values establish only part of the claim. The inside might still disagree. Separate those responsibilities: the current call checks its pair; a smaller call checks all pairs inside it. On a matching input, the distance between the boundaries decreases by two until no pair remains. On a mismatch, the call returns without another descent. A returned False must travel back through every waiting caller.
-
-Here is the shape of that descent for a lesson example. Each box records the boundaries belonging to one call; the earlier boxes still wait for an inside answer.
-
-```figure
-{"type": "environment_diagram", "params": {"frames": [{"bindings": [{"name": "left", "value": "0"}, {"name": "right", "value": "5"}, {"name": "waiting", "value": "inside answer"}], "id": "0", "label": "outside call"}, {"bindings": [{"name": "left", "value": "1"}, {"name": "right", "value": "4"}, {"name": "waiting", "value": "inside answer"}], "id": "1", "label": "inside call"}, {"bindings": [{"name": "left", "value": "2"}, {"name": "right", "value": "3"}, {"name": "waiting", "value": "inside answer"}], "id": "2", "label": "smaller call"}, {"bindings": [{"name": "left", "value": "3"}, {"name": "right", "value": "2"}, {"name": "returns", "value": "True"}], "id": "3", "label": "base call"}]}, "caption": "Matching pairs shrink the inclusive window until left exceeds right. These are active calls, not lexical-parent links. The base answer returns through the waiting calls."}
-```
-
-A container gives a different smaller input: one child. Imagine a package holding numbers or other packages. A number already has its answer. An empty package contributes zero. A nonempty package asks each child for its answer and adds those answers. The current call need not understand the entire descendant structure at once. Its job is to combine correct child answers into its own correct answer.
-
-```figure
-{"type":"tree","params":{"node_radius":32,"node_spacing_x":115,"node_spacing_y":95,"root":{"value":"total 12","children":[{"value":"4"},{"value":"total 6","children":[{"value":"1"},{"value":"5"}]},{"value":"2"}]}},"caption":"A container holding 4, a nested container holding 1 and 5, and 2 totals 12. The nested container completes its answer 6 before its parent can finish."}
-```
-
-Do not mistake several children for repeated work. A nested container can have many recursive calls because it contains many different children. Reusing an answer is warranted only when two calls ask the same question under the same rules. Ordinary structural recursion visits each child occurrence; a recurrence may request the same state repeatedly. The next round will make that distinction visible.
-
-For each new function, write three sentences before code: what one call promises to return, which inputs need no recursive call, and why every recursive input is smaller. Then trace the smallest nontrivial example. Include an empty input and a failure case, rather than testing only the pleasant example. In the lab, record completed child answers before the parent answer so playback exposes a missing contribution instead of merely displaying a final total.
-
-## Round 3: a branching problem — fill a strip
-
-Now fill a strip of length n with pieces of length 1 or 2. The order of pieces matters: a short piece followed by a long one is a different arrangement from the reverse. There is one arrangement for an empty strip, because choosing no pieces is a valid completed arrangement. Length one also has one arrangement.
-
-For a longer strip, separate arrangements by their last piece. A final piece of length 1 leaves an arrangement of length n minus one; a final piece of length 2 leaves an arrangement of length n minus two. These categories are disjoint and cover every arrangement. Their counts therefore add, giving a recurrence whose recursive calls branch.
+**Shrink by a remainder.** The greatest common divisor of two numbers does not change when the larger is replaced by its remainder on division by the smaller. That is Euclid's algorithm:
 
 ```python
-def strip_count(n):
+def gcd(a, b):
+    if b == 0:
+        return a
+    return gcd(b, a % b)
+
+def gcd_steps(a, b):
+    return 0 if b == 0 else 1 + gcd_steps(b, a % b)
+
+assert gcd(206, 40) == 2
+assert gcd_steps(206, 40) == 4
+```
+
+The pairs are (206, 40), (40, 6), (6, 4), (4, 2), (2, 0): four remainders. The second number strictly decreases and never goes below zero, which is the termination argument. In `gcd` nothing waits, since the recursive call's value is returned unchanged; the process is iterative in shape even though the definition is recursive.
+
+**Shrink a window.** To decide whether a sequence reads the same in both directions, compare the two outside values. If they differ, the answer is settled. If they match, only part of the claim is established: the inside may still disagree, so the question passes to the window between them. A window of zero or one elements has nothing left to compare.
+
+```figure
+{"type": "environment_diagram", "params": {"frames": [{"bindings": [{"name": "left", "value": "0"}, {"name": "right", "value": "5"}, {"name": "waiting", "value": "inside answer"}], "id": "0", "label": "outside call"}, {"bindings": [{"name": "left", "value": "1"}, {"name": "right", "value": "4"}, {"name": "waiting", "value": "inside answer"}], "id": "1", "label": "inside call"}, {"bindings": [{"name": "left", "value": "2"}, {"name": "right", "value": "3"}, {"name": "waiting", "value": "inside answer"}], "id": "2", "label": "smaller call"}, {"bindings": [{"name": "left", "value": "3"}, {"name": "right", "value": "2"}, {"name": "returns", "value": "True"}], "id": "3", "label": "base call"}]}, "caption": "A six-element sequence whose pairs all match. Each call owns one inclusive window; the window loses two elements per call until left passes right."}
+```
+
+**Shrink to a child.** A package holds numbers or other packages. A number is its own total. A package asks each thing inside it for a total and adds the answers. The call for a package does not need to understand everything below it, only how to combine correct answers from its children.
+
+```figure
+{"type":"tree","params":{"node_radius":32,"node_spacing_x":115,"node_spacing_y":95,"root":{"value":"total 12","children":[{"value":"4"},{"value":"total 6","children":[{"value":"1"},{"value":"5"}]},{"value":"2"}]}},"caption":"A package holding 4, a package holding 1 and 5, and 2. The inner package finishes with 6 before the outer one can finish with 12."}
+```
+
+Before writing any recursive function, write three sentences: what one call promises to return, which inputs need no recursive call, and why every recursive input is smaller. Then trace the smallest example that is not a base case.
+
+## Round 3: tree recursion
+
+The Fibonacci numbers start 0, 1, and each later one is the sum of the two before it. The definition translates directly:
+
+```python
+def fib(n):
+    if n < 2:
+        return n
+    return fib(n - 1) + fib(n - 2)
+
+def fib_calls(n):
     if n < 2:
         return 1
-    return strip_count(n - 1) + strip_count(n - 2)
+    return 1 + fib_calls(n - 1) + fib_calls(n - 2)
 
-assert [strip_count(n) for n in range(7)] == [1, 1, 2, 3, 5, 8, 13]
+assert [fib(n) for n in range(9)] == [0, 1, 1, 2, 3, 5, 8, 13, 21]
+assert [(n, fib(n), fib_calls(n)) for n in (5, 10, 20)] == [
+    (5, 5, 15), (10, 55, 177), (20, 6765, 21891)
+]
+assert all(fib_calls(n) == 2 * fib(n + 1) - 1 for n in range(21))
 ```
 
-This function also assumes nonnegative integer n. The expression for n equal to 4 requests lengths 3 and 2; the request for 3 requests 2 and 1. The answer for length 2 is computed more than once. The algorithm sees call occurrences, while the mathematical problem has only a small number of distinct lengths.
+This call branches. `fib(4)` asks for `fib(3)` and `fib(2)`; `fib(3)` asks for `fib(2)` again. `fib_calls` counts every call the same recursion makes.
 
 ```figure
-{"type":"tree","params":{"node_radius":32,"node_spacing_x":110,"node_spacing_y":95,"root":{"value":"4","children":[{"value":"3","children":[{"value":"2","children":[{"value":"1"},{"value":"0"}]},{"value":"1"}]},{"value":"2","children":[{"value":"1"},{"value":"0"}]}]}},"caption":"Direct branching for length 4 creates nine call occurrences, but only five distinct lengths (0 through 4). The two occurrences of length 2 repeat the same work."}
+{"type":"tree","params":{"node_radius":32,"node_spacing_x":110,"node_spacing_y":95,"root":{"value":"4","children":[{"value":"3","children":[{"value":"2","children":[{"value":"1"},{"value":"0"}]},{"value":"1"}]},{"value":"2","children":[{"value":"1"},{"value":"0"}]}]}},"caption":"The calls made by fib(4), labelled by argument: nine calls for five distinct arguments. The whole subtree for 2 appears twice."}
 ```
 
-## Reuse answers without changing the question
+??? predict "Predict: fib(20) is 6765. Roughly how many calls does it take?"
+    21,891. The count is exact: computing fib(n) this way takes $2 \cdot \text{fib}(n+1) - 1$ calls, and fib(21) is 10,946.
 
-Memoization stores an answer after computing it, then returns that answer if the same subproblem is requested again. The cache key must identify everything that determines the result. Here the piece lengths are fixed within the function, so n is sufficient. If the allowed pieces or other settings changed, caching only by n in one shared global dictionary could reuse answers for the wrong problem.
+The formula follows by induction. It holds for 0 and 1 (one call each). Write $F_n$ for fib($n$). For larger $n$ the count is one plus the two smaller counts:
+
+$$1 + (2F_n - 1) + (2F_{n-1} - 1) = 2F_{n+1} - 1 .$$
+
+Since fib($n$) grows like $\varphi^n$ with $\varphi \approx 1.618$, so does the number of calls: about 62% more work for each increase of $n$ by one. That is exponential, though slower than doubling. The number of calls *waiting* at any moment is only the depth of the tree, at most $n$. Steps and space are different questions.
+
+The iterative process needs two numbers of state, exactly as `factorial_loop` did:
 
 ```python
-def strip_count_cached(n):
-    cache = {0: 1, 1: 1}
+def fib_loop(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+
+assert all(fib_loop(n) == fib(n) for n in range(21))
+assert fib_loop(90) == 2880067194370816120
+assert 2 * fib_loop(91) - 1 == 9320093220751060617
+```
+
+Before each pass, `a` and `b` are two consecutive Fibonacci numbers; the simultaneous assignment slides that pair one place along. `fib_loop(90)` takes 90 additions. `fib(90)` would take about $9.3 \times 10^{18}$ calls.
+
+## Counting change
+
+Tree recursion is not just a slow way to compute Fibonacci numbers. Sometimes it is the natural way to see a solution at all. How many ways are there to make change for a dollar from half-dollars, quarters, dimes, nickels and pennies?
+
+Split the ways into two groups that cannot overlap: those that use no coin of the first kind, and those that use at least one. The first group is the same problem with one fewer kind of coin. The second is the same problem for the amount left after handing over one such coin.
+
+```python
+def count_change(amount, coins=(1, 5, 10, 25, 50)):
+    calls = 0
+
+    def ways(amount, kinds):
+        nonlocal calls
+        calls += 1
+        if amount == 0:
+            return 1
+        if amount < 0 or kinds == 0:
+            return 0
+        return ways(amount, kinds - 1) + ways(amount - coins[kinds - 1], kinds)
+
+    return ways(amount, len(coins)), calls
+
+assert count_change(11) == (4, 55)
+assert count_change(100) == (292, 15499)
+```
+
+There are 292 ways, found with 15,499 calls. An amount of exactly 0 counts as one way (hand over nothing more); a negative amount or no kinds of coin left counts as none. Order does not matter here: a dime then a nickel is the same change as a nickel then a dime, and the "one fewer kind" branch is what prevents counting it twice.
+
+## Remember answers already computed
+
+`fib` repeats work because it forgets. Storing each answer the first time it is computed is called **memoization**. (SICP introduces it later, in chapter 3; it belongs here because it repairs exactly the waste the tree shows.)
+
+```python
+def fib_memo(n):
+    known = {0: 0, 1: 1}
+
     def solve(k):
-        if k not in cache:
-            cache[k] = solve(k - 1) + solve(k - 2)
-        return cache[k]
+        if k not in known:
+            known[k] = solve(k - 1) + solve(k - 2)
+        return known[k]
+
     return solve(n)
 
-assert strip_count_cached(12) == 233
-assert all(strip_count_cached(n) == strip_count(n) for n in range(13))
+assert all(fib_memo(n) == fib(n) for n in range(21))
+assert fib_memo(90) == fib_loop(90)
 ```
 
-The invariant is that every stored answer is correct for its key. The base entries satisfy it initially. A new entry is stored only after the smaller dependencies return correct answers, so their sum is correct for the new key. A cache hit can safely reuse that completed answer. Partially completed work must not be mistaken for a finished answer; in more general dependency graphs, cycles require a different treatment.
+Every stored answer is correct for its key, and an answer is stored only after the two it depends on have returned. Each argument from 2 to $n$ is computed once, so there are $n - 1$ additions. Two cautions. The key must name everything the answer depends on; here that is only $n$. And memoization removes repeated work, not depth: `solve` still descends $n$ calls on its first trip down.
 
-Memoization removes repeated computation, but it does not automatically remove recursive depth. This implementation still initially descends through a chain of smaller lengths. It improves how often a state is computed, not how many ancestors may be waiting. That distinction matters when the largest input is thousands rather than a small classroom example.
+## Orders of growth
 
-## Complexity: call occurrences versus computed states
+To compare processes, ask how a resource grows with a measure $n$ of the input. Writing $\Theta(f(n))$ means the resource stays between two constant multiples of $f(n)$ for all large $n$. The model below counts one step per call or loop pass and one unit of space per waiting call or state variable. It treats each arithmetic operation as one step, which ignores that Python integers get longer.
 
-Let C(n) count every call occurrence in the direct strip function, including base calls. The base counts are one. For larger n, the current call contributes one and its children contribute their counts. For this particular recurrence, the total is twice the number of strip arrangements minus one. We can verify representative values without treating measurements as a proof of the general formula.
+| Process | Steps | Space |
+|---|---|---|
+| `factorial` | $\Theta(n)$ | $\Theta(n)$ waiting calls |
+| `factorial_loop` | $\Theta(n)$ | $\Theta(1)$ variables |
+| `fib` | $\Theta(\varphi^n)$ | $\Theta(n)$ waiting calls |
+| `fib_loop` | $\Theta(n)$ | $\Theta(1)$ variables |
+| `fib_memo` | $\Theta(n)$ | $\Theta(n)$ stored answers |
+
+Doubling $n$ doubles the work of a $\Theta(n)$ process. For a $\Theta(\log n)$ process, doubling $n$ adds a constant amount of work. Exponentiation shows how to get one.
+
+## Exponentiation by squaring
+
+Computing $b^n$ as $b \cdot b^{n-1}$ takes $n$ multiplications. But $b^8$ needs only three: square $b$, square the result, square again. In general $b^n = (b^{n/2})^2$ when $n$ is even, and $b^n = b \cdot b^{n-1}$ when it is odd.
 
 ```python
-def strip_calls(n):
-    if n < 2:
+def fast_expt(b, n):
+    if n == 0:
         return 1
-    return 1 + strip_calls(n - 1) + strip_calls(n - 2)
+    if n % 2 == 0:
+        half = fast_expt(b, n // 2)
+        return half * half
+    return b * fast_expt(b, n - 1)
 
-assert [(n, strip_count(n), strip_calls(n)) for n in (4, 8, 12)] == [
-    (4, 5, 9), (8, 34, 67), (12, 233, 465)
-]
-assert all(strip_calls(n) == 2 * strip_count(n) - 1 for n in range(13))
+def expt_multiplications(n):
+    if n == 0:
+        return 0
+    if n % 2 == 0:
+        return 1 + expt_multiplications(n // 2)
+    return 1 + expt_multiplications(n - 1)
+
+assert fast_expt(2, 10) == 1024 and fast_expt(3, 13) == 3 ** 13
+assert [expt_multiplications(n) for n in (10, 100, 1000)] == [5, 9, 15]
 ```
 
-The formula follows by induction: both base cases satisfy it, and substituting the two smaller formulas into the call-count recurrence gives twice the sum of the two arrangement counts minus one. With length n at least two, its arrangement count grows at least as fast as doubling every two increases of length, and at most as fast as doubling at every increase. Thus direct branching creates exponentially many call occurrences as n grows.
+An odd exponent becomes even after one step, and an even one is halved, so the exponent at least halves every two steps. That gives at most $2\log_2 n + 2$ multiplications for $n \ge 1$, which is $\Theta(\log n)$ counting each multiplication as one step.
 
-The memoized version computes each positive non-base length from 2 through n once, doing one recurrence addition for each such state. It uses linear many additions and cache entries in n under the unit-cost state model. These are not bit-cost claims: exact counts grow in size, so addition and retained integers are not fixed-size objects. Drawing all call occurrences would also add substantial work; our measured algorithm counts exclude drawing.
+## Measure the claim
 
-## Choose an order with no waiting chain
+Calls made by `fib`, additions made by `fib_loop`, and multiplications made by `fast_expt`:
 
-The same strip recurrence can be evaluated from shorter strips toward longer ones. Once the answers for the two preceding lengths are known, the next answer can be computed immediately. Keeping just those two answers avoids both repeated branching and a deep call chain.
+| $n$ | `fib` | `fib_loop` | `fast_expt` |
+|---:|---:|---:|---:|
+| 10 | 177 | 10 | 5 |
+| 20 | 21,891 | 20 | 6 |
+| 30 | 2,692,537 | 30 | 8 |
 
 ```python
-def strip_count_bottom_up(n):
-    previous, current = 1, 1
-    for length in range(2, n + 1):
-        previous, current = current, previous + current
-    return previous if n == 0 else current
-
-assert all(strip_count_bottom_up(n) == strip_count_cached(n) for n in range(30))
-assert strip_count_bottom_up(12) == 233
+assert [fib_calls(n) for n in (10, 20, 30)] == [177, 21891, 2692537]
+assert [expt_multiplications(n) for n in (10, 20, 30)] == [5, 6, 8]
 ```
 
-The loop's state window must be described precisely: before processing length k, previous and current hold answers for k minus two and k minus one. Simultaneous assignment uses the old values on the right-hand side. Updating previous first and then adding the already changed previous would lose a dependency. For recurrences that use a wider or irregular set of earlier indices, keep the required table or window rather than assuming two variables always suffice.
+Three rows are an illustration. The induction and the halving argument above are what establish the growth.
+
+## Recursion depth in Python
+
+Python limits how many calls may be waiting at once. CPython's default limit is 1,000 frames, and the Python that runs in your browser has its own, different limit. `factorial(5000)` fails in standard Python with a RecursionError although the definition is correct, while `factorial_loop(5000)` is fine. Raising the limit with `sys.setrecursionlimit` moves the wall; it does not make deep recursion safe. When the depth grows with the input, and the input may be large, use a process whose state is explicit.
 
 ## A problem that looks different
 
-A production planner asks how many ordered schedules consume an exact amount of material using permitted batch sizes. Zero remaining material is one completed schedule; a negative remainder is impossible. Different last batches partition the schedules into disjoint categories. Once you identify those dependencies, you can ask whether to recompute them, cache them, or evaluate them in an order that makes all required predecessors available.
-
-The largest input and output representation affect the choice. A small exact calculation may work recursively. A large one may need an iterative order, and a requirement to report a remainder modulo a positive integer keeps intermediate counts bounded. Reducing after each addition preserves the final remainder, but it changes the reported quantity from an exact count to a residue. State that change explicitly.
+Someone picks a whole number from 1 to 1,000 and will answer only "higher", "lower" or "correct". How many questions do you need in the worst case, and what happens to that number when the range becomes 1 to 1,000,000? Say which input measure shrinks with each question, and by how much, before you compute anything.
 
 ## Practise
 
-The lab records real descent and return events, traces a different branching recurrence, and checks whether each subproblem is expanded once. You will measure actual non-base expansions of naive and cached processes, then solve a large scheduling-style task under an addition budget. The last prompt states its behavior and constraints without naming the technique.
+The lab has three rounds, like the lesson, on different functions. In round 1 your own code draws its stack of waiting calls. In round 2 you write a shrinking-window recursion and a nested-container recursion. In round 3 you trace a branching recurrence that is not Fibonacci, make it compute each state once, measure both versions, and finish with a counting problem whose inputs are far too deep to recurse on.
 
 ## Recap
 
-**You can now:** Justify termination, trace pending work, distinguish call occurrences from distinct states, and choose an order that avoids repeated computation and deep Python call chains.
+**You can now:** Tell a recursive definition from the process it generates, trace waiting calls, argue termination and correctness separately, and recognise repeated work in a branching recursion.
 
-**Invariant:** Each completed cached state has the correct answer; each iterative state window holds the dependencies needed for the next result.
+**Invariant:** In the iterative factorial, `product` equals the factorial of `counter - 1` before every test of the loop condition. In a memo table, every stored answer is correct for its key.
 
-**Complexity:** Direct branching for this strip recurrence has exponentially many calls. Cached or bottom-up evaluation uses linear many recurrence additions in n under a unit-cost arithmetic model, excluding drawing.
+**Complexity achieved:** Counting one step per call or loop pass: recursive factorial takes $\Theta(n)$ steps and $\Theta(n)$ waiting calls; tree-recursive fib makes exactly $2\,\text{fib}(n+1) - 1$ calls, which is $\Theta(\varphi^n)$; the loop and the memoized version take $\Theta(n)$ additions; exponentiation by squaring takes $\Theta(\log n)$ multiplications.
 
-**Failure mode:** Missing domain conditions, confusing memoization with stack removal, or reusing cached answers with incomplete keys.
+**Failure mode:** A base case that some permitted input never reaches; assuming memoization or a tail call removes Python's call depth; a memo key that leaves out something the answer depends on.
 
-**In real Python:** Recursion depth is limited. A constant number of integer variables does not imply constant bit storage.
+**In real software:** CPython enforces a recursion limit (1,000 by default, read with `sys.getrecursionlimit()`) and does not optimize tail calls.
 
 **Retrieval:** Module 2: why do two calls to the same function have distinct local parameter bindings?
 
 ## Check yourself
 
-1. Can a function terminate on every permitted input yet still compute the wrong answer?
-2. Which resource does memoization improve, and which can remain linear in input depth?
-3. When would a cache key containing only n be insufficient?
+1. `factorial` and `factorial_loop` both take $\Theta(n)$ steps. What exactly differs between their processes?
+2. Why does `count_change` not count "dime then nickel" and "nickel then dime" as two ways?
+3. Which resource does memoizing `fib` improve, and which one stays proportional to $n$?
 
 ## Optional background
 
-The [original SICP-derived reading](../../reading/03-recursive-functions.html) is preserved separately. This is an independent Python learning module, not an endorsed university offering.
+The [SICP reading for this module](../../reading/03-recursive-functions.html) is the book's own section 1.2, with the Scheme originals. This lesson uses its examples; the reading goes further, into testing for primality.

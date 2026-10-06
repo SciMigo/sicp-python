@@ -1,7 +1,6 @@
 def route_trace(n):
-    if n<0:result=0
-    elif n==0:result=1
-    else:result=route_trace(n-1)  # include the other final jump
+    result=0
+    # Your code goes here: work out this call's result.
     show_route(n,result)
     return result
 from scimigo import canvas,figure,frame,text

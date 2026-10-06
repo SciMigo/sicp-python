@@ -1,43 +1,43 @@
 {
-  "title": "Trace: definition scope or caller scope?",
+  "title": "Trace: where does a call's frame hang?",
   "checklist": [
     {
-      "step": "Bind fresh parameters and preserve the defining parent",
+      "step": "A new frame with its own bindings and the right parent",
       "checks": [
         "definition_parent"
       ]
     },
     {
-      "step": "Draw the new frame and its actual parent",
+      "step": "The picture shows the new frame and its lookup path",
       "checks": [
         "call_picture"
       ]
     }
   ],
   "hints": [
-    "Separate the location of a definition from the location of a call.",
-    "The function record carries its defining parent; caller records describe a different context.",
-    "Create a fresh parameter dictionary and attach the function record's parent."
+    "A call needs a place for its parameters and a rule for where its free names are found. Those are two separate decisions.",
+    "Look at the two indices you are given: one inside the function record, one passed as caller. Only one of them says where the function's free names live.",
+    "Build a fresh dictionary from the parameter names and the arguments, make a frame whose parent is the frame the function was defined in, append it, and return its position in the list."
   ],
   "questions": [
     {
       "step": "Predict the value",
-      "prompt": "Which result follows from the defining offset and the new reading?",
+      "prompt": "The demo calls add_rate with reading 3 from frame 1. What should it print?",
       "choices": [
         {
           "text": "83",
-          "why": "That would use the caller's offset, which is not the lexical owner."
-        },
-        {
-          "text": "6",
-          "why": "That is the offset alone, without the reading."
+          "why": "That reads rate from the caller's frame. A function's free names come from where it was defined."
         },
         {
           "text": "9",
-          "why": "The defining offset is 6 and the reading is 3."
+          "why": "reading is 3 in the new frame; rate is found through the parent, frame 0, where it is 6."
+        },
+        {
+          "text": "86",
+          "why": "Only one binding of rate is used. A lookup stops at the first frame that binds the name."
         }
       ],
-      "answer": 2
+      "answer": 1
     }
   ]
 }

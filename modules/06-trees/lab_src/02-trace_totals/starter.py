@@ -1,8 +1,6 @@
 def totals(t, path=(), whole=None):
     whole = t if whole is None else whole
     result = label(t)
-    for i, child in enumerate(branches(t)):
-        result += label(child)  # currently ignores deeper descendants
     show(whole, path, result)
     return result
 
@@ -24,15 +22,15 @@ def drawing(t, path=()):
 
 def show(t, path, answer):
     canvas(600, 360)
-    view = drawing(t)
     node = t
     for i in path:
         node = branches(node)[i]
     name = "root" if not path else ".".join(map(str, path))
-    figure("tree", x=0, y=0, width=600, height=280, root=view, node_radius=32, node_spacing_x=100, node_spacing_y=95,
+    figure("tree", x=0, y=0, width=600, height=280, root=drawing(t), node_radius=32,
+           node_spacing_x=100, node_spacing_y=95,
            highlights={name + ":" + str(label(node)): "current"})
     text(15, 325, "Completed " + name + ": " + str(answer), size=18)
     frame()
 
-sample = tree(6, [tree(0), tree(1, [tree(5), tree(5)]), tree(-2)])
+sample = tree(4, [tree(7), tree(0, [tree(9), tree(9)]), tree(-3)])
 print(totals(sample))

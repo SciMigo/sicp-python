@@ -1,0 +1,22 @@
+{
+ "title": "Search: the first path to a label",
+ "checklist": [
+  {
+   "step": "Return the first matching path, or None",
+   "checks": [
+    "first_match_paths"
+   ]
+  },
+  {
+   "step": "Examine nodes in order and stop at the match",
+   "checks": [
+    "visited_order"
+   ]
+  }
+ ],
+ "hints": [
+  "A search call answers one question about its own subtree: the path to the first match here, or None.",
+  "Check the current node before its children. Then look at what a child's call returns and decide whether to go on to the next child.",
+  "If a child reports a path, put the current label in front of it and return at once. Return None only after every child has reported None."
+ ]
+}

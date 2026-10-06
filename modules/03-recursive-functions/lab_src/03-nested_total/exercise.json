@@ -15,9 +15,9 @@
     }
   ],
   "hints": [
-    "A child may be an integer, an empty list, or another nonempty list.",
-    "Each call owns its own answer. Wait for all child answers before drawing the parent.",
-    "Start this list\u2019s answer at zero; add one recursive child answer at a time, extending the path with its index."
+    "A node is one of two things. Which one already knows its total?",
+    "A list does not need to look inside its children. It needs each child's total, and a recursive call supplies that.",
+    "For a list, start from 0 and add one recursive answer per child, extending the path with the child's index. An empty list then needs no special case."
   ],
   "questions": []
 }

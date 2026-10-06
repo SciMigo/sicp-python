@@ -1,0 +1,12 @@
+{
+  "title": "Round 1: draw the waiting calls",
+  "checklist": [
+    {"step": "Recurse down to exponent 0 and return the right power", "checks": ["power_values"]},
+    {"step": "Show every call entering and leaving on the real stack", "checks": ["stack_frames"]}
+  ],
+  "hints": [
+    "A call for n cannot multiply until the call for n - 1 has returned. That waiting is what the stack shows.",
+    "Which exponent needs no recursive call, and what is any base raised to it?",
+    "Compute this call's result first, from the base case or from base times the recursive answer. Then draw the leave frame, then pop."
+  ]
+}

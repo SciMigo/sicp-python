@@ -2,71 +2,70 @@
  "schema_version": "lab_v1",
  "lab_spec_id": "sicp-python-03-recursive-functions",
  "title": "Recursion in three rounds",
- "description": "Round 1: see calls descend and return. Round 2: write shrinking-window and nested-container recursions. Round 3: trace branches, reuse states, measure work, and transfer the idea.",
+ "description": "Round 1: draw the calls that wait in a linear recursion. Round 2: recurse on a shrinking window and on nested containers. Round 3: trace a branching recurrence, compute each state once, measure both, and count plans for inputs too deep to recurse on.",
  "runtime": {
   "engine": "pyodide",
   "timeout_ms": 15000
  },
  "recap": {
   "learned": [
-   "Justify a base case with a decreasing argument on the allowed domain.",
-   "Distinguish call occurrences from distinct subproblem states.",
-   "Reuse completed states without confusing a cache with stack removal.",
-   "Choose a dependency order that supports large Python inputs."
+   "Tell a recursive definition from the process it generates, and draw the calls that are waiting.",
+   "Argue termination from an input that shrinks toward a base case, separately from correctness.",
+   "See repeated work in a branching recursion and compute each state once.",
+   "Pick an order of evaluation that needs no deep chain of waiting calls."
   ],
-  "invariant": "Each completed stored state has the correct answer; earlier dependencies are available before a new state is completed.",
-  "complexity": "Count transitions and recurrence additions, not elapsed time. Memoized routes expand at most n positive states; ordered packing uses at most n times the number of allowed sizes additions, with modular residues and drawing excluded.",
-  "common_mistake": "Assuming that memoization or a tail-position call removes Python recursion depth.",
+  "invariant": "Every stored answer is correct for its state, and it is stored only after the answers it depends on are complete.",
+  "complexity": "Counting one step per state expansion or addition, and leaving drawing out: the naive route count expands exponentially many states in n, the memoized one expands n, and ordered packing needs at most n times the number of sizes additions. Waiting calls are counted separately: the memoized recursion is still n deep.",
+  "common_mistake": "Assuming that memoization or a call in tail position removes Python's call depth.",
   "in_real_programs": [
-   "Python exposes a recursion-depth limit; raising it does not remove recursive stack growth."
+   "CPython enforces a recursion limit (1,000 by default) and does not optimize tail calls."
   ],
   "retrieval": {
    "question": "Module 2: why can separate calls use the same parameter name independently?",
-   "answer": "Each invocation has its own local parameter binding; the same spelling does not imply the same binding."
+   "answer": "Each call has its own frame with its own binding for the parameter; the same spelling does not mean the same binding."
   }
  },
  "exercises": [
   {
-   "exercise_id": "recursive_sum",
-   "title": "Build: draw pending recursive work",
-   "prompt_md": "Repair `recursive_sum(n, stack=None)` for nonnegative integers up to 20. It must recursively call itself with n minus one and return the sum from 1 through n. Start a fresh stack when none is supplied, append the current n, then call `show_stack(\"enter\", stack, n)`. Before removing that n, call `show_stack(\"leave\", stack, result)` with its actual returned answer. Record the base call too. A supplied stack must be restored on return; do not keep state between invocations.\n",
-   "questions": [],
+   "exercise_id": "power",
+   "title": "Round 1: draw the waiting calls",
+   "prompt_md": "Write `power(base, n, stack=None)`, which returns `base` raised to the nonnegative integer `n` (at most 20) as a linear recursive process: `base` to the 0 is 1, and otherwise the answer is `base` times `power(base, n - 1, stack)`. The starter already appends `n` to the stack of waiting exponents and draws the \"enter\" frame. You add the rest: the base case, the recursive call (pass the same `stack` down), a call to `show_stack(\"leave\", stack, result)` with this call's actual answer while its `n` is still on the stack, and then the pop. Draw the base call too. A stack supplied by the caller must be back to what it was when you return.\n",
    "checklist": [
     {
-     "step": "Recurse to zero with fresh state and correct answers",
+     "step": "Recurse down to exponent 0 and return the right power",
      "checks": [
-      "recursive_values"
+      "power_values"
      ]
     },
     {
-     "step": "Show descent and return answers in the real stack",
+     "step": "Show every call entering and leaving on the real stack",
      "checks": [
       "stack_frames"
      ]
     }
    ],
-   "starter_code": "def recursive_sum(n,stack=None):\n    if stack is None:stack=[]\n    stack.append(n)\n    show_stack(\"enter\",stack,n)\n    result=n  # include the smaller recursive answer\n    show_stack(\"leave\",stack,result)\n    stack.pop()\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_stack(stage,stack,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=240,\n           values=list(stack),indices=False)\n    text(12,275,stage+\": \"+str(result),size=18)\n    frame()\n\nprint(recursive_sum(3))\n",
+   "starter_code": "def power(base, n, stack=None):\n    if stack is None:\n        stack = []\n    stack.append(n)\n    show_stack(\"enter\", stack, n)\n    # Your code goes here.\n    return 1\nfrom scimigo import canvas,figure,frame,text\n\ndef show_stack(stage,stack,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=240,\n           values=list(stack),indices=False)\n    text(12,275,stage+\": \"+str(result),size=18)\n    frame()\n\nprint(power(2,3))\n",
    "tests": [
     {
-     "name": "recursive_values",
-     "code": "saved_show=show_stack;show_stack=lambda *a:None\noriginal=recursive_sum\nseen=[]\ndef watched(n,stack=None):\n    seen.append(n)\n    return original(n,stack)\nrecursive_sum=watched\nfor n in [0,1,2,6,11,17]:\n    seen.clear();stack=[99]\n    result=recursive_sum(n,stack)\n    assert result==n*(n+1)//2,\"Add the completed smaller sum.\"\n    assert seen==list(range(n,-1,-1)),\"Call the same function once per decreasing argument, including zero.\"\n    assert stack==[99],\"Restore the caller's supplied stack.\"\nrecursive_sum=original;show_stack=saved_show\n"
+     "name": "power_values",
+     "code": "saved_show=show_stack;show_stack=lambda *a:None\noriginal=power\nseen=[]\ndef watched(base,n,stack=None):\n    seen.append(n)\n    return original(base,n,stack)\npower=watched\ntry:\n    for base,n in [(2,0),(5,1),(3,2),(-2,5),(1,11),(2,17),(0,3)]:\n        seen.clear();stack=[99]\n        result=power(base,n,stack)\n        assert result==base**n,f\"power({base}, {n}) should be {base**n}; got {result}. Multiply base by the answer for n - 1.\"\n        assert seen==list(range(n,-1,-1)),f\"power({base}, {n}) should call power once for each exponent from {n} down to 0; the calls had n = {seen}.\"\n        assert stack==[99],f\"The caller's stack was [99] before the call and {stack} after it: pop what you append.\"\n    assert power(7,4)==2401,\"With no stack supplied, start a fresh one.\"\n    assert power(7,4)==2401,\"A second call must not see state left by the first.\"\nfinally:\n    power=original;show_stack=saved_show\n"
     },
     {
      "name": "stack_frames",
-     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert recursive_sum(3)==6\nexpected=[('enter',[3],3),('enter',[3,2],2),('enter',[3,2,1],1),('enter',[3,2,1,0],0),('leave',[3,2,1,0],0),('leave',[3,2,1],1),('leave',[3,2],3),('leave',[3],6)]\nassert _frame_count()-before==len(expected)\nfor j,(stage,stack,value) in enumerate(expected):\n    objects=_frame(before+j);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==stack,\"Draw the actual active argument stack.\"\n    assert any(o['kind']=='text' and o['value']==stage+': '+str(value) for o in objects),\"Draw the value at this entry or return.\"\n"
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count()\nassert power(2,3)==8,\"power(2, 3) should be 8.\"\nexpected=[('enter',[3],3),('enter',[3,2],2),('enter',[3,2,1],1),('enter',[3,2,1,0],0),('leave',[3,2,1,0],1),('leave',[3,2,1],2),('leave',[3,2],4),('leave',[3],8)]\nrecorded=_frame_count()-before\nassert recorded==len(expected),f\"power(2, 3) makes 4 calls, each with an enter and a leave frame: 8 frames; recorded {recorded}.\"\nfor j,(stage,stack,value) in enumerate(expected):\n    objects=_frame(before+j);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==stack,f\"Frame {j+1} should show the waiting exponents {stack}; it shows {fig['params']['values']}.\"\n    assert any(o['kind']=='text' and o['value']==stage+': '+str(value) for o in objects),f\"Frame {j+1} should read '{stage}: {value}'.\"\n"
     }
    ],
    "hints": [
-    "Separate the smaller problem from the addition waiting for it.",
-    "For n equal to zero, what value represents an empty sum?",
-    "Combine n with the returned recursive answer; draw before popping its stack entry."
+    "A call for n cannot multiply until the call for n - 1 has returned. That waiting is what the stack shows.",
+    "Which exponent needs no recursive call, and what is any base raised to it?",
+    "Compute this call's result first, from the base case or from base times the recursive answer. Then draw the leave frame, then pop."
    ],
-   "solution": "def recursive_sum(n,stack=None):\n    if stack is None:stack=[]\n    stack.append(n)\n    show_stack(\"enter\",stack,n)\n    result=0 if n==0 else n+recursive_sum(n-1,stack)\n    show_stack(\"leave\",stack,result)\n    stack.pop()\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_stack(stage,stack,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=240,\n           values=list(stack),indices=False)\n    text(12,275,stage+\": \"+str(result),size=18)\n    frame()\n\nprint(recursive_sum(3))\n"
+   "solution": "def power(base, n, stack=None):\n    if stack is None:\n        stack = []\n    stack.append(n)\n    show_stack(\"enter\", stack, n)\n    if n == 0:\n        result = 1\n    else:\n        result = base * power(base, n - 1, stack)\n    show_stack(\"leave\", stack, result)\n    stack.pop()\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_stack(stage,stack,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=240,\n           values=list(stack),indices=False)\n    text(12,275,stage+\": \"+str(result),size=18)\n    frame()\n\nprint(power(2,3))\n"
   },
   {
    "exercise_id": "mirrored",
    "title": "Round 2: move two boundaries",
-   "prompt_md": "Implement mirrored(items, left=0, right=None) for lists of integers with at most 20 elements. Compare the current outside pair; if it matches, recursively check only the inside window. An empty or one-element window is mirrored. Do not slice or mutate the input. Call show_window on entry with answer None and before return with the Boolean answer. Use the same original list in every frame. Defaults select the whole list; explicit boundaries select an inclusive valid subwindow.\n",
+   "prompt_md": "Write `mirrored(items, left=0, right=None)`, which says whether the inclusive window `items[left]` to `items[right]` reads the same in both directions. Lists have at most 20 integers. Compare the outside pair; when it matches, the answer is whatever a recursive call says about the window inside it. A window of zero or one elements is mirrored. Do not slice, copy or change the list: pass the same list down with new boundaries. The starter draws the \"enter\" frame; before each call returns, call `show_window(items, left, right, \"leave\", answer)` with its Boolean answer.\n",
    "questions": [],
    "checklist": [
     {
@@ -82,28 +81,28 @@
      ]
     }
    ],
-   "starter_code": "def mirrored(items,left=0,right=None):\n    if right is None:right=len(items)-1\n    show_window(items,left,right,\"enter\",None)\n    answer=True if left>=right else items[left]==items[right]\n    # Matching outside values are not enough: check the inside too.\n    show_window(items,left,right,\"leave\",answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_window(items,left,right,stage,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=list(items),indices=True,\n           highlights={str(i):\"current\" for i in range(max(0,left),min(len(items),right+1))},\n           pointers=[{\"index\":left,\"label\":\"left\",\"position\":\"above\"},\n                     {\"index\":right,\"label\":\"right\",\"position\":\"below\"}])\n    text(12,250,\"left=\"+str(left)+\"  right=\"+str(right)+\"  \"+stage,size=18)\n    text(12,280,\"answer=\"+str(answer),size=18)\n    frame()\n\nprint(mirrored([4,7,2,7,4]))\n",
+   "starter_code": "def mirrored(items,left=0,right=None):\n    if right is None:right=len(items)-1\n    show_window(items,left,right,\"enter\",None)\n    # Your code goes here.\n    return True\nfrom scimigo import canvas,figure,frame,text\n\ndef show_window(items,left,right,stage,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=list(items),indices=True,\n           highlights={str(i):\"current\" for i in range(max(0,left),min(len(items),right+1))},\n           pointers=[{\"index\":left,\"label\":\"left\",\"position\":\"above\"},\n                     {\"index\":right,\"label\":\"right\",\"position\":\"below\"}])\n    text(12,250,\"left=\"+str(left)+\"  right=\"+str(right)+\"  \"+stage,size=18)\n    text(12,280,\"answer=\"+str(answer),size=18)\n    frame()\n\nprint(mirrored([4,7,2,7,4]))\n",
    "tests": [
     {
      "name": "mirror_values",
-     "code": "saved=show_window;show_window=lambda *args:None\ntry:\n    cases=[[],[5],[2,2],[2,3],[1,2,3,1],[4,7,2,7,4],[1,2,2,1],[1,2,3,2,9]]\n    import random\n    rng=random.Random(31)\n    cases += [[rng.randrange(4) for _ in range(rng.randrange(12))] for _ in range(35)]\n    for items in cases:\n        before=list(items)\n        assert mirrored(items)==(items==items[::-1]),\"Compare all matching positions, including inside the outside pair.\"\n        assert items==before,\"Do not mutate the supplied sequence.\"\n    assert mirrored([9,1,2,1,8],1,3) is True\n    assert mirrored([9,1,2,3,8],1,3) is False\nfinally:show_window=saved\n"
+     "code": "saved=show_window;show_window=lambda *args:None\nclass Whole(list):\n    def __getitem__(self,key):\n        if isinstance(key,slice):raise AssertionError(\"Do not slice the list: move the left and right boundaries instead.\")\n        return list.__getitem__(self,key)\ntry:\n    cases=[[],[5],[2,2],[2,3],[1,2,3,1],[4,7,2,7,4],[1,2,2,1],[1,2,3,2,9]]\n    import random\n    rng=random.Random(31)\n    cases += [[rng.randrange(4) for _ in range(rng.randrange(12))] for _ in range(35)]\n    for plain in cases:\n        want=plain==plain[::-1]\n        items=Whole(plain)\n        got=mirrored(items)\n        assert got is want,f\"mirrored({plain}) should be {want}; got {got!r}. A matching outside pair is not enough: the inside must be mirrored too.\"\n        assert list(items)==plain,\"Do not change the supplied list.\"\n    assert mirrored(Whole([9,1,2,1,8]),1,3) is True,\"With left=1 and right=3, only the window [1, 2, 1] of [9, 1, 2, 1, 8] is examined; it is mirrored.\"\n    assert mirrored(Whole([9,1,2,3,8]),1,3) is False,\"With left=1 and right=3, the window [1, 2, 3] of [9, 1, 2, 3, 8] is not mirrored.\"\nfinally:show_window=saved\n"
     },
     {
      "name": "mirror_frames",
-     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert mirrored([4,7,2,7,4]) is True\nexpected=[(0,4,'enter',None),(1,3,'enter',None),(2,2,'enter',None),(2,2,'leave',True),(1,3,'leave',True),(0,4,'leave',True)]\nassert _frame_count()-before==len(expected),\"Record entry and return for every window.\"\nfor j,(left,right,stage,answer) in enumerate(expected):\n    objects=_frame(before+j)\n    fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==[4,7,2,7,4]\n    assert fig['params']['highlights']=={str(i):'current' for i in range(left,right+1)}\n    assert [p['index'] for p in fig['params']['pointers']]==[left,right]\n    words=[o['value'] for o in objects if o['kind']=='text']\n    assert 'left='+str(left)+'  right='+str(right)+'  '+stage in words\n    assert 'answer='+str(answer) in words\n"
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count()\nassert mirrored([4,7,2,7,4]) is True,\"[4, 7, 2, 7, 4] is mirrored.\"\nexpected=[(0,4,'enter',None),(1,3,'enter',None),(2,2,'enter',None),(2,2,'leave',True),(1,3,'leave',True),(0,4,'leave',True)]\nrecorded=_frame_count()-before\nassert recorded==len(expected),f\"Three windows are visited, each with an enter and a leave frame: 6 frames; recorded {recorded}.\"\nfor j,(left,right,stage,answer) in enumerate(expected):\n    objects=_frame(before+j)\n    fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==[4,7,2,7,4],f\"Frame {j+1}: draw the original list in every frame.\"\n    assert [p['index'] for p in fig['params']['pointers']]==[left,right],f\"Frame {j+1} should be the {stage} frame of window {left}..{right}.\"\n    assert fig['params']['highlights']=={str(i):'current' for i in range(left,right+1)},f\"Frame {j+1}: highlight exactly positions {left} to {right}.\"\n    words=[o['value'] for o in objects if o['kind']=='text']\n    assert 'left='+str(left)+'  right='+str(right)+'  '+stage in words,f\"Frame {j+1} should be labelled left={left} right={right} {stage}.\"\n    assert 'answer='+str(answer) in words,f\"Frame {j+1} should show answer={answer}.\"\nbefore=_frame_count()\nassert mirrored([1,2,3,1]) is False,\"[1, 2, 3, 1] is not mirrored: the inside pair differs.\"\nrecorded=_frame_count()-before\nassert recorded==4,f\"[1, 2, 3, 1] visits two windows and stops at the mismatch: 4 frames; recorded {recorded}.\"\n"
     }
    ],
    "hints": [
-    "What remains unproved when the outside pair matches?",
-    "Move both boundaries inward, so the remaining window loses two elements.",
-    "An empty or single-element window needs no further comparison. Return the inside answer when the outside values match."
+    "When the outside pair matches, what part of the claim is still unproved?",
+    "The inside window starts one place further right and ends one place further left, so it has two fewer elements.",
+    "Three cases: nothing left to compare, a mismatched pair, or a matched pair. Only the third needs a recursive call, and its answer is that call's answer."
    ],
    "solution": "def mirrored(items,left=0,right=None):\n    if right is None:right=len(items)-1\n    show_window(items,left,right,\"enter\",None)\n    if left>=right:\n        answer=True\n    elif items[left]!=items[right]:\n        answer=False\n    else:\n        answer=mirrored(items,left+1,right-1)\n    show_window(items,left,right,\"leave\",answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_window(items,left,right,stage,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=list(items),indices=True,\n           highlights={str(i):\"current\" for i in range(max(0,left),min(len(items),right+1))},\n           pointers=[{\"index\":left,\"label\":\"left\",\"position\":\"above\"},\n                     {\"index\":right,\"label\":\"right\",\"position\":\"below\"}])\n    text(12,250,\"left=\"+str(left)+\"  right=\"+str(right)+\"  \"+stage,size=18)\n    text(12,280,\"answer=\"+str(answer),size=18)\n    frame()\n\nprint(mirrored([4,7,2,7,4]))\n"
   },
   {
    "exercise_id": "nested_total",
    "title": "Round 2: combine nested children",
-   "prompt_md": "Implement nested_total(node, path=()) for finite acyclic lists containing integers or more lists, with nesting depth at most 10. Integers return themselves; an empty list returns zero; other lists combine the answers from all children. Recursively visit children left to right. Append each child index to its tuple path. Call show_node(path, node, answer) once after this node is complete, including leaves and empty lists. Do not mutate input or keep an accumulator between calls.\n",
+   "prompt_md": "Write `nested_total(node, path=())`. A node is an integer or a list whose items are nodes, nested at most 10 deep. An integer's total is itself, an empty list's total is 0, and any other list's total is the sum of its children's totals. Visit children left to right with a recursive call each, passing `path + (i,)` for the child at index `i`. The starter calls `show_node(path, node, answer)` once per call, after the answer is known; keep that, so every integer, every list and every empty list gets one frame, children before their parent. Do not change the input or keep a running total outside the call.\n",
    "questions": [],
    "checklist": [
     {
@@ -119,28 +118,28 @@
      ]
     }
    ],
-   "starter_code": "def nested_total(node,path=()):\n    if isinstance(node,int):\n        answer=node\n    else:\n        answer=sum(child for child in node if isinstance(child,int))\n        # Nested children contribute too; visit each one separately.\n    show_node(path,node,answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_node(path,node,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[\"integer\" if isinstance(node,int) else \"list\",answer],\n           cell_width=110,indices=False)\n    text(12,260,\"completed path=\"+str(path),size=18)\n    frame()\n\nprint(nested_total([3,[2,[],[5]],1]))\n",
+   "starter_code": "def nested_total(node,path=()):\n    answer=0\n    # Your code goes here: work out this node's own answer.\n    show_node(path,node,answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_node(path,node,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[\"integer\" if isinstance(node,int) else \"list\",answer],\n           cell_width=110,indices=False)\n    text(12,260,\"completed path=\"+str(path),size=18)\n    frame()\n\nprint(nested_total([3,[2,[],[5]],1]))\n",
    "tests": [
     {
      "name": "nested_values",
-     "code": "import copy,random\nsaved=show_node;show_node=lambda *args:None\ntry:\n    def oracle(node):\n        pending=[node];total=0\n        while pending:\n            item=pending.pop()\n            if isinstance(item,int):total+=item\n            else:pending.extend(item)\n        return total\n    rng=random.Random(41)\n    def sample(depth):\n        if depth==0 or rng.random()<0.4:return rng.randrange(-8,9)\n        return [sample(depth-1) for _ in range(rng.randrange(4))]\n    cases=[[],3,[3,[2,[],[5]],1],[[-4],[2,[-3]]],[[[]]]]+[sample(4) for _ in range(30)]\n    for node in cases:\n        before=copy.deepcopy(node)\n        assert nested_total(node)==oracle(node),\"Combine the answers from every nested child.\"\n        assert node==before,\"Leave the input unchanged.\"\nfinally:show_node=saved\n"
+     "code": "import copy,random\nsaved=show_node;show_node=lambda *args:None\ntry:\n    def oracle(node):\n        pending=[node];total=0\n        while pending:\n            item=pending.pop()\n            if isinstance(item,int):total+=item\n            else:pending.extend(item)\n        return total\n    rng=random.Random(41)\n    def sample(depth):\n        if depth==0 or rng.random()<0.4:return rng.randrange(-8,9)\n        return [sample(depth-1) for _ in range(rng.randrange(4))]\n    cases=[[],3,[3,[2,[],[5]],1],[[-4],[2,[-3]]],[[[]]]]+[sample(4) for _ in range(30)]\n    for node in cases:\n        before=copy.deepcopy(node)\n        got=nested_total(node)\n        assert got==oracle(node),f\"nested_total({node}) should be {oracle(node)}; got {got}. An integer is its own total; a list adds the totals of all its children, however deeply they nest.\"\n        assert node==before,\"Leave the input unchanged.\"\nfinally:show_node=saved\n"
     },
     {
      "name": "nested_frames",
-     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert nested_total([3,[2,[],[5]],1])==11\nexpected=[((0,),3,3),((1,0),2,2),((1,1),[],0),((1,2,0),5,5),((1,2),[5],5),((1,),[2,[],[5]],7),((2,),1,1),((),[3,[2,[],[5]],1],11)]\nassert _frame_count()-before==len(expected),\"Draw every leaf and container, including empty containers.\"\nfor j,(path,node,answer) in enumerate(expected):\n    objects=_frame(before+j);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==['integer' if isinstance(node,int) else 'list',answer],\"Draw this node and its own completed answer.\"\n    assert any(o['kind']=='text' and o['value']=='completed path='+str(path) for o in objects)\n"
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count()\nassert nested_total([3,[2,[],[5]],1])==11,\"[3, [2, [], [5]], 1] totals 11.\"\nexpected=[((0,),3,3),((1,0),2,2),((1,1),[],0),((1,2,0),5,5),((1,2),[5],5),((1,),[2,[],[5]],7),((2,),1,1),((),[3,[2,[],[5]],1],11)]\nrecorded=_frame_count()-before\nassert recorded==len(expected),f\"This input has 8 nodes (4 integers and 4 lists, one of them empty): 8 frames; recorded {recorded}.\"\nfor j,(path,node,answer) in enumerate(expected):\n    objects=_frame(before+j);fig=next(o for o in objects if o['kind']=='figure')\n    assert any(o['kind']=='text' and o['value']=='completed path='+str(path) for o in objects),f\"Frame {j+1} should complete the node at path {path}: children finish before their parent, left to right.\"\n    assert fig['params']['values']==['integer' if isinstance(node,int) else 'list',answer],f\"Frame {j+1}: the node at path {path} has total {answer}.\"\n"
     }
    ],
    "hints": [
-    "A child may be an integer, an empty list, or another nonempty list.",
-    "Each call owns its own answer. Wait for all child answers before drawing the parent.",
-    "Start this list’s answer at zero; add one recursive child answer at a time, extending the path with its index."
+    "A node is one of two things. Which one already knows its total?",
+    "A list does not need to look inside its children. It needs each child's total, and a recursive call supplies that.",
+    "For a list, start from 0 and add one recursive answer per child, extending the path with the child's index. An empty list then needs no special case."
    ],
    "solution": "def nested_total(node,path=()):\n    if isinstance(node,int):\n        answer=node\n    else:\n        answer=0\n        for i,child in enumerate(node):\n            answer+=nested_total(child,path+(i,))\n    show_node(path,node,answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef show_node(path,node,answer):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[\"integer\" if isinstance(node,int) else \"list\",answer],\n           cell_width=110,indices=False)\n    text(12,260,\"completed path=\"+str(path),size=18)\n    frame()\n\nprint(nested_total([3,[2,[],[5]],1]))\n"
   },
   {
    "exercise_id": "route_trace",
-   "title": "Trace: every completed branch",
-   "prompt_md": "Complete `route_trace(n)` for routes made of jumps of length 1 or 3, where order matters. Zero remaining distance has one completed route; negative remaining distance has none. For positive n, add the counts of the two smaller remainders. After its children finish, every call invokes `show_route(n, result)` once, including zero and negative base calls. Evaluate the length-1 child before the length-3 child. Demo n is 4. Predict the total call occurrences, including the original and all base calls; the picture records completion order.\n",
+   "title": "Round 3: trace every branch",
+   "prompt_md": "A route covers a distance with jumps of length 1 or 3, and the order of jumps matters. Write `route_trace(n)`, the number of routes that cover exactly `n`. A remaining distance of 0 is one finished route; a negative remaining distance is none. Otherwise a route ends with a 1-jump or a 3-jump, so add the counts for `n - 1` and `n - 3`, making the `n - 1` call first. The starter calls `show_route(n, result)` once per call, after the result is known; keep that for every call, including the ones that return 0. Before you run the demo for n = 4, predict how many calls it makes in total.\n",
    "questions": [
     {
      "step": "Predict the calls",
@@ -176,28 +175,28 @@
      ]
     }
    ],
-   "starter_code": "def route_trace(n):\n    if n<0:result=0\n    elif n==0:result=1\n    else:result=route_trace(n-1)  # include the other final jump\n    show_route(n,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_route(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Completed remaining=\"+str(n)+\", ways=\"+str(result),size=18)\n    frame()\n\nprint(route_trace(4))\n",
+   "starter_code": "def route_trace(n):\n    result=0\n    # Your code goes here: work out this call's result.\n    show_route(n,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_route(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Completed remaining=\"+str(n)+\", ways=\"+str(result),size=18)\n    frame()\n\nprint(route_trace(4))\n",
    "tests": [
     {
      "name": "route_values",
-     "code": "saved=show_route;show_route=lambda *a:None\nexpected=[1,1,1,2,3,4,6,9,13,19]\nfor n,value in enumerate(expected):assert route_trace(n)==value,\"Include both possible final jumps.\"\nassert route_trace(-1)==route_trace(-2)==0\nshow_route=saved\n"
+     "code": "saved=show_route;show_route=lambda *a:None\ntry:\n    expected=[1,1,1,2,3,4,6,9,13,19]\n    for n,value in enumerate(expected):\n        got=route_trace(n)\n        why=\"A remaining distance of 0 is one finished route.\" if n==0 else \"A route ends with a 1-jump or a 3-jump, so add both smaller counts.\"\n        assert got==value,f\"route_trace({n}) should be {value}; got {got}. {why}\"\n    assert route_trace(-1)==0 and route_trace(-2)==0,\"A negative remaining distance has no routes.\"\nfinally:show_route=saved\n"
     },
     {
      "name": "completion_order",
-     "code": "from scimigo import _frame_count,_frame\nexpected=[]\ndef oracle(k):\n    value=0 if k<0 else 1 if k==0 else oracle(k-1)+oracle(k-3)\n    expected.append((k,value))\n    return value\nassert oracle(4)==3 and len(expected)==11\nbefore=_frame_count();assert route_trace(4)==3\nassert _frame_count()-before==11,\"Include all eleven call occurrences, even repeated base calls.\"\nfor j,(n,value) in enumerate(expected):\n    fig=next(o for o in _frame(before+j) if o['kind']=='figure')\n    assert fig['params']['values']==[n,value],\"Record each actual completed remainder and answer in postorder.\"\n"
+     "code": "from scimigo import _frame_count,_frame\nexpected=[]\ndef oracle(k):\n    value=0 if k<0 else 1 if k==0 else oracle(k-1)+oracle(k-3)\n    expected.append((k,value))\n    return value\noracle(4)\nbefore=_frame_count()\nassert route_trace(4)==3,\"There are 3 routes of length 4: 1+1+1+1, 1+3 and 3+1.\"\nrecorded=_frame_count()-before\nassert recorded==11,f\"route_trace(4) makes 11 calls, counting repeated and negative ones, and each draws one frame; recorded {recorded}.\"\nfor j,(n,value) in enumerate(expected):\n    fig=next(o for o in _frame(before+j) if o['kind']=='figure')\n    assert fig['params']['values']==[n,value],f\"Frame {j+1} should complete remaining distance {n} with {value} routes; it shows {fig['params']['values']}. A call finishes after both of its children, and the n - 1 child goes first.\"\n"
     }
    ],
    "hints": [
-    "Separate a completed zero remainder from an impossible negative remainder.",
-    "Partition routes by whether their last jump has length 1 or 3.",
-    "Compute both child answers before drawing this call's result."
+    "Two inputs need no recursive call. One of them counts as a route and the other does not.",
+    "Sort the routes of length n by their last jump. The two groups cannot overlap, so their counts add.",
+    "Make both recursive calls, n - 1 first, and only then draw this call's frame with the sum."
    ],
    "solution": "def route_trace(n):\n    if n<0:result=0\n    elif n==0:result=1\n    else:result=route_trace(n-1)+route_trace(n-3)\n    show_route(n,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_route(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Completed remaining=\"+str(n)+\", ways=\"+str(result),size=18)\n    frame()\n\nprint(route_trace(4))\n"
   },
   {
    "exercise_id": "memo_routes",
-   "title": "Implement: compute each state once",
-   "prompt_md": "Repair `memo_routes(n)` for nonnegative n up to 200. It counts ordered routes with jumps 1 or 3. The supplied `transition(k)` returns the two dependencies. Call it exactly once for each positive state expanded, never for a base state. Reuse a completed state within one invocation; start fresh between invocations. Record each newly completed positive state with `record_state(k, value)` exactly once. Zero returns one and negative dependencies return zero. The starter repeats solved work.\n",
+   "title": "Round 3: compute each state once",
+   "prompt_md": "`memo_routes(n)` counts the same routes (jumps of 1 or 3, order matters) for n up to 200. The starter is correct but recomputes: for n = 30 it makes 125,490 expansions where 30 are enough. Change it so that each positive state is expanded exactly once per call of `memo_routes`. \"Expanded\" means `transition(k)` was called, which returns the two states that `k` depends on; never call it for 0 or a negative state. Call `record_state(k, value)` once for each positive state, when its answer is first known. Two calls of `memo_routes` must not share anything.\n",
    "questions": [],
    "checklist": [
     {
@@ -217,23 +216,23 @@
    "tests": [
     {
      "name": "one_expansion",
-     "code": "saved_transition=transition;saved_record=record_state\nrecord_state=lambda *a:None\nclass BudgetExceeded(BaseException):pass\nfor n in [0,1,4,12,37,120,200]:\n    seen=[]\n    def watched(k):\n        seen.append(k)\n        if len(seen)>n:raise BudgetExceeded('Repeated work exceeds the positive-state budget.')\n        return saved_transition(k)\n    transition=watched\n    table=[1]+[0]*n\n    for k in range(1,n+1):table[k]=table[k-1]+(table[k-3] if k>=3 else 0)\n    try:\n        result=memo_routes(n)\n    except BudgetExceeded as exc:\n        raise AssertionError(str(exc))\n    assert result==table[n]\n    assert sorted(seen)==list(range(1,n+1)),\"Expand each positive state exactly once.\"\ntransition=saved_transition;record_state=saved_record\n"
+     "code": "saved_transition=transition;saved_record=record_state\nrecord_state=lambda *a:None\nclass BudgetExceeded(BaseException):pass\ntry:\n    for n in [0,1,4,12,37,120,200,37]:\n        seen=[]\n        def watched(k):\n            seen.append(k)\n            if len(seen)>n:raise BudgetExceeded()\n            return saved_transition(k)\n        transition=watched\n        table=[1]+[0]*n\n        for k in range(1,n+1):table[k]=table[k-1]+(table[k-3] if k>=3 else 0)\n        try:\n            result=memo_routes(n)\n        except BudgetExceeded:\n            raise AssertionError(f\"memo_routes({n}) expanded more than {n} states, so some state was expanded twice. Look a state up before expanding it.\")\n        except RecursionError:\n            raise AssertionError(f\"memo_routes({n}) ran out of call depth. n is at most 200; check that every chain of calls reaches 0 or a negative state.\")\n        assert result==table[n],f\"memo_routes({n}) should be {table[n]}; got {result}.\"\n        assert all(k>0 for k in seen),\"transition was called for 0 or a negative state; those are base cases.\"\n        assert sorted(seen)==list(range(1,n+1)),f\"memo_routes({n}) should expand each state from 1 to {n} exactly once, even when an earlier call already ran; it expanded {len(seen)} states.\"\nfinally:\n    transition=saved_transition;record_state=saved_record\n"
     },
     {
      "name": "stored_frames",
-     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();assert memo_routes(4)==3\nassert _frame_count()-before==4,\"A stored answer must not be drawn as a new computation twice.\"\nfor j,value in enumerate([1,1,2,3]):\n    fig=next(o for o in _frame(before+j) if o['kind']=='figure')\n    assert fig['params']['values']==[j+1,value]\n"
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count()\nassert memo_routes(4)==3,\"memo_routes(4) should be 3.\"\nrecorded=_frame_count()-before\nassert recorded==4,f\"memo_routes(4) has four positive states, each recorded once when first computed: 4 frames; recorded {recorded}.\"\nfor j,value in enumerate([1,1,2,3]):\n    fig=next(o for o in _frame(before+j) if o['kind']=='figure')\n    assert fig['params']['values']==[j+1,value],f\"Frame {j+1} should store state {j+1} with {value} routes; it shows {fig['params']['values']}.\"\n"
     }
    ],
    "hints": [
-    "Different calls can request the same remainder.",
-    "Store only completed answers and check for a stored answer before expanding a state.",
-    "Use a fresh dictionary inside the public function, with zero as its initial completed state."
+    "Draw the calls for n = 6 on paper. Which remaining distances appear more than once?",
+    "An answer that has been computed once never changes during this call of memo_routes. Where could it wait until it is asked for again?",
+    "Keep a dictionary created inside memo_routes, holding the answer for state 0 from the start. Expand a state only when it is missing, and store its answer before returning it."
    ],
    "solution": "def memo_routes(n):\n    cache={0:1}\n    def solve(k):\n        if k<0:return 0\n        if k not in cache:\n            left,right=transition(k)\n            cache[k]=solve(left)+solve(right)\n            record_state(k,cache[k])\n        return cache[k]\n    return solve(n)\nfrom scimigo import canvas,figure,frame,text\n\ndef transition(k):\n    return k-1,k-3\n\ndef record_state(k,value):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[k,value],indices=False)\n    text(12,260,\"Stored state \"+str(k)+\": \"+str(value),size=18)\n    frame()\n\nprint(memo_routes(4))\n"
   },
   {
    "exercise_id": "measure_routes",
-   "title": "Measure: actual state expansions",
+   "title": "Round 3: measure the expansions",
    "prompt_md": "Implement `measure(solver, n)` returning `(answer, expansions)`. Wrap the supplied global `transition` while the solver runs, counting actual calls to it, and restore it afterward even if the solver raises. Each transition call is one non-base state expansion, not one total function entry. The provided naive and cached solvers use the same dependencies. Keep each measurement fresh. The demo draws your measurements at 5, 9, and 13; no algorithm drawing is counted.\n",
    "questions": [
     {
@@ -274,17 +273,17 @@
    "tests": [
     {
      "name": "measured_expansions",
-     "code": "original=transition\nfor n in [0,1,4,7,11]:\n    def expansions(k):return 0 if k<=0 else 1+expansions(k-1)+expansions(k-3)\n    table=[1]+[0]*n\n    for k in range(1,n+1):table[k]=table[k-1]+(table[k-3] if k>=3 else 0)\n    assert measure(naive_routes,n)==(table[n],expansions(n))\n    assert transition is original,\"Restore the original helper after measuring.\"\n    assert measure(cached_routes,n)==(table[n],n)\ndef odd_solver(n):\n    for _ in range(n+2):transition(1)\n    return 77\nassert measure(odd_solver,3)==(77,5),\"Report actual events, not a guessed formula in n.\"\ndef raises(n):\n    transition(1)\n    raise ValueError('deliberate')\ntry:measure(raises,1)\nexcept ValueError:pass\nelse:raise AssertionError('Propagate solver errors.')\nassert transition is original,\"Restore instrumentation even after an error.\"\n"
+     "code": "original=transition\nfor n in [0,1,4,7,11]:\n    def expansions(k):return 0 if k<=0 else 1+expansions(k-1)+expansions(k-3)\n    table=[1]+[0]*n\n    for k in range(1,n+1):table[k]=table[k-1]+(table[k-3] if k>=3 else 0)\n    got=measure(naive_routes,n)\n    assert got==(table[n],expansions(n)),f\"measure(naive_routes, {n}) should be ({table[n]}, {expansions(n)}): the answer and the number of transition calls; got {got}.\"\n    assert transition is original,\"Put the original transition back after measuring.\"\n    got=measure(cached_routes,n)\n    assert got==(table[n],n),f\"measure(cached_routes, {n}) should be ({table[n]}, {n}); got {got}. Each measurement starts its count from zero.\"\ndef odd_solver(n):\n    for _ in range(n+2):transition(1)\n    return 77\ngot=measure(odd_solver,3)\nassert got==(77,5),f\"A solver that calls transition 5 times and returns 77 should measure as (77, 5); got {got}. Count the calls that happen; do not compute them from n.\"\ndef raises(n):\n    transition(1)\n    raise ValueError('deliberate')\ntry:measure(raises,1)\nexcept ValueError:pass\nelse:raise AssertionError(\"When the solver raises, measure should let the error through.\")\nassert transition is original,\"Put the original transition back even when the solver raises.\"\n"
     },
     {
      "name": "comparison_bars",
-     "code": "from scimigo import _frame_count,_frame\nrows=[(n,measure(naive_routes,n)[1],measure(cached_routes,n)[1]) for n in [5,9,13]]\nassert rows==[(5,8,5),(9,40,9),(13,188,13)]\nbefore=_frame_count();show_expansions(rows)\nobjects=_frame(before)\nassert len([o for o in objects if o['kind']=='rectangle'])==6\nfor n,a,b in rows:\n    for label in ['n='+str(n),'naive='+str(a),'cached='+str(b)]:\n        assert any(o['kind']=='text' and o['value']==label for o in objects),\"Draw the measured values, not expected constants.\"\n"
+     "code": "from scimigo import _frame_count,_frame\nrows=[(n,measure(naive_routes,n)[1],measure(cached_routes,n)[1]) for n in [6,10,14]]\nwant=[(6,12,6),(10,59,10),(14,276,14)]\nassert rows==want,f\"For n = 6, 10, 14 the measured (n, naive, cached) rows should be {want}; got {rows}.\"\nbefore=_frame_count();show_expansions(rows)\nobjects=_frame(before)\nbars=len([o for o in objects if o['kind']=='rectangle'])\nassert bars==6,f\"Draw one naive bar and one cached bar per size: 6 bars; found {bars}.\"\nfor n,a,b in rows:\n    for label in ['n='+str(n),'naive='+str(a),'cached='+str(b)]:\n        assert any(o['kind']=='text' and o['value']==label for o in objects),f\"The chart should carry the label '{label}'.\"\n"
     }
    ],
    "hints": [
-    "A measurement counts the event that actually happened.",
-    "The transition helper is called whenever a positive state is expanded.",
-    "Wrap and restore the helper with try/finally; initialize a new counter for each measurement."
+    "A measurement counts an event when it happens. Which call marks one state being expanded?",
+    "Both solvers look up the global name transition each time they use it, so a replacement installed while the solver runs sees every call.",
+    "Declare transition global, keep the original, install a wrapper that adds one and calls the original, and restore the original in a finally block."
    ],
    "solution": "def measure(solver,n):\n    global transition\n    original=transition\n    expansions=0\n    def counted(k):\n        nonlocal expansions\n        expansions+=1\n        return original(k)\n    transition=counted\n    try:\n        answer=solver(n)\n    finally:\n        transition=original\n    return answer,expansions\nfrom scimigo import canvas,rectangle,text,frame\n\ndef transition(k):\n    return k-1,k-3\n\ndef naive_routes(n):\n    if n<0:return 0\n    if n==0:return 1\n    a,b=transition(n)\n    return naive_routes(a)+naive_routes(b)\n\ndef cached_routes(n):\n    cache={0:1}\n    def solve(k):\n        if k<0:return 0\n        if k not in cache:\n            a,b=transition(k)\n            cache[k]=solve(a)+solve(b)\n        return cache[k]\n    return solve(n)\n\ndef show_expansions(rows):\n    canvas(600,370)\n    largest=max(a for n,a,b in rows) or 1\n    for i,(n,naive,cached) in enumerate(rows):\n        y=20+110*i\n        text(12,y+22,\"n=\"+str(n),size=18)\n        rectangle(120,y,420*naive/largest,22,color=\"#276bb0\")\n        text(125,y+43,\"naive=\"+str(naive),size=17)\n        rectangle(120,y+55,420*cached/largest,22,color=\"#7c3aed\")\n        text(125,y+98,\"cached=\"+str(cached),size=17)\n    frame()\n\nrows=[]\nfor n in [5,9,13]:\n    rows.append((n,measure(naive_routes,n)[1],measure(cached_routes,n)[1]))\nshow_expansions(rows)\n"
   },
@@ -388,17 +387,17 @@
    "tests": [
     {
      "name": "packing_behavior",
-     "code": "import random\nrng=random.Random(3003)\ndef oracle(n,sizes,mod):\n    table=[1%mod]+[0]*n\n    for k in range(1,n+1):table[k]=sum(table[k-s] for s in sizes if s<=k)%mod\n    return table[n]\nfor _ in range(25):\n    n=rng.randrange(0,9);sizes=rng.sample(range(1,7),rng.randrange(0,4));mod=rng.choice([1,2,7,97])\n    old=list(sizes)\n    assert packing_plans(n,sizes,mod)==oracle(n,sizes,mod),\"Count ordered plans using these settings, including the empty plan.\"\n    assert sizes==old\nassert packing_plans(0,[],13)==1 and packing_plans(5,[],13)==0\nassert packing_plans(3,[1,2],97)==3,\"Ordered plans are [1,1,1], [1,2], and [2,1].\"\n"
+     "code": "import random\nrng=random.Random(3003)\ndef oracle(n,sizes,mod):\n    table=[1%mod]+[0]*n\n    for k in range(1,n+1):table[k]=sum(table[k-s] for s in sizes if s<=k)%mod\n    return table[n]\nfor _ in range(25):\n    n=rng.randrange(0,9);sizes=rng.sample(range(1,7),rng.randrange(0,4));mod=rng.choice([1,2,7,97])\n    old=list(sizes)\n    got=packing_plans(n,sizes,mod)\n    assert got==oracle(n,old,mod),f\"packing_plans({n}, {old}, {mod}) should be {oracle(n,old,mod)}; got {got}.\"\n    assert sizes==old,\"Do not change the list of sizes.\"\nassert packing_plans(0,[],13)==1,\"Zero units has exactly one plan, the empty one, even with no sizes.\"\nassert packing_plans(5,[],13)==0,\"With no permitted sizes there is no plan for 5 units.\"\nassert packing_plans(3,[1,2],97)==3,\"Sizes 1 and 2 fill 3 units in three ordered plans: [1,1,1], [1,2] and [2,1].\"\nassert packing_plans(3,[2,1],97)==3,\"The order in which sizes are listed must not change the count.\"\n"
     },
     {
      "name": "packing_budget",
-     "code": "saved=combine\nclass BudgetExceeded(BaseException):pass\nfor n,sizes,mod in [(45,[1,4,6],97),(1200,[3,1,5],1009),(6000,[1,7,4],1000000007)]:\n    count=[0]\n    def counted(a,b,m):\n        count[0]+=1\n        if count[0]>n*len(sizes):raise BudgetExceeded('Repeated branches exceed the addition budget.')\n        assert 0<=a<m and 0<=b<m,\"Keep intermediate residues bounded by the modulus.\"\n        return saved(a,b,m)\n    combine=counted\n    table=[1%mod]+[0]*n\n    for k in range(1,n+1):table[k]=sum(table[k-s] for s in sizes if s<=k)%mod\n    try:\n        result=packing_plans(n,sizes,mod)\n    except BudgetExceeded as exc:\n        raise AssertionError(str(exc))\n    assert result==table[n],\"Handle large input without a deep Python call chain.\"\ncombine=saved\n"
+     "code": "saved=combine\nclass BudgetExceeded(BaseException):pass\ntry:\n    for n,sizes,mod in [(45,[1,4,6],97),(1200,[3,1,5],1009),(6000,[1,7,4],1000000007),(1200,[3,1,5],1009)]:\n        count=[0]\n        def counted(a,b,m):\n            count[0]+=1\n            if count[0]>n*len(sizes):raise BudgetExceeded()\n            assert 0<=a<m and 0<=b<m,f\"combine received {a} and {b} with modulus {m}: keep every count reduced below the modulus.\"\n            return saved(a,b,m)\n        combine=counted\n        table=[1%mod]+[0]*n\n        for k in range(1,n+1):table[k]=sum(table[k-s] for s in sizes if s<=k)%mod\n        try:\n            result=packing_plans(n,list(sizes),mod)\n        except BudgetExceeded:\n            raise AssertionError(f\"n = {n} with {len(sizes)} sizes used more than {n*len(sizes)} additions: the same amounts are being worked out again and again.\")\n        except RecursionError:\n            raise AssertionError(f\"n = {n} needed more waiting calls than Python allows. The answer for {n} must not wait on a chain of {n} unfinished calls.\")\n        assert result==table[n],f\"packing_plans({n}, {sizes}, {mod}) should be {table[n]}; got {result}.\"\n        assert count[0]>0,\"Add plan counts with combine, so the additions can be counted.\"\nfinally:\n    combine=saved\n"
     }
    ],
    "hints": [
-    "What does the largest request require from the order in which smaller answers are completed?",
-    "All permitted batch sizes reduce the requested unit count. Can those dependencies already be available?",
-    "Complete answers for increasing unit counts and reuse the preceding answers needed by each batch size."
+    "Try n = 6 with sizes 1 and 4 on paper. Which amounts does the starter work out more than once?",
+    "Every permitted size makes the amount smaller. So what does the answer for an amount depend on, and could all of that be finished before you reach it?",
+    "Choose an order for the amounts in which nothing an amount needs is still unfinished, and keep each finished count where a later amount can find it."
    ],
    "solution": "def packing_plans(n,sizes,modulus):\n    counts=[1%modulus]+[0]*n\n    for units in range(1,n+1):\n        total=0\n        for size in sizes:\n            if size<=units:\n                total=combine(total,counts[units-size],modulus)\n        counts[units]=total\n    return counts[n]\nfrom scimigo import canvas,figure,frame,text\n\ndef combine(a,b,modulus):\n    return (a+b)%modulus\n\ndef show_packing(n,result):\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,\n           values=[n,result],indices=False)\n    text(12,260,\"Requested units / reported residue\",size=18)\n    frame()\n\nshow_packing(8,packing_plans(8,[1,4,6],97))\n"
   }
