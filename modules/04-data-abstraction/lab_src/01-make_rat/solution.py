@@ -1,22 +1,35 @@
-def make_rat(n,d):
-    if d==0:raise ZeroDivisionError("denominator must be nonzero")
-    common=gcd(n,d)
-    top,bottom=n//common,d//common
-    if bottom<0:top,bottom=-top,-bottom
-    result=(top,bottom)
-    show_rat(n,d,result)
+def make_rat(n, d):
+    if d == 0:
+        raise ZeroDivisionError("denominator must be nonzero")
+    a, b = abs(n), abs(d)
+    while b != 0:
+        show_gcd(a, b)
+        a, b = b, a % b
+    if d < 0:
+        a = -a
+    result = (n // a, d // a)
+    show_rat(n, d, result)
     return result
-from math import gcd
-from scimigo import canvas,figure,frame,text
 
-def numer(r):return r[0]
-def denom(r):return r[1]
+from scimigo import canvas, figure, frame, text
 
-def show_rat(n,d,result):
-    canvas(600,300)
-    figure("array_state",x=0,y=0,width=600,height=220,
-           values=[n,d,numer(result),denom(result)],indices=False)
-    text(12,260,"input numerator / denominator → selected numerator / denominator",size=15)
+def numer(r):
+    return r[0]
+
+def denom(r):
+    return r[1]
+
+def show_gcd(a, b):
+    canvas(600, 300)
+    figure("array_state", x=0, y=0, width=600, height=220, values=[a, b], indices=False)
+    text(12, 260, "Euclid: gcd(" + str(a) + ", " + str(b) + ")", size=18)
     frame()
 
-print(make_rat(-8,-12))
+def show_rat(n, d, result):
+    canvas(600, 300)
+    figure("array_state", x=0, y=0, width=600, height=220,
+           values=[n, d, numer(result), denom(result)], indices=False)
+    text(12, 260, str(n) + "/" + str(d) + " is stored as " + str(numer(result)) + "/" + str(denom(result)), size=18)
+    frame()
+
+print(make_rat(-8, -12))

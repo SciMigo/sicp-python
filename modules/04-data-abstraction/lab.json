@@ -2,23 +2,23 @@
  "schema_version": "lab_v1",
  "lab_spec_id": "sicp-python-04-data-abstraction",
  "title": "Meaning above storage",
- "description": "Normalize fractions, trace representation-independent geometry, build procedural pairs, count gcd calls and produce a constrained manifest report.",
+ "description": "Reduce a signed fraction step by step, serve two rectangle representations with one client, build a pair from functions, count where gcd work happens, then bound two resistors in parallel.",
  "runtime": {
   "engine": "pyodide",
   "timeout_ms": 15000
  },
  "recap": {
   "learned": [
-   "State and test constructor-selector laws.",
-   "Change a representation without changing clients that use its interface.",
-   "Keep independently created procedural pairs separate.",
-   "Measure where an interface performs normalization work."
+   "State and test the laws a constructor and its selectors must satisfy.",
+   "Write a client that survives a change of representation, one layer at a time.",
+   "Build a pair out of functions alone.",
+   "Measure where an interface does its work, and see repeated uncertainty widen an interval."
   ],
   "invariant": "Constructed values satisfy the public laws; clients depend on those meanings rather than storage positions.",
-  "complexity": "For one fraction selected k times in each part, eager normalization makes one gcd call and uncached lazy normalization makes 2k calls. Manifest reporting permits at most n weight reads for n records. These count interface operations, exclude drawing and do not assume fixed-cost large-integer arithmetic.",
-  "common_mistake": "Reaching through a public selector into the current tuple or dictionary layout.",
+  "complexity": "For one fraction whose two parts are each read k times, eager reduction makes 1 gcd call and uncached lazy reduction makes 2k. These count calls to gcd, not the work inside it; drawing is excluded.",
+  "common_mistake": "Reaching past a selector into the tuple or dictionary behind it, or using one uncertain quantity twice in an interval formula.",
   "in_real_programs": [
-   "An interface can preserve behavior while changing representation; old stored values still need a migration or compatibility policy."
+   "Python's fractions.Fraction reduces in its constructor and keeps the sign on the numerator: it divides both parts by math.gcd, negated when the denominator is negative (CPython Lib/fractions.py)."
   ],
   "retrieval": {
    "question": "Module 2: why can separate calls to a pair creator retain different captured values?",
@@ -28,249 +28,277 @@
  "exercises": [
   {
    "exercise_id": "make_rat",
-   "title": "Build: normalize a rational number",
-   "prompt_md": "SICP exercise 2.1 asks for a constructor that handles signs. Implement `make_rat(n, d)` for integers with nonzero d, returning a lowest-terms tuple whose denominator is positive. Zero must select as 0 over 1. Reject d equal to zero with `ZeroDivisionError`. Use the supplied `numer` and `denom` to observe the result. Call `show_rat(n, d, result)` once after a valid construction. The four cells show input numerator, input denominator, selected numerator and selected denominator. Predict the demo before Run.\n",
-   "questions": [],
+   "title": "Build: a rational number in lowest terms",
+   "prompt_md": "This is SICP's exercise 2.1: a constructor that reduces to lowest terms and handles signs. Implement `make_rat(n, d)` for integers `n` and `d`. Return a tuple `(numerator, denominator)` in lowest terms with a positive denominator, so that -8/-12 is stored as 2/3 and 8/-12 as -2/3. Zero is stored as 0/1. A zero denominator raises `ZeroDivisionError`.\n\nFind the greatest common divisor with Euclid's algorithm from module 3, as a loop: start with `a, b = abs(n), abs(d)`; while `b` is not zero, call `show_gcd(a, b)` and then replace the pair by `(b, a % b)`. When the loop ends, `a` is the divisor. Do not import a fraction type. Call `show_rat(n, d, result)` once at the end. Before you press Run, predict how many Euclid frames -8/-12 takes.",
    "checklist": [
     {
-     "step": "Preserve the ratio, reduce, normalize signs and reject zero denominators",
+     "step": "Keep the ratio, reduce it, and put the sign on the numerator",
      "checks": [
       "rational_laws"
      ]
     },
     {
-     "step": "Draw the input and the actual selected output",
+     "step": "Show every Euclid step, then the stored fraction",
      "checks": [
-      "rational_frame"
+      "euclid_frames"
      ]
     }
    ],
-   "starter_code": "def make_rat(n,d):\n    result=(0,1)\n    show_rat(n,d,result)\n    return result\nfrom math import gcd\nfrom scimigo import canvas,figure,frame,text\n\ndef numer(r):return r[0]\ndef denom(r):return r[1]\n\ndef show_rat(n,d,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[n,d,numer(result),denom(result)],indices=False)\n    text(12,260,\"input numerator / denominator → selected numerator / denominator\",size=15)\n    frame()\n\nprint(make_rat(-8,-12))\n",
+   "starter_code": "def make_rat(n, d):\n    result = (0, 1)\n    show_rat(n, d, result)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef numer(r):\n    return r[0]\n\ndef denom(r):\n    return r[1]\n\ndef show_gcd(a, b):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220, values=[a, b], indices=False)\n    text(12, 260, \"Euclid: gcd(\" + str(a) + \", \" + str(b) + \")\", size=18)\n    frame()\n\ndef show_rat(n, d, result):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220,\n           values=[n, d, numer(result), denom(result)], indices=False)\n    text(12, 260, str(n) + \"/\" + str(d) + \" is stored as \" + str(numer(result)) + \"/\" + str(denom(result)), size=18)\n    frame()\n\nprint(make_rat(-8, -12))\n",
    "tests": [
     {
      "name": "rational_laws",
-     "code": "from math import gcd\nimport random\nsaved=show_rat;show_rat=lambda *args:None\ntry:\n    rng=random.Random(204)\n    cases=[(0,7),(0,-7),(-8,-12),(8,-12),(-8,12),(27,9)]+[(rng.randrange(-150,151),rng.choice([i for i in range(-30,31) if i])) for _ in range(45)]\n    for n,d in cases:\n        result=make_rat(n,d);a,b=numer(result),denom(result)\n        assert isinstance(a,int) and isinstance(b,int),\"Keep selected numerator and denominator as integers.\"\n        assert a*d==n*b,\"Selected parts must preserve the original ratio.\"\n        assert b>0,\"Keep the denominator positive; put any negative sign on the numerator.\"\n        assert gcd(a,b)==1,\"Divide out all common factors.\"\n    rejected=False\n    try:make_rat(5,0)\n    except ZeroDivisionError:rejected=True\n    assert rejected,\"A zero denominator must raise ZeroDivisionError.\"\nfinally:show_rat=saved\n"
+     "code": "import ast\nfor node in ast.walk(ast.parse(__source__)):\n    names = [a.name for a in node.names] if isinstance(node, (ast.Import, ast.ImportFrom)) else []\n    module = getattr(node, 'module', '') or ''\n    assert 'fractions' not in names and module != 'fractions', \"Build the constructor yourself: do not import the fractions module.\"\nfrom math import gcd as _gcd\nimport random\nshow_gcd = lambda *args: None\nshow_rat = lambda *args: None\nrng = random.Random(204)\ncases = [(0, 7), (0, -7), (-8, -12), (8, -12), (-8, 12), (27, 9), (5, 1), (-5, -1)]\ncases += [(rng.randrange(-150, 151), rng.choice([i for i in range(-30, 31) if i])) for _ in range(45)]\nfor n, d in cases:\n    result = make_rat(n, d)\n    assert isinstance(result, tuple) and len(result) == 2, f\"make_rat({n}, {d}) must return a (numerator, denominator) tuple; got {result!r}.\"\n    a, b = numer(result), denom(result)\n    assert isinstance(a, int) and isinstance(b, int), f\"make_rat({n}, {d}) gave {result!r}: both parts must stay integers (use // rather than /).\"\n    assert a * d == n * b, f\"make_rat({n}, {d}) gave {a}/{b}, which is a different number from {n}/{d}.\"\n    assert b > 0, f\"make_rat({n}, {d}) gave {a}/{b}: keep the denominator positive and carry the sign on the numerator.\"\n    assert _gcd(a, b) == 1, f\"make_rat({n}, {d}) gave {a}/{b}, which is not in lowest terms.\"\ntry:\n    make_rat(5, 0)\nexcept ZeroDivisionError:\n    pass\nelse:\n    raise AssertionError(\"make_rat(5, 0) must raise ZeroDivisionError: no rational number has denominator zero.\")\n"
     },
     {
-     "name": "rational_frame",
-     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();result=make_rat(15,-25)\nassert result==(-3,5),\"Normalize the demo ratio before drawing.\"\nassert _frame_count()-before==1,\"Record one completed construction.\"\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nassert fig['params']['values']==[15,-25,numer(result),denom(result)],\"Draw input parts and this returned fraction's selected parts.\"\n"
+     "name": "euclid_frames",
+     "code": "from scimigo import _frame_count, _frame\ndef figure_values(index):\n    figures = [o for o in _frame(index) if o['kind'] == 'figure']\n    return figures[0]['params']['values'] if figures else None\nfor (n, d), steps, stored in [((15, -25), [[15, 25], [25, 15], [15, 10], [10, 5]], (-3, 5)), ((0, 4), [[0, 4]], (0, 1)), ((9, 3), [[9, 3]], (3, 1))]:\n    before = _frame_count()\n    result = make_rat(n, d)\n    assert result == stored, f\"make_rat({n}, {d}) should be stored as {stored}; got {result!r}.\"\n    recorded = _frame_count() - before\n    assert recorded == len(steps) + 1, f\"make_rat({n}, {d}) needs {len(steps)} Euclid frame(s) and one frame for the stored fraction; recorded {recorded}.\"\n    for i, pair in enumerate(steps):\n        assert figure_values(before + i) == pair, f\"make_rat({n}, {d}): Euclid frame {i + 1} should show {pair}; it shows {figure_values(before + i)}. Start from the absolute values and call show_gcd before replacing the pair.\"\n    last = figure_values(before + len(steps))\n    assert last == [n, d, stored[0], stored[1]], f\"The last frame should show {[n, d, stored[0], stored[1]]}: the inputs and the parts actually stored; it shows {last}.\"\n"
     }
    ],
    "hints": [
-    "A representation may change its parts while preserving their ratio.",
-    "Reduction and sign placement are separate promises; include zero and both signs in your reasoning.",
-    "Divide both parts by their gcd, then move any denominator sign onto the numerator."
+    "A constructor may store different numbers from the ones it was given, as long as they stand for the same ratio.",
+    "Reducing and choosing where the sign goes are two separate promises. Try 8/-12 and 0/-7 by hand.",
+    "Divide both parts by the gcd. If the denominator you were given is negative, divide by minus the gcd instead: that reduces and flips both signs in one step."
    ],
-   "solution": "def make_rat(n,d):\n    if d==0:raise ZeroDivisionError(\"denominator must be nonzero\")\n    common=gcd(n,d)\n    top,bottom=n//common,d//common\n    if bottom<0:top,bottom=-top,-bottom\n    result=(top,bottom)\n    show_rat(n,d,result)\n    return result\nfrom math import gcd\nfrom scimigo import canvas,figure,frame,text\n\ndef numer(r):return r[0]\ndef denom(r):return r[1]\n\ndef show_rat(n,d,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[n,d,numer(result),denom(result)],indices=False)\n    text(12,260,\"input numerator / denominator → selected numerator / denominator\",size=15)\n    frame()\n\nprint(make_rat(-8,-12))\n"
+   "solution": "def make_rat(n, d):\n    if d == 0:\n        raise ZeroDivisionError(\"denominator must be nonzero\")\n    a, b = abs(n), abs(d)\n    while b != 0:\n        show_gcd(a, b)\n        a, b = b, a % b\n    if d < 0:\n        a = -a\n    result = (n // a, d // a)\n    show_rat(n, d, result)\n    return result\n\nfrom scimigo import canvas, figure, frame, text\n\ndef numer(r):\n    return r[0]\n\ndef denom(r):\n    return r[1]\n\ndef show_gcd(a, b):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220, values=[a, b], indices=False)\n    text(12, 260, \"Euclid: gcd(\" + str(a) + \", \" + str(b) + \")\", size=18)\n    frame()\n\ndef show_rat(n, d, result):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220,\n           values=[n, d, numer(result), denom(result)], indices=False)\n    text(12, 260, str(n) + \"/\" + str(d) + \" is stored as \" + str(numer(result)) + \"/\" + str(denom(result)), size=18)\n    frame()\n\nprint(make_rat(-8, -12))\n"
   },
   {
-   "exercise_id": "rectangle_report",
-   "title": "Trace: keep geometry above its representation",
-   "prompt_md": "SICP exercise 2.3 asks for the same area and perimeter client to work with two rectangle representations. Complete `rectangle_report(rect)` using only the supplied `width(rect)` and `height(rect)` selectors. Dimensions are nonnegative numbers. Read width once, then height once; return `(area, perimeter)`. Call `show_dimensions(w, h, area, perimeter)` once. The demo uses a callable rectangle; checks also swap in a different selector package. Do not special-case storage layouts. Predict the report first.\n",
+   "exercise_id": "rectangles",
+   "title": "Trace: one client, two rectangles",
+   "prompt_md": "This is SICP's exercise 2.3: rectangles in the plane, with area and perimeter that do not care how a rectangle is stored. There are two layers to write.\n\nBelow the barrier: `make_rect(corner, opposite)` builds a rectangle with sides parallel to the axes from two opposite corner points, given in either order. `rect_width(r)` and `rect_height(r)` return its two side lengths, never negative. Reach the coordinates only through `x_point` and `y_point`; the checks swap in points that are not tuples.\n\nAbove the barrier: `report(rect, width, height)` returns `(area, perimeter)` for any rectangle, using only the two selectors it is handed. Call `width(rect)` once and then `height(rect)` once. After each read call `show_read(\"width\", w)` or `show_read(\"height\", h)`, and finish with `show_report(w, h, area, perimeter)`. The checks hand `report` a rectangle stored a completely different way.\n\nAnswer the question before you run the demo.",
    "questions": [
     {
-     "step": "Predict the demo",
-     "prompt": "The demo rectangle has width 7 and height 3. What are area and perimeter?",
+     "step": "Predict the report",
+     "prompt": "The demo's rectangle has opposite corners (2, 1) and (9, 4). What should report return as (area, perimeter)?",
      "choices": [
       {
-       "text": "21 and 20",
-       "why": "Multiply dimensions for area; add all four sides for perimeter."
+       "text": "(36, 26)",
+       "why": "That treats the far corner's coordinates 9 and 4 as the side lengths. The sides are differences of coordinates."
       },
       {
-       "text": "20 and 21",
-       "why": "This reverses the requested answer order."
+       "text": "(21, 20)",
+       "why": "The sides are 9 - 2 = 7 and 4 - 1 = 3, so the area is 21 and the perimeter is 2 × (7 + 3) = 20."
       },
       {
-       "text": "21 and 10",
-       "why": "This counts only one width and one height."
+       "text": "(21, 10)",
+       "why": "The area is right, but a perimeter counts all four sides, not one width and one height."
       }
      ],
-     "answer": 0
+     "answer": 1
     }
    ],
    "checklist": [
     {
-     "step": "Use only the selectors across different rectangle representations",
+     "step": "A corner rectangle that answers through point selectors only",
      "checks": [
-      "rectangle_clients"
+      "corner_rectangle"
      ]
     },
     {
-     "step": "Show selected dimensions and the computed report",
+     "step": "One report that serves any rectangle, one read per selector",
      "checks": [
-      "rectangle_picture"
+      "one_client"
+     ]
+    },
+    {
+     "step": "Frames for each read, then the report",
+     "checks": [
+      "report_frames"
      ]
     }
    ],
-   "starter_code": "def rectangle_report(rect):\n    answer=(0,0)\n    show_dimensions(0,0,*answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef width(rect):return rect(\"width\")\ndef height(rect):return rect(\"height\")\n\ndef rectangle(w,h):\n    return lambda name:w if name==\"width\" else h\n\ndef show_dimensions(w,h,area,perimeter):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[w,h,area,perimeter],indices=False)\n    text(12,260,\"width / height / area / perimeter\",size=18)\n    frame()\n\nprint(rectangle_report(rectangle(7,3)))\n",
+   "starter_code": "def make_rect(corner, opposite):\n    return None\n\ndef rect_width(r):\n    return 0\n\ndef rect_height(r):\n    return 0\n\ndef report(rect, width, height):\n    answer = (0, 0)\n    show_report(0, 0, *answer)\n    return answer\n\nfrom scimigo import canvas, figure, frame, text\n\ndef make_point(x, y):\n    return (x, y)\n\ndef x_point(p):\n    return p[0]\n\ndef y_point(p):\n    return p[1]\n\ndef show_read(name, value):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220, values=[value], indices=False)\n    text(12, 260, \"the client asked for \" + name + \" and was told \" + str(value), size=18)\n    frame()\n\ndef show_report(w, h, area, perimeter):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220, values=[w, h, area, perimeter], indices=False)\n    text(12, 260, \"width / height / area / perimeter\", size=18)\n    frame()\n\nrect = make_rect(make_point(2, 1), make_point(9, 4))\nprint(report(rect, rect_width, rect_height))\n",
    "tests": [
     {
-     "name": "rectangle_clients",
-     "code": "saved_width,saved_height,saved_show=width,height,show_dimensions\nshow_dimensions=lambda *args:None\ntry:\n    for w,h in [(7,3),(0,8),(4,4),(2.5,1.5),(13,2)]:\n        for rect,readw,readh in [(rectangle(w,h),lambda r:r('width'),lambda r:r('height')),({'dimensions':(h,w)},lambda r:r['dimensions'][1],lambda r:r['dimensions'][0])]:\n            seen=[]\n            def width(r):seen.append('width');return readw(r)\n            def height(r):seen.append('height');return readh(r)\n            assert rectangle_report(rect)==(w*h,2*(w+h)),\"The same client must work through each supplied selector package.\"\n            assert seen==['width','height'],\"Read width once, then height once; do not reach into the representation.\"\nfinally:width,height,show_dimensions=saved_width,saved_height,saved_show\n"
+     "name": "corner_rectangle",
+     "code": "import random\nshow_read = lambda *args: None\nshow_report = lambda *args: None\nrng = random.Random(23)\ncorners = [((2, 1), (9, 4)), ((9, 4), (2, 1)), ((2, 4), (9, 1)), ((0, 0), (0, 5)), ((-3, -2), (4, 6))]\ncorners += [((rng.randrange(-20, 21), rng.randrange(-20, 21)), (rng.randrange(-20, 21), rng.randrange(-20, 21))) for _ in range(30)]\nfor (ax, ay), (bx, by) in corners:\n    r = make_rect(make_point(ax, ay), make_point(bx, by))\n    got = (rect_width(r), rect_height(r))\n    want = (abs(ax - bx), abs(ay - by))\n    assert got == want, f\"Corners ({ax}, {ay}) and ({bx}, {by}) give sides {want}; rect_width and rect_height returned {got}. Corners may arrive in either order.\"\n# The same rectangle code must work when points are stored another way.\ntuple_points = (make_point, x_point, y_point)\nmake_point = lambda x, y: {\"east\": x, \"north\": y}\nx_point = lambda p: p[\"east\"]\ny_point = lambda p: p[\"north\"]\ntry:\n    r = make_rect(make_point(2, 1), make_point(9, 4))\n    try:\n        got = (rect_width(r), rect_height(r))\n    except (TypeError, KeyError, IndexError) as error:\n        raise AssertionError(\"With points stored as dictionaries your rectangle code failed: read coordinates with x_point and y_point, never by indexing a point.\")\n    assert got == (7, 3), f\"With points stored as dictionaries the sides should still be (7, 3); got {got}.\"\nfinally:\n    make_point, x_point, y_point = tuple_points\n"
     },
     {
-     "name": "rectangle_picture",
-     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();result=rectangle_report(rectangle(9,2))\nassert result==(18,22),\"Return area and perimeter in that order.\"\nassert _frame_count()-before==1,\"Draw one completed rectangle report.\"\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nassert fig['params']['values']==[9,2,18,22],\"Draw the actual selected dimensions and computed answers.\"\n"
+     "name": "one_client",
+     "code": "show_read = lambda *args: None\nshow_report = lambda *args: None\nr = make_rect(make_point(2, 1), make_point(9, 4))\ngot = report(r, rect_width, rect_height)\nassert got == (21, 20), f\"For corners (2, 1) and (9, 4), report should return (21, 20); got {got!r}.\"\n# A rectangle stored as a centre and two half-sides, with its own selectors.\nfor w, h in [(7, 3), (0, 8), (4, 4), (2.5, 1.5), (13, 2)]:\n    other = {\"centre\": (10, 10), \"half\": (w / 2, h / 2)}\n    seen = []\n    def width(rect):\n        seen.append(\"width\")\n        return 2 * rect[\"half\"][0]\n    def height(rect):\n        seen.append(\"height\")\n        return 2 * rect[\"half\"][1]\n    try:\n        got = report(other, width, height)\n    except (TypeError, KeyError, IndexError):\n        raise AssertionError(\"report failed on a rectangle stored a different way: use only the width and height selectors it is given.\")\n    assert got == (w * h, 2 * (w + h)), f\"A {w} by {h} rectangle has area {w * h} and perimeter {2 * (w + h)}; report returned {got!r}.\"\n    assert seen == [\"width\", \"height\"], f\"report should call width once and then height once; it called {seen}.\"\n"
+    },
+    {
+     "name": "report_frames",
+     "code": "from scimigo import _frame_count, _frame\nr = make_rect(make_point(1, 1), make_point(10, 3))\nbefore = _frame_count()\ngot = report(r, rect_width, rect_height)\nassert got == (18, 22), f\"For corners (1, 1) and (10, 3), report should return (18, 22); got {got!r}.\"\nrecorded = _frame_count() - before\nassert recorded == 3, f\"report records three frames: the width read, the height read, then the report; recorded {recorded}.\"\ndef values(index):\n    figures = [o for o in _frame(index) if o['kind'] == 'figure']\n    return figures[0]['params']['values'] if figures else None\ndef words(index):\n    return [o['value'] for o in _frame(index) if o['kind'] == 'text']\nassert values(before) == [9] and any('width' in t for t in words(before)), f\"Frame 1 should show the width read, 9; it shows {values(before)}.\"\nassert values(before + 1) == [2] and any('height' in t for t in words(before + 1)), f\"Frame 2 should show the height read, 2; it shows {values(before + 1)}.\"\nassert values(before + 2) == [9, 2, 18, 22], f\"Frame 3 should show width, height, area and perimeter: [9, 2, 18, 22]; it shows {values(before + 2)}.\"\n"
     }
    ],
    "hints": [
-    "Geometry needs dimensions, not the place those dimensions are stored.",
-    "Read the two public operations and retain their answers for both calculations.",
-    "Area multiplies the dimensions; perimeter adds both widths and both heights."
+    "Each layer may know how the layer directly beneath it is stored, and nothing further down.",
+    "Follow one call of report downwards: which function touches the rectangle's storage, and which touches a point's?",
+    "Store the two corners. A side length is the absolute difference of two coordinates read with x_point or y_point. report multiplies and adds the two numbers its selectors return."
    ],
-   "solution": "def rectangle_report(rect):\n    w,h=width(rect),height(rect)\n    answer=(w*h,2*(w+h))\n    show_dimensions(w,h,*answer)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\ndef width(rect):return rect(\"width\")\ndef height(rect):return rect(\"height\")\n\ndef rectangle(w,h):\n    return lambda name:w if name==\"width\" else h\n\ndef show_dimensions(w,h,area,perimeter):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[w,h,area,perimeter],indices=False)\n    text(12,260,\"width / height / area / perimeter\",size=18)\n    frame()\n\nprint(rectangle_report(rectangle(7,3)))\n"
+   "solution": "def make_rect(corner, opposite):\n    return (corner, opposite)\n\ndef rect_width(r):\n    return abs(x_point(r[0]) - x_point(r[1]))\n\ndef rect_height(r):\n    return abs(y_point(r[0]) - y_point(r[1]))\n\ndef report(rect, width, height):\n    w = width(rect)\n    show_read(\"width\", w)\n    h = height(rect)\n    show_read(\"height\", h)\n    answer = (w * h, 2 * (w + h))\n    show_report(w, h, *answer)\n    return answer\n\nfrom scimigo import canvas, figure, frame, text\n\ndef make_point(x, y):\n    return (x, y)\n\ndef x_point(p):\n    return p[0]\n\ndef y_point(p):\n    return p[1]\n\ndef show_read(name, value):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220, values=[value], indices=False)\n    text(12, 260, \"the client asked for \" + name + \" and was told \" + str(value), size=18)\n    frame()\n\ndef show_report(w, h, area, perimeter):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220, values=[w, h, area, perimeter], indices=False)\n    text(12, 260, \"width / height / area / perimeter\", size=18)\n    frame()\n\nrect = make_rect(make_point(2, 1), make_point(9, 4))\nprint(report(rect, rect_width, rect_height))\n"
   },
   {
-   "exercise_id": "cons",
-   "title": "Implement: a pair that accepts a chooser",
-   "prompt_md": "This is SICP exercise 2.4's alternative procedural pair. Implement `cons(x, y)` returning a callable pair. When called with a function `choose`, that pair must call `choose(x, y)` exactly once and return its result. Preserve the original objects and keep different pairs independent. Creating a pair must not select either part. The supplied first and second selectors pass their own chooser functions; the helper draws their returned values. Predict those two values before running.\n",
-   "questions": [],
+   "exercise_id": "pair",
+   "title": "Implement: a pair made of functions",
+   "prompt_md": "This is SICP's exercise 2.4, a second way to build a pair out of nothing but functions. The selector `car` is supplied: it hands the pair a function of two arguments that returns its first. Read it, then write the two missing pieces.\n\n`cons(x, y)` returns a pair. A pair here is a function that takes one argument, `choose`, calls `choose(x, y)` exactly once and returns what it returns. Building a pair calls nothing. `cdr(z)` returns the second part of a pair, in the same style as `car`.\n\nThe parts can be any objects, and two pairs must not interfere with each other. The demo draws `car` and `cdr` of one pair; predict both cells before you press Run.",
    "checklist": [
     {
-     "step": "Keep each pair independent and defer the choice until selection",
+     "step": "cons keeps both parts and hands them to whatever asks",
      "checks": [
       "pair_laws"
      ]
     },
     {
-     "step": "Draw values obtained through the two selectors",
+     "step": "cdr recovers the second part of any such pair",
      "checks": [
-      "pair_picture"
+      "second_part"
      ]
     }
    ],
-   "starter_code": "def cons(x,y):\n    def dispatch(choose):\n        return None\n    return dispatch\nfrom scimigo import canvas,figure,frame,text\n\ndef select_first(p):return p(lambda x,y:x)\ndef select_second(p):return p(lambda x,y:y)\n\ndef show_pair(p):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[str(select_first(p)),str(select_second(p))],cell_width=100,indices=False)\n    text(12,260,\"first selector / second selector\",size=18)\n    frame()\n\np=cons(\"east\",\"west\")\nshow_pair(p)\n",
+   "starter_code": "def cons(x, y):\n    return lambda choose: None\n\ndef cdr(z):\n    return None\n\nfrom scimigo import canvas, figure, frame, text\n\ndef car(z):\n    return z(lambda p, q: p)\n\ndef show_pair(z):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220,\n           values=[str(car(z)), str(cdr(z))], cell_width=110, indices=False)\n    text(12, 260, \"car / cdr\", size=18)\n    frame()\n\nshow_pair(cons(\"east\", \"west\"))\n",
    "tests": [
     {
      "name": "pair_laws",
-     "code": "saved=show_pair;show_pair=lambda *args:None\ntry:\n    for x,y in [(4,9),(None,False),(0,''),([],{}),('left','right')]:\n        p=cons(x,y)\n        assert callable(p),\"Return a function representing the pair.\"\n        assert select_first(p) is x and select_second(p) is y,\"Selectors must return the original objects, preserving identity.\"\n        calls=[]\n        def choose(a,b):calls.append((a,b));return 'chosen'\n        assert p(choose)=='chosen',\"Apply the chooser and return its result.\"\n        assert len(calls)==1 and calls[0][0] is x and calls[0][1] is y,\"Call the chooser once with this pair's two original parts.\"\n    a,b=cons(3,5),cons(7,11)\n    assert (select_first(a),select_second(b),select_second(a))==(3,11,5),\"Different pair creators keep separate captured bindings.\"\nfinally:show_pair=saved\n"
+     "code": "show_pair = lambda *args: None\nfirst = lambda z: z(lambda p, q: p)\nsecond = lambda z: z(lambda p, q: q)\nfor x, y in [(4, 9), (None, False), (0, ''), ([], {}), ('left', 'right')]:\n    calls = []\n    z = cons(x, y)\n    assert callable(z), f\"cons({x!r}, {y!r}) must return a function; got {z!r}.\"\n    def choose(a, b):\n        calls.append((a, b))\n        return 'chosen'\n    got = z(choose)\n    assert len(calls) == 1, f\"A pair calls the function it is given exactly once; it called it {len(calls)} times.\"\n    assert calls[0][0] is x and calls[0][1] is y, f\"cons({x!r}, {y!r}) should pass its own two parts, in order; it passed {calls[0]!r}.\"\n    assert got == 'chosen', f\"A pair returns whatever the function it was given returns; it returned {got!r}.\"\n    assert first(z) is x and second(z) is y, f\"The parts of cons({x!r}, {y!r}) must come back as the same objects.\"\na, b = cons(3, 5), cons(7, 11)\nassert (first(a), second(b), second(a), first(b)) == (3, 11, 5, 7), \"Two pairs must keep their own parts: building the second changed the first.\"\n"
     },
     {
-     "name": "pair_picture",
-     "code": "from scimigo import _frame_count,_frame\np=cons('near','far');before=_frame_count();show_pair(p)\nassert _frame_count()-before==1,\"Draw one selector observation.\"\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nassert fig['params']['values']==['near','far'],\"The picture must show the values recovered from this pair.\"\n"
+     "name": "second_part",
+     "code": "from scimigo import _frame_count, _frame\n# A pair built by the check, so cdr is tested by itself.\ntheirs = lambda choose: choose('near', 'far')\ngot = cdr(theirs)\nassert got == 'far', f\"cdr of a pair holding 'near' and 'far' should be 'far'; got {got!r}.\"\nmarker = object()\nassert cdr(lambda choose: choose(0, marker)) is marker, \"cdr must return the second part itself, whatever kind of object it is.\"\ncalls = []\ndef counting_pair(choose):\n    calls.append(choose)\n    return choose(1, 2)\ncdr(counting_pair)\nassert len(calls) == 1 and callable(calls[0]), \"cdr should call the pair once, passing it a function of two arguments.\"\nz = cons('north', 'south')\nbefore = _frame_count()\nshow_pair(z)\nfigure_values = [o for o in _frame(before) if o['kind'] == 'figure'][0]['params']['values']\nassert figure_values == ['north', 'south'], f\"The picture of cons('north', 'south') should show ['north', 'south']; it shows {figure_values}.\"\n"
     }
    ],
    "hints": [
-    "The pair keeps its parts, but selection supplies the operation to perform on them.",
-    "Which call creates bindings, and which later call receives a chooser?",
-    "Return a function that retains the creator’s two arguments and gives both to the chooser when called."
+    "The pair does not decide which part to give back. Whoever asks supplies the decision.",
+    "Look at car: what does it pass to the pair, and what must the pair do with it for car to get x?",
+    "cons returns a one-argument function that calls its argument on x and y. cdr passes the pair a two-argument function that returns its second argument."
    ],
-   "solution": "def cons(x,y):\n    def dispatch(choose):\n        return choose(x,y)\n    return dispatch\nfrom scimigo import canvas,figure,frame,text\n\ndef select_first(p):return p(lambda x,y:x)\ndef select_second(p):return p(lambda x,y:y)\n\ndef show_pair(p):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[str(select_first(p)),str(select_second(p))],cell_width=100,indices=False)\n    text(12,260,\"first selector / second selector\",size=18)\n    frame()\n\np=cons(\"east\",\"west\")\nshow_pair(p)\n"
+   "solution": "def cons(x, y):\n    return lambda choose: choose(x, y)\n\ndef cdr(z):\n    return z(lambda p, q: q)\n\nfrom scimigo import canvas, figure, frame, text\n\ndef car(z):\n    return z(lambda p, q: p)\n\ndef show_pair(z):\n    canvas(600, 300)\n    figure(\"array_state\", x=0, y=0, width=600, height=220,\n           values=[str(car(z)), str(cdr(z))], cell_width=110, indices=False)\n    text(12, 260, \"car / cdr\", size=18)\n    frame()\n\nshow_pair(cons(\"east\", \"west\"))\n"
   },
   {
    "exercise_id": "measure",
-   "title": "Measure: move work across the interface",
-   "prompt_md": "The supplied eager package reduces once when constructed. Its lazy alternative reduces independently for each numerator and denominator selection. Implement `measure(solver, n, d, k)` returning `(solver_result, actual_gcd_calls)`. Temporarily wrap the supplied global `gcd`, count real calls, and restore it even if the solver raises. Keep each measurement fresh. The demo compares one fraction read 3, 7 and 12 times; the blue and purple bars must show your counts. Drawing is excluded from the measured work.\n",
-   "questions": [],
+   "title": "Measure: where does the gcd work happen?",
+   "prompt_md": "Two supplied packages store the same fraction. `eager` reduces once, when the fraction is built. `lazy` stores the raw parts and reduces each time a part is read. Both take the gcd function to use as their last argument, and both then read the numerator and the denominator `k` times.\n\nImplement `measure(strategy, n, d, k)` returning `(result, calls)`: the list the strategy returns, and the number of times it really called the gcd function you gave it. Give it a function that behaves exactly like the supplied `gcd`. Count calls as they happen; the checks also run strategies you have not seen.\n\nThe demo measures both packages at 0, 3 and 12 reads. Blue bars are eager, purple are lazy. Answer the question before you run it.",
+   "questions": [
+    {
+     "step": "Predict the first row",
+     "prompt": "A fraction is built and its parts are never read (0 reads). Which package calls gcd fewer times?",
+     "choices": [
+      {
+       "text": "eager",
+       "why": "eager reduces when the fraction is built, so it has already made one call that nobody used."
+      },
+      {
+       "text": "lazy",
+       "why": "lazy does its work only when a part is read. With no reads it makes no calls; eager has made one."
+      },
+      {
+       "text": "Neither: both make one call",
+       "why": "lazy postpones the work until a part is read, and no part is read."
+      }
+     ],
+     "answer": 1
+    }
+   ],
    "checklist": [
     {
-     "step": "Count actual gcd calls and restore the helper even on errors",
+     "step": "Count the gcd calls a strategy really makes",
      "checks": [
-      "counted_gcd"
+      "counted_calls"
      ]
     },
     {
-     "step": "Draw the measurements made by the supplied solvers",
+     "step": "Draw your own measurements",
      "checks": [
       "count_bars"
      ]
     }
    ],
-   "starter_code": "def measure(solver,n,d,k):\n    return solver(n,d,k),0\nfrom math import gcd\nfrom scimigo import canvas,rectangle,text,frame\n\ndef normalize(n,d):\n    g=gcd(n,d)\n    return n//g,d//g\n\ndef eager(n,d,k):\n    top,bottom=normalize(n,d)\n    return [(top,bottom) for _ in range(k)]\n\ndef lazy(n,d,k):\n    return [(normalize(n,d)[0],normalize(n,d)[1]) for _ in range(k)]\n\ndef show_counts(rows):\n    canvas(600,370)\n    largest=max([1]+[count for k,a,b in rows for count in (a,b)])\n    for i,(k,a,b) in enumerate(rows):\n        y=i*115\n        text(12,y+20,\"selections=\"+str(k),size=18)\n        rectangle(145,y+25,400*a/largest,20,color=\"#276bb0\")\n        text(145,y+64,\"eager=\"+str(a),size=17)\n        rectangle(145,y+72,400*b/largest,20,color=\"#763aed\")\n        text(145,y+110,\"lazy=\"+str(b),size=17)\n    frame()\n\nrows=[]\nfor k in (3,7,12):\n    rows.append((k,measure(eager,21,35,k)[1],measure(lazy,21,35,k)[1]))\nshow_counts(rows)\n",
+   "starter_code": "def measure(strategy, n, d, k):\n    return strategy(n, d, k, gcd), 0\n\nfrom scimigo import canvas, rectangle, text, frame\n\ndef gcd(a, b):\n    a, b = abs(a), abs(b)\n    while b != 0:\n        a, b = b, a % b\n    return a\n\ndef eager(n, d, k, gcd):\n    \"\"\"Reduce once, when the fraction is built; then read both parts k times.\"\"\"\n    g = gcd(n, d)\n    stored = (n // g, d // g)\n    return [(stored[0], stored[1]) for _ in range(k)]\n\ndef lazy(n, d, k, gcd):\n    \"\"\"Store the raw parts; reduce every time a part is read.\"\"\"\n    stored = (n, d)\n    def numer():\n        return stored[0] // gcd(stored[0], stored[1])\n    def denom():\n        return stored[1] // gcd(stored[0], stored[1])\n    return [(numer(), denom()) for _ in range(k)]\n\ndef show_counts(rows):\n    canvas(600, 370)\n    largest = max([1] + [count for k, a, b in rows for count in (a, b)])\n    for i, (k, a, b) in enumerate(rows):\n        y = i * 115\n        text(12, y + 20, \"reads=\" + str(k), size=18)\n        rectangle(145, y + 25, 400 * a / largest, 20, color=\"#276bb0\")\n        text(145, y + 64, \"eager=\" + str(a), size=17)\n        rectangle(145, y + 72, 400 * b / largest, 20, color=\"#763aed\")\n        text(145, y + 110, \"lazy=\" + str(b), size=17)\n    frame()\n\nrows = []\nfor k in (0, 3, 12):\n    rows.append((k, measure(eager, 21, 35, k)[1], measure(lazy, 21, 35, k)[1]))\nshow_counts(rows)\n",
    "tests": [
     {
-     "name": "counted_gcd",
-     "code": "original=gcd\nfor k in (0,1,4,9):\n    expected=[(3,5)]*k\n    assert measure(eager,21,35,k)==(expected,1),\"Eager construction performs one gcd even if nothing is later selected.\"\n    assert measure(lazy,21,35,k)==(expected,2*k),\"Each lazy pair selection computes two gcd calls.\"\n    assert gcd is original,\"Restore the original gcd after measuring.\"\ndef unusual(n,d,k):\n    for _ in range(5):gcd(n,d)\n    return 'done'\nassert measure(unusual,12,18,3)==('done',5),\"Measure actual operations; do not infer a count from k or the solver name.\"\ndef broken(n,d,k):\n    gcd(n,d)\n    raise ValueError('expected')\nraised=False\ntry:measure(broken,4,6,2)\nexcept ValueError:raised=True\nassert raised and gcd is original,\"Propagate the solver error and still restore gcd.\"\n"
+     "name": "counted_calls",
+     "code": "show_counts = lambda *args: None\nreal_gcd = gcd\nseen = []\ndef gcd(a, b):\n    seen.append((a, b))\n    return real_gcd(a, b)\ntry:\n    for k in (0, 1, 4, 9):\n        for strategy, want_calls in ((eager, 1), (lazy, 2 * k)):\n            seen.clear()\n            got = measure(strategy, 21, 35, k)\n            assert isinstance(got, tuple) and len(got) == 2, f\"measure returns a pair (result, calls); got {got!r}.\"\n            result, calls = got\n            assert result == [(3, 5)] * k, f\"measure must return the strategy's own result; for {k} reads of 21/35 that is {[(3, 5)] * k}, got {result!r}.\"\n            assert len(seen) == want_calls, f\"{strategy.__name__} with {k} reads should reach the supplied gcd {want_calls} time(s) through your function; it reached it {len(seen)} time(s). Your function must do the real gcd work by calling gcd.\"\n            assert calls == len(seen), f\"{strategy.__name__} with {k} reads really made {len(seen)} gcd call(s); you reported {calls}.\"\n    def unusual(n, d, k, g):\n        assert g(12, 18) == 6, \"The function you hand to a strategy must return what gcd returns.\"\n        for _ in range(4):\n            g(n, d)\n        return 'done'\n    seen.clear()\n    got = measure(unusual, 12, 18, 3)\n    assert got == ('done', 5), f\"A strategy that calls its gcd five times should measure as ('done', 5); got {got!r}. Count calls as they happen; do not work them out from k or from the strategy.\"\n    first = measure(lazy, 21, 35, 2)[1]\n    second = measure(lazy, 21, 35, 2)[1]\n    assert first == second == 4, f\"Each measurement starts from zero: two identical runs gave {first} and {second}.\"\nfinally:\n    gcd = real_gcd\n"
     },
     {
      "name": "count_bars",
-     "code": "from scimigo import _frame_count,_frame\nrows=[(k,measure(eager,21,35,k)[1],measure(lazy,21,35,k)[1]) for k in (3,7,12)]\nassert rows==[(3,1,6),(7,1,14),(12,1,24)],\"Measure both strategies before drawing.\"\nbefore=_frame_count();show_counts(rows)\nassert _frame_count()-before==1,\"Draw one comparison frame.\"\nobjects=_frame(before)\nassert sum(o['kind']=='rectangle' for o in objects)==6,\"Draw two measured bars for each selection count.\"\nwords=[o['value'] for o in objects if o['kind']=='text']\nfor k,a,b in rows:\n    assert 'selections='+str(k) in words and 'eager='+str(a) in words and 'lazy='+str(b) in words,\"Label bars with the actual counted values.\"\n"
+     "code": "from scimigo import _frame_count, _frame\ndef count(strategy, k):\n    calls = [0]\n    def g(a, b):\n        calls[0] += 1\n        return gcd(a, b)\n    strategy(33, 77, k, g)\n    return calls[0]\nreads = (2, 5, 9)\nrows = [(k, measure(eager, 33, 77, k)[1], measure(lazy, 33, 77, k)[1]) for k in reads]\nwant = [(k, count(eager, k), count(lazy, k)) for k in reads]\nassert rows == want, f\"At {reads} reads your (reads, eager, lazy) rows are {rows}; they do not match the calls that really happen.\"\nbefore = _frame_count()\nshow_counts(rows)\nobjects = _frame(before)\nbars = sum(o['kind'] == 'rectangle' for o in objects)\nassert bars == 6, f\"Draw two bars for each of the three rows; found {bars}.\"\nwords = [o['value'] for o in objects if o['kind'] == 'text']\nfor k, a, b in want:\n    assert 'eager=' + str(a) in words and 'lazy=' + str(b) in words, f\"The picture must label the {k}-read row with your measured counts.\"\n"
     }
    ],
    "hints": [
-    "The same public values can require different work depending on where reduction happens.",
-    "Observe the gcd function used by the solver; an expected formula does not measure it.",
-    "Wrap gcd during one solver call, preserve its return value, and use finally to restore the original function."
+    "A strategy can only use the gcd function it is handed, so what you hand it decides what you can observe.",
+    "Module 1 counted calls the same way: a stand-in function that makes a note and then does the real work.",
+    "Inside measure define a function of (a, b) that adds one to a counter and returns gcd(a, b). Pass it as the strategy's last argument and return the strategy's result with the counter."
    ],
-   "solution": "def measure(solver,n,d,k):\n    original=globals()[\"gcd\"]\n    calls=0\n    def counted(a,b):\n        nonlocal calls\n        calls+=1\n        return original(a,b)\n    globals()[\"gcd\"]=counted\n    try:\n        answer=solver(n,d,k)\n        return answer,calls\n    finally:\n        globals()[\"gcd\"]=original\nfrom math import gcd\nfrom scimigo import canvas,rectangle,text,frame\n\ndef normalize(n,d):\n    g=gcd(n,d)\n    return n//g,d//g\n\ndef eager(n,d,k):\n    top,bottom=normalize(n,d)\n    return [(top,bottom) for _ in range(k)]\n\ndef lazy(n,d,k):\n    return [(normalize(n,d)[0],normalize(n,d)[1]) for _ in range(k)]\n\ndef show_counts(rows):\n    canvas(600,370)\n    largest=max([1]+[count for k,a,b in rows for count in (a,b)])\n    for i,(k,a,b) in enumerate(rows):\n        y=i*115\n        text(12,y+20,\"selections=\"+str(k),size=18)\n        rectangle(145,y+25,400*a/largest,20,color=\"#276bb0\")\n        text(145,y+64,\"eager=\"+str(a),size=17)\n        rectangle(145,y+72,400*b/largest,20,color=\"#763aed\")\n        text(145,y+110,\"lazy=\"+str(b),size=17)\n    frame()\n\nrows=[]\nfor k in (3,7,12):\n    rows.append((k,measure(eager,21,35,k)[1],measure(lazy,21,35,k)[1]))\nshow_counts(rows)\n"
+   "solution": "def measure(strategy, n, d, k):\n    calls = 0\n    def counted(a, b):\n        nonlocal calls\n        calls += 1\n        return gcd(a, b)\n    answer = strategy(n, d, k, counted)\n    return answer, calls\n\nfrom scimigo import canvas, rectangle, text, frame\n\ndef gcd(a, b):\n    a, b = abs(a), abs(b)\n    while b != 0:\n        a, b = b, a % b\n    return a\n\ndef eager(n, d, k, gcd):\n    \"\"\"Reduce once, when the fraction is built; then read both parts k times.\"\"\"\n    g = gcd(n, d)\n    stored = (n // g, d // g)\n    return [(stored[0], stored[1]) for _ in range(k)]\n\ndef lazy(n, d, k, gcd):\n    \"\"\"Store the raw parts; reduce every time a part is read.\"\"\"\n    stored = (n, d)\n    def numer():\n        return stored[0] // gcd(stored[0], stored[1])\n    def denom():\n        return stored[1] // gcd(stored[0], stored[1])\n    return [(numer(), denom()) for _ in range(k)]\n\ndef show_counts(rows):\n    canvas(600, 370)\n    largest = max([1] + [count for k, a, b in rows for count in (a, b)])\n    for i, (k, a, b) in enumerate(rows):\n        y = i * 115\n        text(12, y + 20, \"reads=\" + str(k), size=18)\n        rectangle(145, y + 25, 400 * a / largest, 20, color=\"#276bb0\")\n        text(145, y + 64, \"eager=\" + str(a), size=17)\n        rectangle(145, y + 72, 400 * b / largest, 20, color=\"#763aed\")\n        text(145, y + 110, \"lazy=\" + str(b), size=17)\n    frame()\n\nrows = []\nfor k in (0, 3, 12):\n    rows.append((k, measure(eager, 21, 35, k)[1], measure(lazy, 21, 35, k)[1]))\nshow_counts(rows)\n"
   },
   {
-   "exercise_id": "manifest_report",
-   "title": "Mastery challenge: a manifest with limited reads",
-   "prompt_md": "A shipping manifest can arrive in several record formats. Implement `manifest_report(records, weight_of, label_of)` returning total weight and the label of the first heaviest record. Empty input returns `(0, None)`; weights are nonnegative integers and labels are strings. The supplied operations are the only way to read a record. **Each record permits at most one call to weight_of.** Handle up to 500 records, preserve their order and contents, and keep invocations independent. Call `show_report(total, heaviest)` once after computing the answer. The starter produces a correct report, but exceeds the read allowance for nonempty input.\n",
+   "exercise_id": "parallel",
+   "title": "Mastery challenge: two resistors in parallel",
+   "prompt_md": "Two resistors wired in parallel behave like one resistor of R1 × R2 / (R1 + R2) ohms. A real resistor is only known to within a tolerance: one marked 6.8 ohms ± 10% is somewhere between 6.12 and 7.48. So each resistor is an interval, built and read with the supplied `make_interval`, `lower_bound` and `upper_bound`, and the supplied `add_interval`, `mul_interval` and `div_interval` do arithmetic on them. Resistances are positive.\n\nImplement `parallel(r1, r2)`. It returns an interval that contains every resistance the pair can really have, and is no wider than it needs to be: the check allows 1% beyond the true range. Use only the supplied interval operations; the checks store intervals another way. Call `show_parallel(r1, r2, result)` once.\n\nThe starter's answer does contain every possible value, and it is far too wide. Run it and compare the purple bar with the two blue ones.",
    "questions": [
     {
-     "step": "Explain the plan",
-     "prompt": "What must remain stable when a record format changes?",
+     "step": "Name the plan",
+     "prompt": "What must the interval you return guarantee?",
      "choices": [
       {
-       "text": "The report’s meaning",
-       "why": "The required report describes weights and labels, independently of storage."
+       "text": "It holds every value the pair can take",
+       "why": "That is what an interval answer means, and the task adds that it should hold little else."
       },
       {
-       "text": "The record’s positions",
-       "why": "Positions are an implementation choice."
+       "text": "Its centre is the nominal resistance",
+       "why": "The centre of the true range is not the value computed from the two nominal resistances."
       },
       {
-       "text": "The record’s dictionary keys",
-       "why": "Keys are an implementation choice."
+       "text": "It is as narrow as the narrower input",
+       "why": "Nothing ties the width of the result to the width of one input."
       }
      ],
      "answer": 0
     },
     {
      "step": "State the invariant",
-     "prompt": "What does the running total describe?",
+     "prompt": "What does each interval produced along the way contain?",
      "choices": [
       {
-       "text": "Only the heaviest item",
-       "why": "The total must include lighter items too."
+       "text": "Only that step's nominal value",
+       "why": "A single value would throw the tolerance away."
       },
       {
-       "text": "Exactly the items already read",
-       "why": "Each completed item contributes its weight once."
+       "text": "Every value that sub-expression can take",
+       "why": "Each supplied operation promises this for its inputs, so it holds step by step up to the final answer."
       },
       {
-       "text": "All items before reading",
-       "why": "Unread weights have not been supplied yet."
+       "text": "The values of the step before it",
+       "why": "Each step computes a different quantity, in different units."
       }
      ],
      "answer": 1
     },
     {
-     "step": "Predict the work",
-     "prompt": "What weight-access budget applies to n records?",
+     "step": "Predict the cost",
+     "prompt": "How many times should each resistor's interval enter the arithmetic?",
      "choices": [
       {
-       "text": "At most n calls",
-       "why": "Each record permits one weight read."
+       "text": "Once",
+       "why": "Every further appearance is treated as a separate quantity free to take any value in the interval. That can widen the result, and in this formula it does."
       },
       {
-       "text": "At least two n calls",
-       "why": "A second pass repeats forbidden weight reads."
+       "text": "Twice",
+       "why": "The second appearance is treated as a second, independent resistor."
       },
       {
-       "text": "Exactly one call total",
-       "why": "Different records can have different weights."
+       "text": "It makes no difference",
+       "why": "The starter and a correct answer use the same operations and differ only in this."
       }
      ],
      "answer": 0
     },
     {
-     "step": "Explain a failure",
-     "prompt": "For weights 6, 9, 9, why is returning the last label wrong?",
+     "step": "Why not the starter?",
+     "prompt": "For 6.8 ± 10% and 4.7 ± 5% the starter returns about 2.20 to 3.49 ohms. The pair's real range is about 2.58 to 2.97. Where does the extra width come from?",
      "choices": [
       {
-       "text": "The total must be 9",
-       "why": "The total includes all weights."
+       "text": "Dividing one interval by another",
+       "why": "Division by an interval that excludes zero is sound; a correct answer here divides too."
       },
       {
-       "text": "The input must be sorted",
-       "why": "Sorting is unnecessary and changes order."
+       "text": "Tolerances given in percent",
+       "why": "The percentages are converted to plain bounds before any arithmetic happens."
       },
       {
-       "text": "Ties must keep the first maximum",
-       "why": "The second item is the first maximum; a later equal weight must not replace it."
+       "text": "R1 taken as 6.12 and 7.48 at once",
+       "why": "The lower bound 2.20 is the smallest product, 6.12 × 4.465, over the largest sum, 7.48 + 4.935. No single resistor is at both ends."
       }
      ],
      "answer": 2
@@ -278,35 +306,35 @@
    ],
    "checklist": [
     {
-     "step": "Return the total and the first heaviest label across storage packages",
+     "step": "Contain every possible resistance, however intervals are stored",
      "checks": [
-      "manifest_behavior"
+      "contains_every_value"
      ]
     },
     {
-     "step": "Read each record within its budget and draw the returned result",
+     "step": "Stay within 1% of the true range, and draw it",
      "checks": [
-      "manifest_budget"
+      "tight_and_drawn"
      ]
     }
    ],
-   "starter_code": "def manifest_report(records,weight_of,label_of):\n    total=sum(weight_of(record) for record in records)\n    heaviest=None\n    if records:\n        best=max(records,key=weight_of)\n        heaviest=label_of(best)\n    show_report(total,heaviest)\n    return total,heaviest\nfrom scimigo import canvas,figure,frame,text\n\ndef weight_of(record):return record[1]\ndef label_of(record):return record[0]\n\ndef show_report(total,heaviest):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[total],indices=False)\n    text(12,250,\"total weight=\"+str(total),size=18)\n    text(12,280,\"heaviest label=\"+str(heaviest),size=18)\n    frame()\n\nprint(manifest_report([('birch',6),('cedar',9),('elm',9)],weight_of,label_of))\n",
+   "starter_code": "def parallel(r1, r2):\n    result = div_interval(mul_interval(r1, r2), add_interval(r1, r2))\n    show_parallel(r1, r2, result)\n    return result\n\nfrom scimigo import canvas, rectangle, text, frame\n\ndef make_interval(low, high):\n    return (low, high)\n\ndef lower_bound(i):\n    return i[0]\n\ndef upper_bound(i):\n    return i[1]\n\ndef make_center_percent(center, percent):\n    half = abs(center) * percent / 100\n    return make_interval(center - half, center + half)\n\ndef add_interval(x, y):\n    return make_interval(lower_bound(x) + lower_bound(y), upper_bound(x) + upper_bound(y))\n\ndef mul_interval(x, y):\n    products = [a * b for a in (lower_bound(x), upper_bound(x)) for b in (lower_bound(y), upper_bound(y))]\n    return make_interval(min(products), max(products))\n\ndef div_interval(x, y):\n    if lower_bound(y) <= 0 <= upper_bound(y):\n        raise ValueError(\"cannot divide by an interval that contains zero\")\n    return mul_interval(x, make_interval(1 / upper_bound(y), 1 / lower_bound(y)))\n\ndef show_parallel(r1, r2, result):\n    canvas(600, 330)\n    rows = [(\"R1\", r1, \"#276bb0\"), (\"R2\", r2, \"#276bb0\"), (\"together\", result, \"#763aed\")]\n    top = max(upper_bound(i) for name, i, color in rows) or 1\n    for n, (name, i, color) in enumerate(rows):\n        y = 20 + 100 * n\n        low, high = lower_bound(i), upper_bound(i)\n        text(12, y + 22, name, size=18)\n        rectangle(110 + 460 * low / top, y, max(2, 460 * (high - low) / top), 30, color=color)\n        text(110, y + 58, str(round(low, 3)) + \" to \" + str(round(high, 3)) + \" ohms\", size=16)\n    frame()\n\nr1 = make_center_percent(6.8, 10)\nr2 = make_center_percent(4.7, 5)\ntogether = parallel(r1, r2)\nprint(round(lower_bound(together), 3), round(upper_bound(together), 3))\n",
    "tests": [
     {
-     "name": "manifest_behavior",
-     "code": "import random,copy\nsaved=show_report;show_report=lambda *args:None\ntry:\n    rng=random.Random(404)\n    for length in (0,1,2,7,30):\n        raw=[('item'+str(i),rng.randrange(20)) for i in range(length)]\n        expected=(sum(w for name,w in raw),max(raw,key=lambda x:x[1])[0] if raw else None)\n        for records,getw,getl in [(raw,lambda r:r[1],lambda r:r[0]),([{'payload':{'kg':w,'name':name}} for name,w in raw],lambda r:r['payload']['kg'],lambda r:r['payload']['name'])]:\n            before=copy.deepcopy(records)\n            assert manifest_report(records,getw,getl)==expected,\"Use the provided access operations and preserve the first label on a maximum-weight tie.\"\n            assert records==before,\"Do not modify records or their order.\"\n    assert manifest_report([('a',0),('b',0)],lambda r:r[1],lambda r:r[0])==(0,'a'),\"Zero weights are valid; ties retain the first record.\"\nfinally:show_report=saved\n"
+     "name": "contains_every_value",
+     "code": "import random\ndef exact(a_low, a_high, b_low, b_high):\n    par = lambda a, b: a * b / (a + b)\n    return par(a_low, b_low), par(a_high, b_high)   # increasing in both resistances\nrng = random.Random(214)\ncases = [(6.12, 7.48, 4.465, 4.935), (10, 10, 10, 10), (1, 2, 1, 2), (100, 101, 0.5, 9)]\ncases += [(a, a + rng.uniform(0, 6), b, b + rng.uniform(0, 6)) for a, b in [(rng.uniform(0.5, 60), rng.uniform(0.5, 60)) for _ in range(25)]]\nshow_parallel = lambda *args: None\ndef run(label):\n    for a_low, a_high, b_low, b_high in cases:\n        try:\n            result = parallel(make_interval(a_low, a_high), make_interval(b_low, b_high))\n            low, high = lower_bound(result), upper_bound(result)\n        except (TypeError, KeyError, IndexError):\n            raise AssertionError(f\"parallel failed when intervals are stored as {label}: build and read them only with make_interval, lower_bound and upper_bound.\")\n        want_low, want_high = exact(a_low, a_high, b_low, b_high)\n        slack = 1e-9 * (1 + abs(want_high))\n        assert low <= want_low + slack and high >= want_high - slack, f\"R1 in [{a_low:.3f}, {a_high:.3f}] and R2 in [{b_low:.3f}, {b_high:.3f}] can combine to anything from {want_low:.4f} to {want_high:.4f}; your interval [{low:.4f}, {high:.4f}] leaves some of that out.\"\nrun(\"tuples\")\n# The same client with intervals stored as a centre and a half-width.\ntuple_package = (make_interval, lower_bound, upper_bound)\nmake_interval = lambda low, high: {\"centre\": (low + high) / 2, \"half\": (high - low) / 2}\nlower_bound = lambda i: i[\"centre\"] - i[\"half\"]\nupper_bound = lambda i: i[\"centre\"] + i[\"half\"]\ntry:\n    run(\"a centre and a half-width\")\nfinally:\n    make_interval, lower_bound, upper_bound = tuple_package\n"
     },
     {
-     "name": "manifest_budget",
-     "code": "from scimigo import _frame_count,_frame\nclass BudgetExceeded(BaseException):pass\nfor size in (1,8,500):\n    class Record:\n        def __init__(self,i):self.i=i\n        def __getitem__(self,key):raise AssertionError(\"These records have no public positional layout.\")\n    records=[Record(i) for i in range(size)];counts={id(r):0 for r in records}\n    def getweight(r):\n        counts[id(r)]+=1\n        if counts[id(r)]>1:raise BudgetExceeded()\n        return r.i%13\n    def getlabel(r):return 'tag'+str(r.i)\n    before=_frame_count()\n    try:answer=manifest_report(records,getweight,getlabel)\n    except BudgetExceeded:raise AssertionError(\"The weight accessor may be called only once per record; retain values already read.\")\n    expected=(sum(i%13 for i in range(size)),'tag'+str(min(size-1,12)))\n    assert answer==expected,\"Opaque records still need the correct total and first heaviest label.\"\n    assert _frame_count()-before==1,\"Draw one completed report after each invocation.\"\n    objects=_frame(before);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['values']==[answer[0]],\"Draw this report's computed total.\"\n    assert any(o['kind']=='text' and o['value']=='heaviest label='+str(answer[1]) for o in objects),\"Draw this report's selected label.\"\n"
+     "name": "tight_and_drawn",
+     "code": "import random\ndef exact(a_low, a_high, b_low, b_high):\n    par = lambda a, b: a * b / (a + b)\n    return par(a_low, b_low), par(a_high, b_high)   # increasing in both resistances\nrng = random.Random(214)\ncases = [(6.12, 7.48, 4.465, 4.935), (10, 10, 10, 10), (1, 2, 1, 2), (100, 101, 0.5, 9)]\ncases += [(a, a + rng.uniform(0, 6), b, b + rng.uniform(0, 6)) for a, b in [(rng.uniform(0.5, 60), rng.uniform(0.5, 60)) for _ in range(25)]]\nfrom scimigo import _frame_count, _frame\nsaved = show_parallel\nshow_parallel = lambda *args: None\ntry:\n    for a_low, a_high, b_low, b_high in cases:\n        result = parallel(make_interval(a_low, a_high), make_interval(b_low, b_high))\n        low, high = lower_bound(result), upper_bound(result)\n        want_low, want_high = exact(a_low, a_high, b_low, b_high)\n        allowed = 1.01 * (want_high - want_low) + 1e-9 * (1 + abs(want_high))\n        assert high - low <= allowed, f\"R1 in [{a_low:.3f}, {a_high:.3f}] with R2 in [{b_low:.3f}, {b_high:.3f}] really spans {want_high - want_low:.4f} ohms; your interval spans {high - low:.4f}. It includes resistances the pair can never have.\"\nfinally:\n    show_parallel = saved\nr1, r2 = make_interval(6.12, 7.48), make_interval(4.465, 4.935)\nbefore = _frame_count()\nresult = parallel(r1, r2)\nrecorded = _frame_count() - before\nassert recorded == 1, f\"Call show_parallel once per call of parallel; recorded {recorded} frames.\"\nobjects = _frame(before)\nbars = [o for o in objects if o['kind'] == 'rectangle']\nassert len(bars) == 3, f\"The picture has three bars: R1, R2 and the pair; found {len(bars)}.\"\nlabel = str(round(lower_bound(result), 3)) + \" to \" + str(round(upper_bound(result), 3)) + \" ohms\"\nassert any(o['kind'] == 'text' and o['value'] == label for o in objects), f\"The third bar must be labelled with the interval you return: '{label}'. Pass show_parallel your result.\"\n"
     }
    ],
    "hints": [
-    "Which information is being requested again after it was already returned?",
-    "Distinguish the current record’s contribution from the best record seen so far.",
-    "Keep the running total and first best label as you consume the returned weights."
+    "Ask what the circuit can really do. Can one resistor be at its lowest and its highest value at the same moment?",
+    "Count how many times each resistor appears in the formula the starter evaluates, and what interval arithmetic assumes about each appearance.",
+    "Look for an algebraically equal way to write the combined resistance in which R1 and R2 each appear once."
    ],
-   "solution": "def manifest_report(records,weight_of,label_of):\n    total=0\n    best_weight=None\n    heaviest=None\n    for record in records:\n        weight=weight_of(record)\n        name=label_of(record)\n        total+=weight\n        if best_weight is None or weight>best_weight:\n            best_weight=weight\n            heaviest=name\n    show_report(total,heaviest)\n    return total,heaviest\nfrom scimigo import canvas,figure,frame,text\n\ndef weight_of(record):return record[1]\ndef label_of(record):return record[0]\n\ndef show_report(total,heaviest):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[total],indices=False)\n    text(12,250,\"total weight=\"+str(total),size=18)\n    text(12,280,\"heaviest label=\"+str(heaviest),size=18)\n    frame()\n\nprint(manifest_report([('birch',6),('cedar',9),('elm',9)],weight_of,label_of))\n"
+   "solution": "def parallel(r1, r2):\n    one = make_interval(1, 1)\n    result = div_interval(one, add_interval(div_interval(one, r1), div_interval(one, r2)))\n    show_parallel(r1, r2, result)\n    return result\n\nfrom scimigo import canvas, rectangle, text, frame\n\ndef make_interval(low, high):\n    return (low, high)\n\ndef lower_bound(i):\n    return i[0]\n\ndef upper_bound(i):\n    return i[1]\n\ndef make_center_percent(center, percent):\n    half = abs(center) * percent / 100\n    return make_interval(center - half, center + half)\n\ndef add_interval(x, y):\n    return make_interval(lower_bound(x) + lower_bound(y), upper_bound(x) + upper_bound(y))\n\ndef mul_interval(x, y):\n    products = [a * b for a in (lower_bound(x), upper_bound(x)) for b in (lower_bound(y), upper_bound(y))]\n    return make_interval(min(products), max(products))\n\ndef div_interval(x, y):\n    if lower_bound(y) <= 0 <= upper_bound(y):\n        raise ValueError(\"cannot divide by an interval that contains zero\")\n    return mul_interval(x, make_interval(1 / upper_bound(y), 1 / lower_bound(y)))\n\ndef show_parallel(r1, r2, result):\n    canvas(600, 330)\n    rows = [(\"R1\", r1, \"#276bb0\"), (\"R2\", r2, \"#276bb0\"), (\"together\", result, \"#763aed\")]\n    top = max(upper_bound(i) for name, i, color in rows) or 1\n    for n, (name, i, color) in enumerate(rows):\n        y = 20 + 100 * n\n        low, high = lower_bound(i), upper_bound(i)\n        text(12, y + 22, name, size=18)\n        rectangle(110 + 460 * low / top, y, max(2, 460 * (high - low) / top), 30, color=color)\n        text(110, y + 58, str(round(low, 3)) + \" to \" + str(round(high, 3)) + \" ohms\", size=16)\n    frame()\n\nr1 = make_center_percent(6.8, 10)\nr2 = make_center_percent(4.7, 5)\ntogether = parallel(r1, r2)\nprint(round(lower_bound(together), 3), round(upper_bound(together), 3))\n"
   }
  ]
 }

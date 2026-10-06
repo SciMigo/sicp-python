@@ -1,23 +1,46 @@
-# Module 04 review — 2026-10-06
+# Module 04 review notes
 
-Checked local draft; publication pending. Based on reviewed merged main 5f8554a.
+## 2026-10-06: lab rewrite after review (Claude)
 
-## Scope
+Status: local draft, not published. Follows the conversion of the same day.
 
-1814 prose words, seven executable Python blocks, two semantic figures. Follows SICP §§2.1.1–2.1.4: rational arithmetic, reduction, representation boundaries, laws, points and segments, procedural pairs, normalization placement, intervals and repeated-variable dependence. Lab covers exercises 2.1, 2.3 and 2.4, measured gcd calls and a distinct shipping task. The public lesson does not solve signed normalization or the function-choice pair, does not print lab demo answers and uses a map-units teaser separate from shipping mastery. New lesson carries credit, a changes statement and CC BY-SA 4.0 notice. Original book text remains optional reference.
+The lesson was sound and is mostly unchanged. The lab was the problem.
 
-## Verification
+What changed, and why:
 
-- Seven lesson blocks and two figures pass; lab packing is current.
-- Ten solution checks pass. All five starters run and draw; every check fails on untouched code except deliberately correct-but-over-budget mastery behavior (nine red of ten). Every Python assert has a message.
-- Mutation probes reject missing reduction, direct rectangle indexing, reversed pair parts, inferred rather than counted gcd calls, and replacing the first maximum with a later tie.
-- Cases include both denominator signs, zero numerator, zero-denominator rejection, seeded fractions, alternate rectangle packages, identity-preserving pair selection, independent captured pairs, actual helper-call counts and restoration after exceptions, empty manifests, zero weights, ties, alternate layouts, input preservation and 500 opaque records.
-- Chrome/Pyodide smoke passes all five exercises, playback, questions, mastery unlock, embedded sizing and host/example integration; no page errors. Real Pyodide 0.27.4 was cached locally for this draft; no external-CDN claim for Module 4.
-- Inspected all sixteen smoke images and both lesson figures. Phone labels are readable; diagrams explicitly distinguish dependencies from recursive calls and coordinate lists from scaled geometry.
-- Layout checked at 1366/390 pixels in light and dark, with no horizontal overflow. Body contrast 16.74/15.26; phone starter runs and shows the editable function first.
+- **Every exercise drew one static frame.** `make_rat` now records each Euclid step; `report`
+  records each read through the barrier; the mastery draws the two resistors and the result on
+  one scale.
+- **Two exercises were a couple of minutes each.** The rectangle exercise was `w*h` and
+  `2*(w+h)`; it is now exercise 2.3 proper, with a representation to write and a second one to
+  survive. `cons` was one expression inside a supplied skeleton; the learner now writes `cons`
+  and `cdr`, with `car` supplied as in the book.
+- **Measure needed a mechanism no lesson teaches.** It rebound a module-level `gcd` from inside a
+  function. The strategies now take the gcd function as an argument.
+- **Intervals had a lesson section and no exercise**, while the mastery was a sum and a running
+  maximum with its constraint in bold. The mastery is now the parallel-resistor problem.
+- `fractions.Fraction` passed the first exercise; its import is now refused.
+- Lesson: added the invariant call-out and two predict blocks, replaced the second figure (a row
+  of coordinate strings) with the three layers, added "In real software", and brought "Check
+  yourself" to three questions.
 
-## Estimate and limits
+Verified in this pass:
 
-20–25-minute lesson (200 words/minute plus code/figures), five labs at 10, 10, 10, 15 and 15 minutes; 80–85 total, unmeasured. Arithmetic and gcd calls are not claimed to have fixed bit cost. Replacing a selector package does not migrate old stored values. The interval example does not track dependence. Educational checks are not secure anti-cheating. Course-wide concepts/tutor tags, all old-reading licence notices, raw reference-link hosting and publication cleanup remain separate work. Module 4 has not been published; publisher and viewer registration must follow content review.
+- `tools/lessons.py check 04`: ok, 7 blocks, 2 figures. `tools/check_lab.py 04`: ok, 5 exercises,
+  11 solution checks. `lab_src.py check`: up to date.
+- Untouched starters against each check: 10 of 11 red, each with a message about the missing work.
+- 21 wrong, lazy and alternative submissions: every wrong one fails at least one check; the two
+  alternative correct ones (a rectangle stored as two side lengths, the mastery by endpoints) pass.
+- Browser smoke (`preview_smoke.mjs --all`, Chromium, Pyodide 0.27.4 from the CDN): all checks passed.
+- Lesson at 390 px, dark: no horizontal overflow. Looked at both lesson figures and the mastery screenshot.
 
-Evidence: output/review/04-data-abstraction/.
+Estimate: 80 minutes, unchanged in total but now matched by the work (lesson 20–25, lab about 60).
+Unmeasured.
+
+Known limits:
+
+- Exercise 3 is small; that is the size of exercise 2.4.
+- No `concepts` tags: the course has no `concepts.yaml` yet.
+- The reference link is relative and is rewritten by the publish script.
+- The licence sentence at the end of the lesson is the earlier draft's; whether lessons carry it
+  is an owner decision for all modules.

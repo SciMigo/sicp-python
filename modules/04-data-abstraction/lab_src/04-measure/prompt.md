@@ -1,1 +1,5 @@
-The supplied eager package reduces once when constructed. Its lazy alternative reduces independently for each numerator and denominator selection. Implement `measure(solver, n, d, k)` returning `(solver_result, actual_gcd_calls)`. Temporarily wrap the supplied global `gcd`, count real calls, and restore it even if the solver raises. Keep each measurement fresh. The demo compares one fraction read 3, 7 and 12 times; the blue and purple bars must show your counts. Drawing is excluded from the measured work.
+Two supplied packages store the same fraction. `eager` reduces once, when the fraction is built. `lazy` stores the raw parts and reduces each time a part is read. Both take the gcd function to use as their last argument, and both then read the numerator and the denominator `k` times.
+
+Implement `measure(strategy, n, d, k)` returning `(result, calls)`: the list the strategy returns, and the number of times it really called the gcd function you gave it. Give it a function that behaves exactly like the supplied `gcd`. Count calls as they happen; the checks also run strategies you have not seen.
+
+The demo measures both packages at 0, 3 and 12 reads. Blue bars are eager, purple are lazy. Answer the question before you run it.

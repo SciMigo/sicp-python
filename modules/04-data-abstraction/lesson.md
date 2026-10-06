@@ -54,6 +54,9 @@ assert add_rat(one_third, one_third) == (6, 9), "Raw construction leaves the res
 assert equal_rat(make_rat(6, 9), make_rat(2, 3)), "Different parts can represent the same value."
 ```
 
+??? predict "Is make_rat(6, 9) == make_rat(2, 3) true with this tuple package?"
+    No. The tuples are `(6, 9)` and `(2, 3)`, which Python compares part by part. `equal_rat` says they are equal, because it compares the ratios.
+
 The last two assertions distinguish an abstract value from its concrete parts. Six ninths and two thirds are the same rational number. They are different tuples. Tuple equality is therefore the wrong equality operation for this first package, even though it sometimes happens to agree.
 
 For positive arguments we can reduce in the constructor, using the greatest common divisor from module 3. Integer division by that divisor keeps the parts integral. Normalizing negative arguments requires an additional sign policy; that is exercise 2.1 in the lab, rather than a completed exercise here.
@@ -110,6 +113,9 @@ The book asks what is meant by data. A collection of functions with plausible na
 
 $$\operatorname{numer}(r)\,d = n\,\operatorname{denom}(r).$$
 
+!!! invariant "The law every representation must keep"
+    Whatever `make_rat(n, d)` stores, the parts its selectors return stand for the same ratio as `n` over `d`, and the denominator they return is not zero.
+
 The selected denominator must also remain nonzero. If the interface promises lowest terms and a positive denominator, those are additional laws to test. Checking only one friendly positive example cannot establish them.
 
 A useful test varies signs, zero numerator, reducible inputs and repeated calls. It also checks the clients against a different representation. Otherwise a client that quietly indexes a tuple can pass every arithmetic example and still fail the main purpose of the interface.
@@ -151,7 +157,7 @@ assert mid == (3.0, 5.0), "Average the endpoints independently in each coordinat
 ```
 
 ```figure
-{"type":"array_state","params":{"values":["(1, 2)","(3, 5)","(5, 8)"],"cell_width":110,"indices":false},"caption":"The segment endpoints are (1, 2) and (5, 8); their midpoint is (3, 5). This diagram lists coordinates, rather than plotting distances to scale."}
+{"type":"tree","params":{"node_radius":44,"node_spacing_x":120,"node_spacing_y":110,"root":{"value":"segment","children":[{"value":"start","children":[{"value":"x = 1"},{"value":"y = 2"}]},{"value":"end","children":[{"value":"x = 5"},{"value":"y = 8"}]}]}},"caption":"Three layers. midpoint_segment asks the segment for its two points and each point for its two numbers. It never looks at how a segment stores points, or how a point stores numbers."}
 ```
 
 Notice that `midpoint_segment` can keep its body if point storage changes and the point operations preserve their laws. Changing segment storage similarly affects its constructor and selectors. Exercise 2.3 applies this idea to rectangles: perimeter and area should describe geometry while width and height operations describe the chosen representation.
@@ -191,11 +197,14 @@ This establishes the pair laws, not a claim that Python implements tuples with c
 
 The book compares reducing a rational number at construction with reducing when a selector is called. Both can implement the same ratio law. Their costs differ when the same value is selected repeatedly.
 
+??? predict "A fraction is built once and each of its parts is read five times. How many gcd calls does each plan make?"
+    Reducing at construction makes one. Reducing at every read makes ten: one for each of the five numerator reads and five denominator reads.
+
 For `n` newly created fractions with `k` later selections of each part, eager reduction performs `n` gcd calls; lazy reduction performs `2nk` gcd calls if each selector recomputes it. If no parts are ever selected, lazy reduction does none. Neither statement counts the internal work of gcd. We measure calls to it, not seconds, and do not treat large-integer arithmetic as constant time.
 
 The choice also affects the canonical-form contract. A lazy package may keep raw parts internally yet always return reduced parts. A client reading the storage directly would observe something outside the public promise, and would defeat both the correctness boundary and the intended cost model.
 
-There is no universally best placement of work. The usage pattern matters. The lab supplies both implementations and asks you to measure the actual helper calls, including restoration of the original helper when a computation raises. A hard-coded count may match one example while measuring nothing.
+There is no universally best placement of work. The usage pattern matters. The lab supplies both packages and asks you to measure the calls they really make, because a count worked out on paper measures nothing.
 
 ## Uncertain values need a different contract
 
@@ -229,7 +238,7 @@ A map renderer receives either coordinates in pixels or coordinates in meters. S
 
 ## Practise
 
-Normalize signed fractions from a stub, trace a rectangle through its public operations, build the alternative procedural pair, and count normalization work in the two supplied packages. Then attempt a separate constrained task whose prompt describes its behavior without naming the method. Predict each picture before running and explain what remains unchanged across representations.
+In the lab you reduce signed fractions and watch Euclid's algorithm do it step by step, write a rectangle and a client that works on someone else's rectangle too, build a pair out of functions, and count where the gcd calls happen in an eager and a lazy package. The last exercise is a small electrical problem with an answer that is correct and still not good enough; its prompt does not say what to change.
 
 ## Recap
 
@@ -237,9 +246,11 @@ Normalize signed fractions from a stub, trace a rectangle through its public ope
 
 **Invariant:** Every constructed value satisfies its public laws; clients combine the meanings returned by the interface rather than incidental storage positions.
 
-**Cost:** Eager reduction makes one gcd call per fraction constructed; uncached lazy reduction makes one per part selected. Those are operation counts, not fixed-cost arithmetic claims. Drawing is excluded.
+**Complexity achieved:** Eager reduction makes one gcd call per fraction constructed; uncached lazy reduction makes one per part selected. Those are operation counts, not fixed-cost arithmetic claims. Drawing is excluded.
 
-**Common mistake:** Testing arithmetic on one tuple layout while the client secretly depends on that layout.
+**Failure mode:** Testing arithmetic on one tuple layout while the client secretly depends on that layout.
+
+**In real software:** Python's `fractions.Fraction` reduces in its constructor and keeps the sign on the numerator, so `Fraction(8, -12)` is `Fraction(-2, 3)`.
 
 **Retrieval:** Module 2: why does each procedural pair retain its own two captured values after its creator returns?
 
@@ -247,8 +258,7 @@ Normalize signed fractions from a stub, trace a rectangle through its public ope
 
 1. Does the ratio law alone require lowest terms or a positive denominator?
 2. When may a constructor implementation index its input, while an arithmetic client may not?
-3. Can an unchanged client correctly consume old tuple values after its selectors are replaced with dictionary selectors?
-4. Why can two equivalent exact formulas give different interval bounds?
+3. Why can two equivalent exact formulas give different interval bounds?
 
 ## Reference and licence
 

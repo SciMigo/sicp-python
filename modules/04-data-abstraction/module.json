@@ -3,7 +3,7 @@
   "title": "Data Abstraction",
   "subtitle": "Rational numbers, geometry and procedural pairs behind tested interfaces",
   "chapter": "SICP §2.1",
-  "description": "Follow SICP’s rational-number, point and segment, procedural-pair and interval examples in Python. Specify constructor-selector laws, keep clients independent of storage and count where normalization work happens.",
+  "description": "Follow SICP’s rational-number, point and segment, procedural-pair and interval examples in Python. Specify constructor-selector laws, keep clients independent of storage, count where normalization work happens, and see why interval formulas that are algebraically equal give different bounds.",
   "estimatedMinutes": 80,
   "prerequisites": [
     "03-recursive-functions"
@@ -12,17 +12,17 @@
     "title": "Meaning above storage",
     "exercises": [
       "make_rat",
-      "rectangle_report",
-      "cons",
+      "rectangles",
+      "pair",
       "measure",
-      "manifest_report"
+      "parallel"
     ],
-    "mastery": "manifest_report"
+    "mastery": "parallel"
   },
   "lesson": "lesson.md",
   "backgroundReading": "reading/04-data-abstraction.html",
   "format": "lesson-visual-lab",
   "publicationStatus": "draft",
-  "estimateNote": "Author estimate, not learner-measured: lesson 1814 prose words at 200 words/minute plus code and figure study, about 20–25 minutes; labs 10 + 10 + 10 + 15 + 15 minutes, about 60 minutes. Total 80–85 minutes. Optional book reference excluded.",
-  "sourceAttribution": "Based on SICP §§2.1.1–2.1.4 by Harold Abelson and Gerald Jay Sussman with Julie Sussman. Rational numbers, segments, procedural pairs and intervals are the book’s examples translated to Python; labs include exercises 2.1, 2.3 and 2.4. This lesson adds prose, figures and checks and is shared under CC BY-SA 4.0. Independent course; not endorsed by MIT or UC Berkeley."
+  "estimateNote": "Author estimate, not measured on learners: lesson about 20–25 minutes (2,400 words, seven code blocks); lab about 12 + 12 + 6 + 10 + 20 = 60 minutes. The book's own text is a reference and is not counted.",
+  "sourceAttribution": "Based on SICP §§2.1.1–2.1.4 by Harold Abelson and Gerald Jay Sussman with Julie Sussman. Rational numbers, segments, procedural pairs and intervals are the book’s examples translated to Python; the lab uses exercises 2.1, 2.3 and 2.4 and the parallel-resistor formulas of exercises 2.13–2.16. This lesson adds prose, figures and checks and is shared under CC BY-SA 4.0. Independent course; not endorsed by MIT or UC Berkeley."
 }
