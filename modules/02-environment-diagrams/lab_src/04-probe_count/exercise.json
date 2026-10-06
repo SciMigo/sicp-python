@@ -1,0 +1,43 @@
+{
+  "title": "Measure: count actual membership probes",
+  "checklist": [
+    {
+      "step": "Match actual membership operations on hits and misses",
+      "checks": [
+        "actual_probes"
+      ]
+    },
+    {
+      "step": "Draw the measured counts at all three depths",
+      "checks": [
+        "measured_bars"
+      ]
+    }
+  ],
+  "hints": [
+    "Measure an event in the running traversal rather than guessing from input size.",
+    "Include the table that contains the successful binding, not only failed probes.",
+    "Start the counter anew and increment it immediately before each membership test."
+  ],
+  "questions": [
+    {
+      "step": "Explain the bound",
+      "prompt": "For depth d, why can the explicit lookup use at most d probes?",
+      "choices": [
+        {
+          "text": "It visits each frame at most once",
+          "why": "Following valid acyclic parent links cannot revisit a frame."
+        },
+        {
+          "text": "It tests every binding in each frame",
+          "why": "One dictionary membership test is the counted operation, not a loop over all bindings."
+        },
+        {
+          "text": "Python caches every variable read",
+          "why": "This claim is about the model's loop, not interpreter optimization."
+        }
+      ],
+      "answer": 0
+    }
+  ]
+}

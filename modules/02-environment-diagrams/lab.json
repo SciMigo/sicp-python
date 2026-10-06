@@ -1,100 +1,332 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "environment-diagrams-lab",
-  "title": "Environment Diagrams Lab",
-  "description": "Practice predicting, tracing, and implementing programs using the environment model: frames, bindings, lookup, parent links, closures, shadowing, and nonlocal mutation.",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 5000
-  },
-  "exercises": [
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-02-environment-diagrams",
+ "title": "Names, owners, and remembered state",
+ "description": "Trace lexical ownership, create call frames, share state within services, measure lookup, and prepare distinct deferred callbacks.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "Find the nearest owner rather than the most recently assigned value.",
+   "Use definition scope, not caller scope, for a function's free names.",
+   "Share one binding within a service while keeping factory instances independent.",
+   "Measure actual membership probes in an explicit frame model."
+  ],
+  "invariant": "Every frame already passed lacks the requested name; the first hit owns that lookup.",
+  "complexity": "Depth d requires at most d membership probes in the explicit finite acyclic frame model. Drawing is excluded; this is not CPython variable-access cost.",
+  "common_mistake": "Confusing caller scope with lexical scope or sharing one loop binding among all deferred callbacks.",
+  "in_real_programs": [
+   "Python nonlocal rebinds an existing enclosing function variable."
+  ],
+  "retrieval": {
+   "question": "Module 1: what distinguishes returning a function from returning its current result?",
+   "answer": "A function can be invoked later with new inputs; its current result is just the value from one invocation."
+  }
+ },
+ "exercises": [
+  {
+   "exercise_id": "locate",
+   "title": "Build: find the binding owner",
+   "prompt_md": "Repair `locate(frames, current, name)` to return `(value, owner_index)` from the first frame on the parent chain containing `name`. A present value can be None, False, or zero. If no frame binds the name, raise NameError. Inputs are finite acyclic frame lists with valid parent indices; None ends a chain. This small model excludes builtins and Python local-before-assignment rules. Call `show_scope` once immediately before testing each visited frame. Do not mutate the input.\n",
+   "questions": [],
+   "checklist": [
     {
-      "exercise_id": "ex1_predict_defined_not_called",
-      "title": "Predict: Defined, Not Called",
-      "slide_anchor": 9,
-      "prompt_md": "**Predict the output before running.**\n\n```python\ndef outer():\n    x = 1\n    def inner(y):\n        return x + y\n    x = 5\n    return inner\n\nx = 100\nf = outer()\nprint(f(2))\nprint(x)\n```\n\nWhat will be printed?\n\nRemember: a function's parent frame is the frame where it was **defined**, not where it is called.",
-      "starter_code": "def outer():\n    x = 1\n    def inner(y):\n        return x + y\n    x = 5\n    return inner\n\nx = 100\nf = outer()\n\n# First, write your prediction as a comment:\n# I predict the two printed values are: ??? and ???\n\n# Then uncomment to check:\n# print(f(2))\n# print(x)",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "assert f(2) == 7, 'inner should read x=5 from outer\\'s frame, then add y=2'"
-        },
-        {
-          "name": "t2",
-          "code": "assert x == 100, 'the global x should still be 100'"
-        },
-        {
-          "name": "t3",
-          "code": "assert outer()(10) == 15, 'outer returns a closure whose parent frame has x=5'"
-        }
-      ],
-      "hints": [
-        "`inner` is defined inside the frame created by calling `outer()`.",
-        "The closure remembers the frame, not just the value of `x` at the moment `inner` was defined.",
-        "Before `outer` returns, it rebinds its local `x` from 1 to 5.",
-        "The global `x = 100` is a different binding in a different frame."
-      ],
-      "solution": "The output is:\n\n7\n100\n\nCalling `outer()` creates a frame where `x` is first 1. Then `inner` is defined, so its parent link points to that `outer` frame. After that, `x` in the `outer` frame is rebound to 5. When `f(2)` calls `inner`, `y` is 2 in the `inner` call frame, and lookup for `x` follows the parent link to the `outer` frame, finding 5. So `x + y` is 7. The global `x` remains 100."
+     "step": "Handle shadowing, missing names, and false-like values",
+     "checks": [
+      "nearest_owner"
+     ]
     },
     {
-      "exercise_id": "ex2_trace_shared_counter_frame",
-      "title": "Trace: Two Closures, One Shared Frame",
-      "slide_anchor": 7,
-      "prompt_md": "Trace the environment frames for this program.\n\n```python\ndef make_counter():\n    n = 0\n    def inc():\n        nonlocal n\n        n += 1\n        return n\n    def get():\n        return n\n    return inc, get\n\ninc, get = make_counter()\na = inc()\nb = inc()\nc = get()\nprint(a, b, c)\n```\n\nFor your trace, answer:\n\n1. What bindings are in the global frame after `inc, get = make_counter()`?\n2. What bindings are in the `make_counter` frame that both closures remember?\n3. How does `n` change after each call to `inc()`?\n4. Why does `get()` return the same `n` that `inc()` modified?",
-      "starter_code": "def make_counter():\n    n = 0\n    def inc():\n        nonlocal n\n        n += 1\n        return n\n    def get():\n        return n\n    return inc, get\n\ninc, get = make_counter()\n\n# Trace before running:\n# Global frame contains: make_counter, inc, get\n# Shared parent frame contains n = ???\n# After first inc(): n = ???, returned ???\n# After second inc(): n = ???, returned ???\n# get() returns ??? because ???\n\na = inc()\nb = inc()\nc = get()\nprint(a, b, c)",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "new_inc, new_get = make_counter()\nassert new_get() == 0, 'a new counter should start with n=0'"
-        },
-        {
-          "name": "t2",
-          "code": "new_inc, new_get = make_counter()\nassert new_inc() == 1, 'first inc should update shared n to 1'\nassert new_inc() == 2, 'second inc should update shared n to 2'\nassert new_get() == 2, 'get should read the same shared n'"
-        },
-        {
-          "name": "t3",
-          "code": "inc1, get1 = make_counter()\ninc2, get2 = make_counter()\ninc1()\ninc1()\ninc2()\nassert get1() == 2, 'first counter has its own remembered frame'\nassert get2() == 1, 'second counter has a separate remembered frame'"
-        }
-      ],
-      "hints": [
-        "`inc` and `get` are both defined during the same call to `make_counter()`.",
-        "Therefore, both returned functions have the same parent frame.",
-        "`nonlocal n` means assignment changes `n` in the remembered parent frame.",
-        "Calling `make_counter()` a second time creates a new frame with a different `n`."
-      ],
-      "solution": "After `inc, get = make_counter()`, the global frame has `make_counter`, `inc`, and `get`. The names `inc` and `get` are bound to two function objects, both with parent link `f1`, the frame created by calling `make_counter()`. In `f1`, `n` starts as 0, and the local names `inc` and `get` are also bound while the function body runs. The first `inc()` uses `nonlocal n`, changes `f1`'s `n` to 1, and returns 1. The second `inc()` changes the same `n` to 2 and returns 2. Then `get()` looks for `n`; it is not local to `get`, so lookup follows its parent link to `f1` and finds `n = 2`. The program prints `1 2 2`."
-    },
-    {
-      "exercise_id": "ex3_extend_accumulator_closure",
-      "title": "Implement and Extend: Accumulator with Reset",
-      "slide_anchor": 10,
-      "prompt_md": "Implement `make_accumulator(start)`, which returns three closures that share one frame:\n\n- `add(amount)` adds `amount` to the running total and returns the new total.\n- `get_total()` returns the current total without changing it.\n- `reset()` resets the total back to the original `start` value and returns it.\n\nExample:\n\n```python\nadd, get_total, reset = make_accumulator(10)\nadd(5)       # 15\nadd(-3)      # 12\nget_total()  # 12\nreset()      # 10\n```\n\nBefore coding, predict why all three functions must share the same parent frame.",
-      "starter_code": "def make_accumulator(start):\n    total = start\n\n    def add(amount):\n        # YOUR CODE HERE\n        pass\n\n    def get_total():\n        # YOUR CODE HERE\n        pass\n\n    def reset():\n        # YOUR CODE HERE\n        pass\n\n    return add, get_total, reset\n\n# Predict before running:\n# add, get_total, reset = make_accumulator(10)\n# print(add(5), add(-3), get_total(), reset(), get_total())\n# Expected: ???\n\n# Uncomment to test manually:\n# add, get_total, reset = make_accumulator(10)\n# print(add(5), add(-3), get_total(), reset(), get_total())",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "add, get_total, reset = make_accumulator(10)\nassert get_total() == 10, 'initial total should be start'"
-        },
-        {
-          "name": "t2",
-          "code": "add, get_total, reset = make_accumulator(10)\nassert add(5) == 15, 'add should update total'\nassert add(-3) == 12, 'add should keep using the updated total'\nassert get_total() == 12, 'get_total should read the shared total'"
-        },
-        {
-          "name": "t3",
-          "code": "add, get_total, reset = make_accumulator(10)\nadd(5)\nadd(-3)\nassert reset() == 10, 'reset should restore total to start'\nassert get_total() == 10, 'get_total should see the reset value'"
-        },
-        {
-          "name": "t4",
-          "code": "add1, get1, reset1 = make_accumulator(0)\nadd2, get2, reset2 = make_accumulator(100)\nassert add1(1) == 1\nassert add2(1) == 101\nassert get1() == 1, 'separate calls to make_accumulator should create separate frames'\nassert get2() == 101, 'separate accumulators should not share total'"
-        }
-      ],
-      "hints": [
-        "`total` lives in the frame created by `make_accumulator(start)`.",
-        "`add`, `get_total`, and `reset` are all defined in that same frame.",
-        "Use `nonlocal total` in functions that rebind `total`.",
-        "`start` is also remembered in the parent frame, so `reset` can use it."
-      ],
-      "solution": "def make_accumulator(start):\n    total = start\n\n    def add(amount):\n        nonlocal total\n        total += amount\n        return total\n\n    def get_total():\n        return total\n\n    def reset():\n        nonlocal total\n        total = start\n        return total\n\n    return add, get_total, reset\n\n\n# The key idea is that `add`, `get_total`, and `reset` are all defined\n# inside the same call to `make_accumulator`, so they share the same parent\n# frame. `add` and `reset` need `nonlocal total` because they rebind\n# `total`; `get_total` only reads it.\n"
+     "step": "Record every visited scope in order",
+     "checks": [
+      "visited_frames"
+     ]
     }
-  ]
+   ],
+   "starter_code": "def locate(frames, current, name):\n    while current is not None:\n        show_scope(frames,current,name)\n        bindings=frames[current][\"bindings\"]\n        if name in bindings:\n            return bindings[name],current\n        break  # continue to the parent on a miss\n    raise NameError(name)\nfrom scimigo import canvas, figure, frame, text\n\ndef show_scope(frames, current, name):\n    canvas(360, 480)\n    shown = [{\"id\":str(i), \"label\":\"Frame \"+str(i),\n              \"parent\":str(f[\"parent\"]) if f[\"parent\"] is not None else None,\n              \"bindings\":[{\"name\":k,\"value\":str(v)} for k,v in f[\"bindings\"].items()]}\n             for i,f in enumerate(frames)]\n    figure(\"environment_diagram\", x=0,y=0,width=360,height=440,\n           frames=shown, frame_width=240,\n           highlights={\"frames\":{str(current):\"current\"}})\n    text(12,465,\"Probe \"+name+\" in frame \"+str(current),size=16)\n    frame()\n\nframes=[{\"bindings\":{\"offset\":80},\"parent\":None},\n        {\"bindings\":{\"offset\":6},\"parent\":0},\n        {\"bindings\":{\"reading\":3},\"parent\":1}]\ntry:\n    print(locate(frames,2,\"offset\"))\nexcept NameError:\n    print(\"Offset was not found by this lookup.\")\n",
+   "tests": [
+    {
+     "name": "nearest_owner",
+     "code": "import random, copy\nsaved=show_scope\nshow_scope=lambda *args:None\nrng=random.Random(2205)\nfor _ in range(45):\n    count=rng.randint(1,18)\n    fs=[{\"bindings\":{},\"parent\":i-1 if i else None} for i in range(count)]\n    for i in range(count):\n        if rng.random()<.4: fs[i][\"bindings\"][\"x\"]=rng.choice([None,False,0,-8,13])\n    snapshot=copy.deepcopy(fs)\n    owners=[i for i in range(count) if \"x\" in fs[i][\"bindings\"]]\n    if owners:\n        owner=max(owners)\n        assert locate(fs,count-1,\"x\")== (fs[owner][\"bindings\"][\"x\"],owner), \"Follow parents and stop at the nearest present binding.\"\n    else:\n        try:locate(fs,count-1,\"x\")\n        except NameError:pass\n        else:raise AssertionError(\"Missing names must raise NameError.\")\n    assert fs==snapshot,\"Lookup must not change bindings.\"\nbranched=[{'bindings':{'x':4},'parent':None},{'bindings':{'x':99},'parent':0},{'bindings':{},'parent':0}]\nassert locate(branched,2,'x')==(4,0), 'Follow the supplied parent, not adjacent list indices.'\nshow_scope=saved\n"
+    },
+    {
+     "name": "visited_frames",
+     "code": "from scimigo import _frame_count,_frame\nfs=[{\"bindings\":{\"x\":0},\"parent\":None},{\"bindings\":{},\"parent\":0},{\"bindings\":{},\"parent\":1}]\nbefore=_frame_count()\nassert locate(fs,2,\"x\")== (0,0)\nassert _frame_count()-before==3,\"Draw exactly one frame per visited scope.\"\nfor j,current in enumerate([2,1,0]):\n    objects=_frame(before+j)\n    fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['highlights']['frames']=={str(current):'current'},\"Highlight the scope actually being probed.\"\n    actual=fig['params']['frames']\n    assert [f['parent'] for f in actual]==[None,'0','1'],\"Draw the supplied parent links.\"\n    assert actual[0]['bindings']==[{'name':'x','value':'0'}],\"Preserve actual binding values.\"\n"
+    }
+   ],
+   "hints": [
+    "Name presence is different from the truth of its value.",
+    "On a miss, which parent link belongs to the current frame?",
+    "Test each frame before following its parent; stop at the first present binding."
+   ],
+   "solution": "def locate(frames, current, name):\n    while current is not None:\n        show_scope(frames,current,name)\n        bindings=frames[current][\"bindings\"]\n        if name in bindings:\n            return bindings[name],current\n        current=frames[current][\"parent\"]\n    raise NameError(name)\nfrom scimigo import canvas, figure, frame, text\n\ndef show_scope(frames, current, name):\n    canvas(360, 480)\n    shown = [{\"id\":str(i), \"label\":\"Frame \"+str(i),\n              \"parent\":str(f[\"parent\"]) if f[\"parent\"] is not None else None,\n              \"bindings\":[{\"name\":k,\"value\":str(v)} for k,v in f[\"bindings\"].items()]}\n             for i,f in enumerate(frames)]\n    figure(\"environment_diagram\", x=0,y=0,width=360,height=440,\n           frames=shown, frame_width=240,\n           highlights={\"frames\":{str(current):\"current\"}})\n    text(12,465,\"Probe \"+name+\" in frame \"+str(current),size=16)\n    frame()\n\nframes=[{\"bindings\":{\"offset\":80},\"parent\":None},\n        {\"bindings\":{\"offset\":6},\"parent\":0},\n        {\"bindings\":{\"reading\":3},\"parent\":1}]\ntry:\n    print(locate(frames,2,\"offset\"))\nexcept NameError:\n    print(\"Offset was not found by this lookup.\")\n"
+  },
+  {
+   "exercise_id": "call_frame",
+   "title": "Trace: definition scope or caller scope?",
+   "prompt_md": "Implement `call_frame(function, caller, arguments)` for this explicit model. The function record has unique `params` and its defining `parent` index. Inputs have matching arity. Return a fresh frame record with those parameter bindings and the defining parent; the caller index is context, not a replacement parent. Do not change the function or arguments. Call `show_call` with the actual new frame before returning. The helper draws its parameter bindings and parent link; the parent's own bindings are omitted. In the demo, the definition environment has offset 6 and the caller has offset 80; predict the result of adding the new reading 3 to the offset reached through its parent.\n",
+   "questions": [
+    {
+     "step": "Predict the value",
+     "prompt": "Which result follows from the defining offset and the new reading?",
+     "choices": [
+      {
+       "text": "83",
+       "why": "That would use the caller's offset, which is not the lexical owner."
+      },
+      {
+       "text": "6",
+       "why": "That is the offset alone, without the reading."
+      },
+      {
+       "text": "9",
+       "why": "The defining offset is 6 and the reading is 3."
+      }
+     ],
+     "answer": 2
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Bind fresh parameters and preserve the defining parent",
+     "checks": [
+      "definition_parent"
+     ]
+    },
+    {
+     "step": "Draw the new frame and its actual parent",
+     "checks": [
+      "call_picture"
+     ]
+    }
+   ],
+   "starter_code": "def call_frame(function, caller, arguments):\n    created={\"bindings\":dict(zip(function[\"params\"],arguments)),\"parent\":caller}\n    show_call(created)\n    return created\nfrom scimigo import canvas, figure, frame, text\n\ndef show_call(created):\n    canvas(360,320)\n    owner=created[\"parent\"]\n    figure(\"environment_diagram\",x=0,y=0,width=360,height=275,frame_width=240,\n           frames=[{\"id\":\"owner\",\"label\":\"Definition environment \"+str(owner),\"bindings\":[{\"name\":\"…\",\"value\":\"omitted\"}]},\n                   {\"id\":\"call\",\"label\":\"Fresh call\",\"parent\":\"owner\",\n                    \"bindings\":[{\"name\":k,\"value\":str(v)} for k,v in created[\"bindings\"].items()]}])\n    text(12,305,\"Parent = definition environment \"+str(owner),size=16)\n    frame()\n\nfunction={\"params\":[\"reading\"],\"parent\":1}\ncreated=call_frame(function,2,[3])\noffsets={1:6,2:80}\nprint(created[\"bindings\"][\"reading\"]+offsets[created[\"parent\"]])\n",
+   "tests": [
+    {
+     "name": "definition_parent",
+     "code": "import random,copy\nsaved=show_call;show_call=lambda *a:None\nrng=random.Random(921)\nfor _ in range(40):\n    count=rng.randrange(0,5)\n    fn={'params':['p'+str(i) for i in range(count)],'parent':rng.randrange(10)}\n    args=[rng.randrange(-20,21) for _ in range(count)]\n    oldfn=copy.deepcopy(fn);oldargs=list(args)\n    caller=(fn['parent']+1)%10\n    a=call_frame(fn,caller,args);b=call_frame(fn,caller,args)\n    assert a=={'bindings':dict(zip(fn['params'],args)),'parent':fn['parent']},\"Free names use the definition environment, not caller locals.\"\n    assert a is not b and a['bindings'] is not b['bindings'],\"Each call needs a fresh parameter table.\"\n    assert fn==oldfn and args==oldargs\nshow_call=saved\n"
+    },
+    {
+     "name": "call_picture",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();a=call_frame({'params':['reading'],'parent':4},9,[7])\nassert _frame_count()-before==1\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nf=fig['params']['frames']\nassert f[0]['label']=='Definition environment 4',\"The diagram must name the defining environment.\"\nassert f[1]['parent']=='owner' and f[1]['bindings']==[{'name':'reading','value':'7'}]\n"
+    }
+   ],
+   "hints": [
+    "Separate the location of a definition from the location of a call.",
+    "The function record carries its defining parent; caller records describe a different context.",
+    "Create a fresh parameter dictionary and attach the function record's parent."
+   ],
+   "solution": "def call_frame(function, caller, arguments):\n    created={\"bindings\":dict(zip(function[\"params\"],arguments)),\"parent\":function[\"parent\"]}\n    show_call(created)\n    return created\nfrom scimigo import canvas, figure, frame, text\n\ndef show_call(created):\n    canvas(360,320)\n    owner=created[\"parent\"]\n    figure(\"environment_diagram\",x=0,y=0,width=360,height=275,frame_width=240,\n           frames=[{\"id\":\"owner\",\"label\":\"Definition environment \"+str(owner),\"bindings\":[{\"name\":\"…\",\"value\":\"omitted\"}]},\n                   {\"id\":\"call\",\"label\":\"Fresh call\",\"parent\":\"owner\",\n                    \"bindings\":[{\"name\":k,\"value\":str(v)} for k,v in created[\"bindings\"].items()]}])\n    text(12,305,\"Parent = definition environment \"+str(owner),size=16)\n    frame()\n\nfunction={\"params\":[\"reading\"],\"parent\":1}\ncreated=call_frame(function,2,[3])\noffsets={1:6,2:80}\nprint(created[\"bindings\"][\"reading\"]+offsets[created[\"parent\"]])\n"
+  },
+  {
+   "exercise_id": "box",
+   "title": "Implement: one box, three operations",
+   "prompt_md": "Complete `make_box(start)` returning `(change, read, reset)`. Change accepts an integer delta and returns the updated total. Read returns it without changing it. Reset restores the original start and returns it. All three operations from one factory call must agree on the current total; separate factory calls must remain independent. Each operation calls `show_box(operation, start, total)` after its effect, using operation names change, read, and reset.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Share state within each box and isolate different boxes",
+     "checks": [
+      "shared_independent"
+     ]
+    },
+    {
+     "step": "Draw actual shared values after every operation",
+     "checks": [
+      "box_frames"
+     ]
+    }
+   ],
+   "starter_code": "def make_box(start):\n    total=start\n    def change(delta):\n        result=start+delta  # preserve accumulated changes instead\n        show_box(\"change\",start,result)\n        return result\n    def read():\n        show_box(\"read\",start,total)\n        return total\n    def reset():\n        show_box(\"reset\",start,start)\n        return start\n    return change,read,reset\nfrom scimigo import canvas,figure,frame,text\n\ndef show_box(operation,start,total):\n    canvas(360,240)\n    figure(\"environment_diagram\",x=0,y=0,width=360,height=195,frame_width=240,\n           frames=[{\"id\":\"box\",\"label\":\"Captured box bindings\",\"bindings\":[\n               {\"name\":\"start\",\"value\":str(start)},{\"name\":\"total\",\"value\":str(total)}]}])\n    text(12,225,operation+\": total=\"+str(total),size=16)\n    frame()\n\nchange,read,reset=make_box(20)\nprint(change(5),change(-2),read(),reset())\n",
+   "tests": [
+    {
+     "name": "shared_independent",
+     "code": "import random\nsaved=show_box;show_box=lambda *a:None\nrng=random.Random(620)\nfor _ in range(25):\n    starts=[rng.randrange(-30,31),rng.randrange(-30,31)]\n    boxes=[make_box(s) for s in starts];expected=starts[:]\n    for _ in range(25):\n        i=rng.randrange(2);op=rng.randrange(3);change,read,reset=boxes[i]\n        if op==0:\n            delta=rng.randrange(-10,11);expected[i]+=delta\n            assert change(delta)==expected[i],\"Changes must accumulate in one shared binding.\"\n        elif op==1:assert read()==expected[i],\"Reads must see the current shared value.\"\n        else:\n            expected[i]=starts[i];assert reset()==expected[i],\"Reset must restore the original start.\"\n        assert boxes[1-i][1]()==expected[1-i],\"Separate factory calls must stay independent.\"\nshow_box=saved\n"
+    },
+    {
+     "name": "box_frames",
+     "code": "from scimigo import _frame_count,_frame\nchange,read,reset=make_box(7);before=_frame_count()\nassert [change(4),change(-2),read(),reset(),read()]==[11,9,9,7,7]\nassert _frame_count()-before==5\nfor j,(operation,total) in enumerate([('change',11),('change',9),('read',9),('reset',7),('read',7)]):\n    objects=_frame(before+j);fig=next(o for o in objects if o['kind']=='figure')\n    assert fig['params']['frames'][0]['bindings']==[{'name':'start','value':'7'},{'name':'total','value':str(total)}]\n    assert any(o['kind']=='text' and o['value']==operation+': total='+str(total) for o in objects)\n"
+    }
+   ],
+   "hints": [
+    "All operations from one box must agree on one current value.",
+    "Compare a second change with a read, then try two separate factory calls.",
+    "Keep total in the factory; operations that rebind it can declare it nonlocal."
+   ],
+   "solution": "def make_box(start):\n    total=start\n    def change(delta):\n        nonlocal total\n        total+=delta\n        show_box(\"change\",start,total)\n        return total\n    def read():\n        show_box(\"read\",start,total)\n        return total\n    def reset():\n        nonlocal total\n        total=start\n        show_box(\"reset\",start,total)\n        return total\n    return change,read,reset\nfrom scimigo import canvas,figure,frame,text\n\ndef show_box(operation,start,total):\n    canvas(360,240)\n    figure(\"environment_diagram\",x=0,y=0,width=360,height=195,frame_width=240,\n           frames=[{\"id\":\"box\",\"label\":\"Captured box bindings\",\"bindings\":[\n               {\"name\":\"start\",\"value\":str(start)},{\"name\":\"total\",\"value\":str(total)}]}])\n    text(12,225,operation+\": total=\"+str(total),size=16)\n    frame()\n\nchange,read,reset=make_box(20)\nprint(change(5),change(-2),read(),reset())\n"
+  },
+  {
+   "exercise_id": "probe_count",
+   "title": "Measure: count actual membership probes",
+   "prompt_md": "Repair `measured_lookup(frames, current, name)` to return `(value, probes)` for a successful lookup. Count each membership test actually performed on a binding table. Return `(None, probes)` on a miss in this exercise. This value alone does not distinguish a miss from a present None; the probe count is the measurement. Use finite acyclic frame inputs and do not draw inside the function. The demo draws your measured results at three depths. This measures the explicit model, not Python interpreter timing.\n",
+   "questions": [
+    {
+     "step": "Explain the bound",
+     "prompt": "For depth d, why can the explicit lookup use at most d probes?",
+     "choices": [
+      {
+       "text": "It visits each frame at most once",
+       "why": "Following valid acyclic parent links cannot revisit a frame."
+      },
+      {
+       "text": "It tests every binding in each frame",
+       "why": "One dictionary membership test is the counted operation, not a loop over all bindings."
+      },
+      {
+       "text": "Python caches every variable read",
+       "why": "This claim is about the model's loop, not interpreter optimization."
+      }
+     ],
+     "answer": 0
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Match actual membership operations on hits and misses",
+     "checks": [
+      "actual_probes"
+     ]
+    },
+    {
+     "step": "Draw the measured counts at all three depths",
+     "checks": [
+      "measured_bars"
+     ]
+    }
+   ],
+   "starter_code": "def measured_lookup(frames,current,name):\n    probes=0\n    while current is not None:\n        bindings=frames[current][\"bindings\"]\n        if name in bindings:return bindings[name],probes\n        current=frames[current][\"parent\"]\n    return None,probes\nfrom scimigo import canvas,rectangle,text,frame\n\ndef show_probes(rows):\n    canvas(600,300)\n    largest=max(c for d,c in rows) or 1\n    for i,(depth,calls) in enumerate(rows):\n        rectangle(120,25+75*i,430*calls/largest,35,color=\"#276bb0\")\n        text(12,48+75*i,\"depth=\"+str(depth),size=17)\n        text(125,85+75*i,\"probes=\"+str(calls),size=17)\n    frame()\n\nrows=[]\nfor depth in [2,5,9]:\n    frames=[{\"bindings\":{},\"parent\":i-1 if i else None} for i in range(depth)]\n    frames[0][\"bindings\"][\"key\"]=42\n    rows.append((depth,measured_lookup(frames,depth-1,\"key\")[1]))\nshow_probes(rows)\n",
+   "tests": [
+    {
+     "name": "actual_probes",
+     "code": "import random\nclass Table(dict):\n    calls=0\n    def __contains__(self,key):\n        Table.calls+=1\n        return super().__contains__(key)\nrng=random.Random(4051)\nfor depth in [1,2,7,19,53]:\n    for owner in [None,0,depth-1,rng.randrange(depth)]:\n        fs=[{'bindings':Table(),'parent':i-1 if i else None} for i in range(depth)]\n        if owner is not None:fs[owner]['bindings']['key']=0\n        Table.calls=0\n        value,probes=measured_lookup(fs,depth-1,'key')\n        expected=depth if owner is None else depth-owner\n        assert probes==Table.calls==expected,\"Count each actual membership test, including the successful one.\"\n        assert value==(None if owner is None else 0)\nassert measured_lookup([],None,'key')==(None,0)\n\nfs=[{'bindings':Table({'key':3}),'parent':None},{'bindings':Table({'key':99}),'parent':0},{'bindings':Table(),'parent':0}]\nTable.calls=0\nassert measured_lookup(fs,2,'key')==(3,2) and Table.calls==2, 'Follow actual parent links.'\n"
+    },
+    {
+     "name": "measured_bars",
+     "code": "from scimigo import _frame_count,_frame\nrows=[]\nfor depth in [2,5,9]:\n    fs=[{'bindings':{},'parent':i-1 if i else None} for i in range(depth)]\n    fs[0]['bindings']['key']=42\n    rows.append((depth,measured_lookup(fs,depth-1,'key')[1]))\nbefore=_frame_count();show_probes(rows)\nobjects=_frame(before);bars=[o for o in objects if o['kind']=='rectangle']\nassert rows==[(2,2),(5,5),(9,9)]\nassert len(bars)==3\nfor bar,(_,count) in zip(bars,rows):assert abs(bar['width']-430*count/9)<1e-8\nfor count in [2,5,9]:assert any(o['kind']=='text' and o['value']=='probes='+str(count) for o in objects)\n"
+    }
+   ],
+   "hints": [
+    "Measure an event in the running traversal rather than guessing from input size.",
+    "Include the table that contains the successful binding, not only failed probes.",
+    "Start the counter anew and increment it immediately before each membership test."
+   ],
+   "solution": "def measured_lookup(frames,current,name):\n    probes=0\n    while current is not None:\n        bindings=frames[current][\"bindings\"]\n        probes+=1\n        if name in bindings:return bindings[name],probes\n        current=frames[current][\"parent\"]\n    return None,probes\nfrom scimigo import canvas,rectangle,text,frame\n\ndef show_probes(rows):\n    canvas(600,300)\n    largest=max(c for d,c in rows) or 1\n    for i,(depth,calls) in enumerate(rows):\n        rectangle(120,25+75*i,430*calls/largest,35,color=\"#276bb0\")\n        text(12,48+75*i,\"depth=\"+str(depth),size=17)\n        text(125,85+75*i,\"probes=\"+str(calls),size=17)\n    frame()\n\nrows=[]\nfor depth in [2,5,9]:\n    frames=[{\"bindings\":{},\"parent\":i-1 if i else None} for i in range(depth)]\n    frames[0][\"bindings\"][\"key\"]=42\n    rows.append((depth,measured_lookup(frames,depth-1,\"key\")[1]))\nshow_probes(rows)\n"
+  },
+  {
+   "exercise_id": "badges",
+   "title": "Mastery challenge: prepare panel badges",
+   "prompt_md": "A dashboard configures integer panel prefixes once, then asks each panel to label readings later. Implement `prepare_badges(prefixes)` returning one callable per prefix in the original order. Calling position i with reading x must return `(original_prefix_i, x)`. Configuration may finish before any reading arrives. Later changes to the input list must not alter the prepared behavior. Duplicate prefixes are allowed, and separate setups must remain independent. Empty input returns an empty list. The supplied version creates callables but they do not keep distinct panel behavior. The demo draws the prefixes actually returned by your callbacks.\n",
+   "questions": [
+    {
+     "step": "Name the plan",
+     "prompt": "What must remain true when readings arrive later?",
+     "choices": [
+      {
+       "text": "Setup remains unfinished",
+       "why": "The callbacks must also work after setup returns."
+      },
+      {
+       "text": "Panel behavior remains distinct",
+       "why": "Each panel must preserve its own original prefix."
+      },
+      {
+       "text": "The caller supplies each prefix",
+       "why": "The callback interface supplies only a reading."
+      }
+     ],
+     "answer": 1
+    },
+    {
+     "step": "State the invariant",
+     "prompt": "What does callback position i preserve?",
+     "choices": [
+      {
+       "text": "The most recent loop value",
+       "why": "That would confuse panels after configuration finishes."
+      },
+      {
+       "text": "The current input list",
+       "why": "Later list changes must not alter prepared behavior."
+      },
+      {
+       "text": "Its original panel prefix",
+       "why": "Position i must continue to return its original prefix."
+      }
+     ],
+     "answer": 2
+    },
+    {
+     "step": "Predict the cost",
+     "prompt": "For n panels, what setup and later-call costs fit this solution?",
+     "choices": [
+      {
+       "text": "Linear setup, constant work per call",
+       "why": "One small callable per panel; each invocation constructs one pair, excluding drawing and using the bounded-value model."
+      },
+      {
+       "text": "Constant setup, linear work per call",
+       "why": "The output already needs n callable positions."
+      },
+      {
+       "text": "Linear setup, linear work per call",
+       "why": "A panel callback need not scan all other panels."
+      }
+     ],
+     "answer": 0
+    },
+    {
+     "step": "Why not shared loop state?",
+     "prompt": "What goes wrong when two callbacks read one loop binding over prefixes 4 and 9?",
+     "choices": [
+      {
+       "text": "Both callbacks report 9",
+       "why": "After the loop the shared binding holds 9, so the first panel loses its 4."
+      },
+      {
+       "text": "Both callbacks report 4",
+       "why": "The loop does not stop after assigning its first value."
+      },
+      {
+       "text": "The callbacks run during setup",
+       "why": "Defining a function does not run its body."
+      }
+     ],
+     "answer": 0
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Preserve each panel after setup and input changes",
+     "checks": [
+      "deferred_behavior"
+     ]
+    },
+    {
+     "step": "Draw prefixes actually returned by distinct callbacks",
+     "checks": [
+      "badge_picture"
+     ]
+    }
+   ],
+   "starter_code": "def prepare_badges(prefixes):\n    badges=[]\n    for prefix in prefixes:\n        def badge(reading):\n            return prefix,reading\n        badges.append(badge)\n    return badges\nfrom scimigo import canvas,figure,frame,text\n\ndef show_badges(badges,reading):\n    actual=[badge(reading)[0] for badge in badges]\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,values=actual,indices=True)\n    text(12,260,\"Reported prefixes for reading \"+str(reading),size=18)\n    frame()\n\nbadges=prepare_badges([4,9,2])\nshow_badges(badges,7)\n",
+   "tests": [
+    {
+     "name": "deferred_behavior",
+     "code": "import random\nrng=random.Random(2002)\nassert prepare_badges([])==[]\nfor _ in range(40):\n    prefixes=[rng.randrange(-20,21) for _ in range(rng.randrange(1,25))]\n    original=list(prefixes)\n    first=prepare_badges(prefixes);second=prepare_badges([80,-3])\n    assert len(first)==len(original) and all(callable(b) for b in first)\n    prefixes[:]=[999]\n    for reading in [0,-7,13]:\n        assert [b(reading) for b in first]==[(p,reading) for p in original],\"Each deferred callback must retain its own original panel prefix.\"\n        assert [b(reading) for b in second]==[(80,reading),(-3,reading)],\"Separate configurations must not share state.\"\n"
+    },
+    {
+     "name": "badge_picture",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();show_badges(prepare_badges([6,-1,6]),4)\nassert _frame_count()-before==1\nfig=next(o for o in _frame(before) if o['kind']=='figure')\nassert fig['params']['values']==[6,-1,6],\"Draw the callbacks' results, preserving order and duplicates.\"\n"
+    }
+   ],
+   "hints": [
+    "What information distinguishes the panels after setup has returned?",
+    "Ask whether the saved functions all read one binding that the loop keeps changing.",
+    "A separate small factory call can give each saved function its own prefix binding."
+   ],
+   "solution": "def prepare_badges(prefixes):\n    def prepare_one(prefix):\n        def badge(reading):\n            return prefix,reading\n        return badge\n    return [prepare_one(prefix) for prefix in prefixes]\nfrom scimigo import canvas,figure,frame,text\n\ndef show_badges(badges,reading):\n    actual=[badge(reading)[0] for badge in badges]\n    canvas(600,280)\n    figure(\"array_state\",x=0,y=0,width=600,height=230,values=actual,indices=True)\n    text(12,260,\"Reported prefixes for reading \"+str(reading),size=18)\n    frame()\n\nbadges=prepare_badges([4,9,2])\nshow_badges(badges,7)\n"
+  }
+ ]
 }

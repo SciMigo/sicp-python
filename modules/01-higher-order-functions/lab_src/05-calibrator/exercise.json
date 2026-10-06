@@ -1,0 +1,100 @@
+{
+  "title": "Mastery challenge: prepare a reading service",
+  "checklist": [
+    {
+      "step": "Preserve ordered settings and independent prepared services",
+      "checks": [
+        "prepared_behavior"
+      ]
+    },
+    {
+      "step": "Meet separate setup and per-reading operation budgets",
+      "checks": [
+        "arithmetic_budget"
+      ]
+    }
+  ],
+  "hints": [
+    "Which part of the setup stays identical across all future readings?",
+    "Describe the relationship between one input reading and its output after fixed settings.",
+    "Combining fixed scale-and-offset adjustments preserves a scale-and-offset relationship."
+  ],
+  "questions": [
+    {
+      "step": "Name the plan",
+      "prompt": "Which property must prepared behavior have?",
+      "choices": [
+        {
+          "text": "Each reading may change the settings",
+          "why": "The task requires fixed behavior after setup."
+        },
+        {
+          "text": "Equal settings share mutable state",
+          "why": "Separately prepared services must remain independent."
+        },
+        {
+          "text": "Fixed settings need not be reprocessed",
+          "why": "Many readings share the same setup work."
+        }
+      ],
+      "answer": 2
+    },
+    {
+      "step": "State the invariant",
+      "prompt": "What must any prepared summary preserve?",
+      "choices": [
+        {
+          "text": "Only the last setting",
+          "why": "Earlier settings can affect every later result."
+        },
+        {
+          "text": "The effect of all settings in order",
+          "why": "Order changes the result for general scale-and-offset pairs."
+        },
+        {
+          "text": "The sum of their scales only",
+          "why": "Offsets and ordering also matter."
+        }
+      ],
+      "answer": 1
+    },
+    {
+      "step": "Predict the cost",
+      "prompt": "Which budget does the service require?",
+      "choices": [
+        {
+          "text": "Linear setup and fixed work per reading",
+          "why": "The number of adjustments may affect setup but not later arithmetic counts."
+        },
+        {
+          "text": "Fixed setup and linear work per reading",
+          "why": "This is the provided slow approach."
+        },
+        {
+          "text": "No setup and no reading work",
+          "why": "The returned behavior must still compute a result."
+        }
+      ],
+      "answer": 0
+    },
+    {
+      "step": "Why not reprocess?",
+      "prompt": "Why does applying every record to each reading miss the budget?",
+      "choices": [
+        {
+          "text": "It always changes the numerical answer",
+          "why": "The slow version can be numerically correct."
+        },
+        {
+          "text": "It makes record order irrelevant",
+          "why": "Order still matters; repeated work is the problem."
+        },
+        {
+          "text": "The repeated arithmetic grows with settings",
+          "why": "240 records at two operations each means 480 operations per reading, exceeding four."
+        }
+      ],
+      "answer": 2
+    }
+  ]
+}

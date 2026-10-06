@@ -1,0 +1,28 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "sicp-python-02-environment-diagrams",
+  "title": "Names, owners, and remembered state",
+  "description": "Trace lexical ownership, create call frames, share state within services, measure lookup, and prepare distinct deferred callbacks.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 15000
+  },
+  "recap": {
+    "learned": [
+      "Find the nearest owner rather than the most recently assigned value.",
+      "Use definition scope, not caller scope, for a function's free names.",
+      "Share one binding within a service while keeping factory instances independent.",
+      "Measure actual membership probes in an explicit frame model."
+    ],
+    "invariant": "Every frame already passed lacks the requested name; the first hit owns that lookup.",
+    "complexity": "Depth d requires at most d membership probes in the explicit finite acyclic frame model. Drawing is excluded; this is not CPython variable-access cost.",
+    "common_mistake": "Confusing caller scope with lexical scope or sharing one loop binding among all deferred callbacks.",
+    "in_real_programs": [
+      "Python nonlocal rebinds an existing enclosing function variable."
+    ],
+    "retrieval": {
+      "question": "Module 1: what distinguishes returning a function from returning its current result?",
+      "answer": "A function can be invoked later with new inputs; its current result is just the value from one invocation."
+    }
+  }
+}

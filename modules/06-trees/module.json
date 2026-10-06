@@ -1,27 +1,28 @@
 {
   "id": "06-trees",
   "title": "Trees",
-  "subtitle": "Recursive data structures and tree traversal patterns",
+  "subtitle": "Follow structure, specify answers, and count traversal work",
   "chapter": "2.5",
-  "description": "Represent hierarchical data as trees. Learn the tree ADT (constructor + selectors), and master recursive patterns for aggregation, transformation, and search over tree structures.",
-  "estimatedMinutes": 40,
-  "prerequisites": ["05-sequences"],
-
-  "generation": {
-    "minSlides": 8,
-    "maxSlides": 10,
-    "targetSeconds": 420,
-    "preset": "sicp_interactive",
-    "referenceFiles": ["2.2-hierarchical-data.md"],
-    "diagramTemplates": ["tree_structure", "tree_recursion"],
-    "interactionCheckpoints": 2,
-    "enableFragments": true,
-    "enableImages": true,
-    "imageStyle": "clean technical diagram, minimalist, white background",
-    "pyodideEnabled": true
-  },
-
+  "description": "Separate labels from structure; justify aggregation, transformation, and search contracts; measure node visits and reuse completed answers.",
+  "estimatedMinutes": 100,
+  "prerequisites": [
+    "05-sequences"
+  ],
   "lab": {
-    "exercises": ["2.24", "2.25", "2.26"]
-  }
+    "title": "Structure, answers, and work",
+    "exercises": [
+      "leaf_count",
+      "trace_totals",
+      "transform",
+      "measure",
+      "shipment_report"
+    ],
+    "mastery": "shipment_report"
+  },
+  "lesson": "lesson.md",
+  "backgroundReading": "reading/06-trees.html",
+  "format": "lesson-visual-lab",
+  "publicationStatus": "draft",
+  "estimateNote": "Author estimate, not learner-measured: lesson 25\u201335 minutes, lab 55\u201380 minutes. Original reading is optional and excluded.",
+  "sourceAttribution": "Original Python lesson on recursive data, informed by SICP ideas by Harold Abelson, Gerald Jay Sussman, and Julie Sussman. Independent course; not endorsed by MIT or UC Berkeley."
 }

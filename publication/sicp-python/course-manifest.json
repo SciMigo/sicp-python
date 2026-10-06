@@ -1,0 +1,202 @@
+{
+  "id": "sicp-python",
+  "language": "en",
+  "title": "Structure and Interpretation of Computer Programs",
+  "subtitle": "Classic CS curriculum adapted for Python",
+  "description": "This is demanding material\u2014and that's why it works. Master the fundamental ideas of computation that shaped generations of programmers.",
+  "overview": "Study selected ideas from SICP in Python through readings and hands-on exercises. The existing slides and voice narration are withdrawn while the modules are rebuilt as focused lessons and visual labs. The original readings remain available as background. This independent course is free.",
+  "prerequisites": [
+    "Basic Python fluency (variables, if/else, loops, defining functions)",
+    "Comfort with simple math (algebra-level)",
+    "No prior CS theory or functional programming experience required"
+  ],
+  "learningOutcomes": [
+    "Use higher-order functions, closures, and lambda expressions to write expressive, reusable code",
+    "Trace program execution using the environment model (frames, scoping, name lookup)",
+    "Think recursively and analyze recursive vs iterative processes",
+    "Design programs using data abstraction and abstraction barriers",
+    "Process sequences and trees with map, filter, reduce, and recursive traversal",
+    "Reason about mutation, aliasing, and identity in Python",
+    "Use classes, inheritance, and polymorphism effectively",
+    "Build a working interpreter for a small programming language"
+  ],
+  "sourceAttribution": "Based on Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman (MIT Press, 1996), adapted to Python following UC Berkeley CS 61A.",
+  "terminologyMapping": [
+    {
+      "classic": "Procedure / Higher-order procedure",
+      "python": "Function / Higher-order function"
+    },
+    {
+      "classic": "Lambda expression",
+      "python": "Lambda expression (same concept)"
+    },
+    {
+      "classic": "Environment model of evaluation",
+      "python": "Environment diagrams (frames & scope)"
+    },
+    {
+      "classic": "Recursive / iterative process",
+      "python": "Recursive / iterative process (no tail-call optimization in Python)"
+    },
+    {
+      "classic": "Pairs (cons, car, cdr)",
+      "python": "Tuples, lists, or closure-based pairs"
+    },
+    {
+      "classic": "Data abstraction (constructors + selectors)",
+      "python": "Data abstraction (same pattern, using functions or classes)"
+    },
+    {
+      "classic": "Sequences (lists)",
+      "python": "Python lists, generators, comprehensions"
+    },
+    {
+      "classic": "Message passing",
+      "python": "Dispatch functions / methods"
+    },
+    {
+      "classic": "Generic operations / data-directed programming",
+      "python": "Polymorphism / duck typing"
+    },
+    {
+      "classic": "Metacircular evaluator",
+      "python": "Interpreter written in Python"
+    }
+  ],
+  "modules": [
+    {
+      "id": "01-higher-order-functions",
+      "title": "Higher-Order Functions",
+      "subtitle": "Functions as first-class values, closures, and the summation abstraction",
+      "chapter": "1.6",
+      "description": "Learn to pass functions as arguments, return functions as values, and use lambda expressions. See how one general pattern (summation) replaces many specific functions\u2014the key idea behind abstraction.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 45,
+      "prerequisites": [],
+      "labId": "sicp-01-higher-order-functions"
+    },
+    {
+      "id": "02-environment-diagrams",
+      "title": "Environment Diagrams",
+      "subtitle": "How names get values, and how evaluation actually proceeds",
+      "chapter": "1.7",
+      "description": "Build a mental model for how Python tracks names and values. Trace function calls through frames, understand name lookup and shadowing, and see why closures work.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 30,
+      "prerequisites": [
+        "01-higher-order-functions"
+      ],
+      "labId": "sicp-02-environment-diagrams"
+    },
+    {
+      "id": "03-recursive-functions",
+      "title": "Recursive Functions",
+      "subtitle": "Recursive vs iterative processes, tree recursion, and memoization",
+      "chapter": "1.8",
+      "description": "Understand recursive function definitions, trace call stacks, and distinguish linear from tree recursion. Learn when recursion leads to exponential blowup and how memoization tames it.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 40,
+      "prerequisites": [
+        "02-environment-diagrams"
+      ],
+      "labId": "sicp-03-recursive-functions"
+    },
+    {
+      "id": "04-data-abstraction",
+      "title": "Data Abstraction",
+      "subtitle": "Constructors, selectors, and the power of abstraction barriers",
+      "chapter": "2.2",
+      "description": "Separate the use of data from its implementation. Build rational number arithmetic behind a clean interface, then see that even functions can serve as data.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 50,
+      "prerequisites": [
+        "03-recursive-functions"
+      ],
+      "labId": "sicp-04-data-abstraction"
+    },
+    {
+      "id": "05-sequences",
+      "title": "Sequences",
+      "subtitle": "Lists, the signal-processing view, and lazy evaluation with generators",
+      "chapter": "2.3",
+      "description": "Process data with map, filter, and reduce. See sequences as pipelines, master list comprehensions, and discover Python generators for lazy, memory-efficient computation.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 45,
+      "prerequisites": [
+        "04-data-abstraction"
+      ],
+      "labId": "sicp-05-sequences"
+    },
+    {
+      "id": "06-trees",
+      "title": "Trees",
+      "subtitle": "Recursive data structures and tree traversal patterns",
+      "chapter": "2.5",
+      "description": "Represent hierarchical data as trees. Learn the tree ADT (constructor + selectors), and master recursive patterns for aggregation, transformation, and search over tree structures.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 40,
+      "prerequisites": [
+        "05-sequences"
+      ],
+      "labId": "sicp-06-trees"
+    },
+    {
+      "id": "07-mutable-data",
+      "title": "Mutable Data",
+      "subtitle": "State, identity, and why mutation breaks substitution",
+      "chapter": "2.6",
+      "description": "Introduce mutation into the picture. Understand nonlocal, aliasing dangers, the mutable default trap, and the fundamental trade-off: mutation enables state modeling but makes reasoning harder.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 35,
+      "prerequisites": [
+        "05-sequences"
+      ],
+      "labId": "sicp-07-mutable-data"
+    },
+    {
+      "id": "08-object-oriented-programming",
+      "title": "Object-Oriented Programming",
+      "subtitle": "Objects as an alternative abstraction boundary",
+      "chapter": "2.7",
+      "description": "Organize state and behavior into classes. Connect OOP back to closures and message passing, then explore inheritance, method resolution, and how polymorphism enables multiple data representations.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 60,
+      "prerequisites": [
+        "07-mutable-data"
+      ],
+      "labId": "sicp-08-object-oriented-programming"
+    },
+    {
+      "id": "09-interpreters",
+      "title": "Interpreters",
+      "subtitle": "Rebuilding the evaluator to understand computation itself",
+      "chapter": "3.1-3.5",
+      "description": "The capstone: build a working interpreter in ~100 lines of Python. Understand parsing, the Eval/Apply cycle, environments inside the interpreter, and how a language can describe itself.",
+      "hasReading": true,
+      "hasDeck": false,
+      "hasLab": true,
+      "estimatedMinutes": 90,
+      "prerequisites": [
+        "08-object-oriented-programming"
+      ],
+      "labId": "sicp-09-interpreters"
+    }
+  ],
+  "generatedAt": "2026-10-05T01:09:23.935754+00:00"
+}

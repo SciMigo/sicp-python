@@ -1,0 +1,100 @@
+{
+  "title": "Mastery challenge: prepare panel badges",
+  "checklist": [
+    {
+      "step": "Preserve each panel after setup and input changes",
+      "checks": [
+        "deferred_behavior"
+      ]
+    },
+    {
+      "step": "Draw prefixes actually returned by distinct callbacks",
+      "checks": [
+        "badge_picture"
+      ]
+    }
+  ],
+  "hints": [
+    "What information distinguishes the panels after setup has returned?",
+    "Ask whether the saved functions all read one binding that the loop keeps changing.",
+    "A separate small factory call can give each saved function its own prefix binding."
+  ],
+  "questions": [
+    {
+      "step": "Name the plan",
+      "prompt": "What must remain true when readings arrive later?",
+      "choices": [
+        {
+          "text": "Setup remains unfinished",
+          "why": "The callbacks must also work after setup returns."
+        },
+        {
+          "text": "Panel behavior remains distinct",
+          "why": "Each panel must preserve its own original prefix."
+        },
+        {
+          "text": "The caller supplies each prefix",
+          "why": "The callback interface supplies only a reading."
+        }
+      ],
+      "answer": 1
+    },
+    {
+      "step": "State the invariant",
+      "prompt": "What does callback position i preserve?",
+      "choices": [
+        {
+          "text": "The most recent loop value",
+          "why": "That would confuse panels after configuration finishes."
+        },
+        {
+          "text": "The current input list",
+          "why": "Later list changes must not alter prepared behavior."
+        },
+        {
+          "text": "Its original panel prefix",
+          "why": "Position i must continue to return its original prefix."
+        }
+      ],
+      "answer": 2
+    },
+    {
+      "step": "Predict the cost",
+      "prompt": "For n panels, what setup and later-call costs fit this solution?",
+      "choices": [
+        {
+          "text": "Linear setup, constant work per call",
+          "why": "One small callable per panel; each invocation constructs one pair, excluding drawing and using the bounded-value model."
+        },
+        {
+          "text": "Constant setup, linear work per call",
+          "why": "The output already needs n callable positions."
+        },
+        {
+          "text": "Linear setup, linear work per call",
+          "why": "A panel callback need not scan all other panels."
+        }
+      ],
+      "answer": 0
+    },
+    {
+      "step": "Why not shared loop state?",
+      "prompt": "What goes wrong when two callbacks read one loop binding over prefixes 4 and 9?",
+      "choices": [
+        {
+          "text": "Both callbacks report 9",
+          "why": "After the loop the shared binding holds 9, so the first panel loses its 4."
+        },
+        {
+          "text": "Both callbacks report 4",
+          "why": "The loop does not stop after assigning its first value."
+        },
+        {
+          "text": "The callbacks run during setup",
+          "why": "Defining a function does not run its body."
+        }
+      ],
+      "answer": 0
+    }
+  ]
+}

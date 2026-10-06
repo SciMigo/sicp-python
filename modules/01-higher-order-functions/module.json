@@ -1,27 +1,26 @@
 {
   "id": "01-higher-order-functions",
   "title": "Higher-Order Functions",
-  "subtitle": "Functions as first-class values, closures, and the summation abstraction",
+  "subtitle": "Pass behavior, return configured functions, and count actual calls",
   "chapter": "1.6",
-  "description": "Learn to pass functions as arguments, return functions as values, and use lambda expressions. See how one general pattern (summation) replaces many specific functions—the key idea behind abstraction.",
-  "estimatedMinutes": 45,
+  "description": "Separate a reusable process from its rule; trace ordered calls, construct independent behavior, and distinguish setup from execution costs.",
+  "estimatedMinutes": 100,
   "prerequisites": [],
-
-  "generation": {
-    "minSlides": 8,
-    "maxSlides": 10,
-    "targetSeconds": 420,
-    "preset": "sicp_interactive",
-    "referenceFiles": ["1.3-higher-order-procedures.md"],
-    "diagramTemplates": ["function_graph", "environment_diagram"],
-    "interactionCheckpoints": 2,
-    "enableFragments": true,
-    "enableImages": true,
-    "imageStyle": "clean technical diagram, minimalist, white background",
-    "pyodideEnabled": true
-  },
-
   "lab": {
-    "exercises": ["1.29", "1.31", "1.34", "1.42", "1.43"]
-  }
+    "title": "Functions as behavior",
+    "exercises": [
+      "total_terms",
+      "chain",
+      "repeat",
+      "profile",
+      "calibrator"
+    ],
+    "mastery": "calibrator"
+  },
+  "lesson": "lesson.md",
+  "backgroundReading": "reading/01-higher-order-functions.html",
+  "format": "lesson-visual-lab",
+  "publicationStatus": "draft",
+  "estimateNote": "Author estimate, not learner-measured: lesson 25\u201335 minutes; lab 55\u201380 minutes. Optional original reading excluded.",
+  "sourceAttribution": "Original Python lesson informed by SICP ideas by Harold Abelson, Gerald Jay Sussman, and Julie Sussman. Independent course; not endorsed by MIT or UC Berkeley."
 }

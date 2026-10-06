@@ -1,0 +1,1 @@
+Predict the final label sum and the completion order before running. Repair `totals`: it currently adds only immediate child labels. Record one frame per completed node using `show`, including leaves. The picture shows completion, rather than entry into a call.

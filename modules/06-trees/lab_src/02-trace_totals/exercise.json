@@ -1,0 +1,62 @@
+{
+  "title": "Trace: when answers become available",
+  "checklist": [
+    {
+      "step": "Match every completion frame to its subtree sum",
+      "checks": [
+        "trace_answers"
+      ]
+    },
+    {
+      "step": "Handle a deeper hierarchy and a single node",
+      "checks": [
+        "other_totals"
+      ]
+    }
+  ],
+  "hints": [
+    "Write down what one completed call must return.",
+    "Check the leaf case independently of its label.",
+    "Use child answers to establish the contract at their parent."
+  ],
+  "questions": [
+    {
+      "step": "Predict the final sum",
+      "prompt": "What does the root return?",
+      "choices": [
+        {
+          "text": "14",
+          "why": "This excludes the internal label 1."
+        },
+        {
+          "text": "5",
+          "why": "This adds only root and immediate child labels."
+        },
+        {
+          "text": "15",
+          "why": "Add all six labels, including internal labels."
+        }
+      ],
+      "answer": 2
+    },
+    {
+      "step": "Predict completion order",
+      "prompt": "Which node completes immediately before the root?",
+      "choices": [
+        {
+          "text": "Child 0, labelled 0",
+          "why": "This is the first child to finish."
+        },
+        {
+          "text": "Child 2, labelled -2",
+          "why": "All earlier child subtrees finish before the final child."
+        },
+        {
+          "text": "Child 1, labelled 1",
+          "why": "Its subtree finishes before child 2 starts."
+        }
+      ],
+      "answer": 1
+    }
+  ]
+}
