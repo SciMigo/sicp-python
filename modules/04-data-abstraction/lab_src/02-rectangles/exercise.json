@@ -1,0 +1,49 @@
+{
+ "title": "Trace: one client, two rectangles",
+ "questions": [
+  {
+   "step": "Predict the report",
+   "prompt": "The demo's rectangle has opposite corners (2, 1) and (9, 4). What should report return as (area, perimeter)?",
+   "choices": [
+    {
+     "text": "(36, 26)",
+     "why": "That treats the far corner's coordinates 9 and 4 as the side lengths. The sides are differences of coordinates."
+    },
+    {
+     "text": "(21, 20)",
+     "why": "The sides are 9 - 2 = 7 and 4 - 1 = 3, so the area is 21 and the perimeter is 2 × (7 + 3) = 20."
+    },
+    {
+     "text": "(21, 10)",
+     "why": "The area is right, but a perimeter counts all four sides, not one width and one height."
+    }
+   ],
+   "answer": 1
+  }
+ ],
+ "checklist": [
+  {
+   "step": "A corner rectangle that answers through point selectors only",
+   "checks": [
+    "corner_rectangle"
+   ]
+  },
+  {
+   "step": "One report that serves any rectangle, one read per selector",
+   "checks": [
+    "one_client"
+   ]
+  },
+  {
+   "step": "Frames for each read, then the report",
+   "checks": [
+    "report_frames"
+   ]
+  }
+ ],
+ "hints": [
+  "Each layer may know how the layer directly beneath it is stored, and nothing further down.",
+  "Follow one call of report downwards: which function touches the rectangle's storage, and which touches a point's?",
+  "Store the two corners. A side length is the absolute difference of two coordinates read with x_point or y_point. report multiplies and adds the two numbers its selectors return."
+ ]
+}

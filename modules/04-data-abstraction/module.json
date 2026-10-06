@@ -1,27 +1,28 @@
 {
   "id": "04-data-abstraction",
   "title": "Data Abstraction",
-  "subtitle": "Constructors, selectors, and the power of abstraction barriers",
-  "chapter": "2.2",
-  "description": "Separate the use of data from its implementation. Build rational number arithmetic behind a clean interface, then see that even functions can serve as data.",
-  "estimatedMinutes": 50,
-  "prerequisites": ["03-recursive-functions"],
-
-  "generation": {
-    "minSlides": 9,
-    "maxSlides": 11,
-    "targetSeconds": 480,
-    "preset": "sicp_interactive",
-    "referenceFiles": ["2.1-data-abstraction.md"],
-    "diagramTemplates": ["abstraction_barrier", "data_structure"],
-    "interactionCheckpoints": 2,
-    "enableFragments": true,
-    "enableImages": true,
-    "imageStyle": "clean technical diagram, minimalist, white background",
-    "pyodideEnabled": true
-  },
-
+  "subtitle": "Rational numbers, geometry and procedural pairs behind tested interfaces",
+  "chapter": "SICP §2.1",
+  "description": "Follow SICP’s rational-number, point and segment, procedural-pair and interval examples in Python. Specify constructor-selector laws, keep clients independent of storage, count where normalization work happens, and see why interval formulas that are algebraically equal give different bounds.",
+  "estimatedMinutes": 80,
+  "prerequisites": [
+    "03-recursive-functions"
+  ],
   "lab": {
-    "exercises": ["2.1", "2.2", "2.3"]
-  }
+    "title": "Meaning above storage",
+    "exercises": [
+      "make_rat",
+      "rectangles",
+      "pair",
+      "measure",
+      "parallel"
+    ],
+    "mastery": "parallel"
+  },
+  "lesson": "lesson.md",
+  "backgroundReading": "reading/04-data-abstraction.html",
+  "format": "lesson-visual-lab",
+  "publicationStatus": "draft",
+  "estimateNote": "Author estimate, not measured on learners: lesson about 20–25 minutes (2,400 words, seven code blocks); lab about 12 + 12 + 6 + 10 + 20 = 60 minutes. The book's own text is a reference and is not counted.",
+  "sourceAttribution": "Based on SICP §§2.1.1–2.1.4 by Harold Abelson and Gerald Jay Sussman with Julie Sussman. Rational numbers, segments, procedural pairs and intervals are the book’s examples translated to Python; the lab uses exercises 2.1, 2.3 and 2.4 and the parallel-resistor formulas of exercises 2.13–2.16. This lesson adds prose, figures and checks and is shared under CC BY-SA 4.0. Independent course; not endorsed by MIT or UC Berkeley."
 }

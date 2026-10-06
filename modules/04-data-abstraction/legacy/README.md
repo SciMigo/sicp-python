@@ -1,0 +1,1 @@
+The previous lab and slide outline are archived here. The original book-text reading stays at reading/04-data-abstraction.html as optional reference. The new lesson and lab are authoritative for this module.

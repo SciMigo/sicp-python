@@ -1,0 +1,43 @@
+{
+ "title": "Measure: where does the gcd work happen?",
+ "questions": [
+  {
+   "step": "Predict the first row",
+   "prompt": "A fraction is built and its parts are never read (0 reads). Which package calls gcd fewer times?",
+   "choices": [
+    {
+     "text": "eager",
+     "why": "eager reduces when the fraction is built, so it has already made one call that nobody used."
+    },
+    {
+     "text": "lazy",
+     "why": "lazy does its work only when a part is read. With no reads it makes no calls; eager has made one."
+    },
+    {
+     "text": "Neither: both make one call",
+     "why": "lazy postpones the work until a part is read, and no part is read."
+    }
+   ],
+   "answer": 1
+  }
+ ],
+ "checklist": [
+  {
+   "step": "Count the gcd calls a strategy really makes",
+   "checks": [
+    "counted_calls"
+   ]
+  },
+  {
+   "step": "Draw your own measurements",
+   "checks": [
+    "count_bars"
+   ]
+  }
+ ],
+ "hints": [
+  "A strategy can only use the gcd function it is handed, so what you hand it decides what you can observe.",
+  "Module 1 counted calls the same way: a stand-in function that makes a note and then does the real work.",
+  "Inside measure define a function of (a, b) that adds one to a counter and returns gcd(a, b). Pass it as the strategy's last argument and return the strategy's result with the counter."
+ ]
+}

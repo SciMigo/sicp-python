@@ -1,0 +1,22 @@
+{
+ "title": "Implement: a pair made of functions",
+ "checklist": [
+  {
+   "step": "cons keeps both parts and hands them to whatever asks",
+   "checks": [
+    "pair_laws"
+   ]
+  },
+  {
+   "step": "cdr recovers the second part of any such pair",
+   "checks": [
+    "second_part"
+   ]
+  }
+ ],
+ "hints": [
+  "The pair does not decide which part to give back. Whoever asks supplies the decision.",
+  "Look at car: what does it pass to the pair, and what must the pair do with it for car to get x?",
+  "cons returns a one-argument function that calls its argument on x and y. cdr passes the pair a two-argument function that returns its second argument."
+ ]
+}
