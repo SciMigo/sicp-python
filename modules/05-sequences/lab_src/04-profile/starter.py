@@ -1,17 +1,18 @@
 def profile(solver,items,k):
-    return solver(items,k),0
+    return solver(items,k,source),0
+
 from itertools import islice
 from scimigo import canvas,rectangle,text,frame
 
 def source(items):
     yield from items
 
-def eager(items,k):
-    values=[x+10 for x in source(items) if x%4==0]
+def eager(items,k,read_source):
+    values=[x+10 for x in read_source(items) if x%4==0]
     return values[:k]
 
-def lazy(items,k):
-    return list(islice((x+10 for x in source(items) if x%4==0),k))
+def lazy(items,k,read_source):
+    return list(islice((x+10 for x in read_source(items) if x%4==0),k))
 
 def show_pulls(rows):
     canvas(600,370)

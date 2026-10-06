@@ -2,7 +2,7 @@
   "title": "Measure: compare complete work with prefix demand",
   "checklist": [
     {
-      "step": "Count yielded source values, including rejected ones, and restore the source",
+      "step": "Count yielded source values, including rejected ones, without changing the source",
       "checks": [
         "actual_pulls"
       ]
@@ -17,7 +17,7 @@
   "hints": [
     "Equal returned prefixes do not imply equal source consumption.",
     "The relevant event is a yielded input, including one later rejected by the predicate.",
-    "Count inside a wrapper generator as it yields, run the supplied solver once, and restore source in finally."
+    "Pass a counting generator function to the strategy; increment as it yields each item from the supplied source."
   ],
   "questions": []
 }

@@ -13,7 +13,7 @@ Five labs: same_parity (2.20), a source/predicate/map/output event trace, horner
 - Nine lesson blocks and two figures pass; lab_src packing is current.
 - Ten solution checks pass. Each starter executes and draws; nine of ten checks fail untouched. Only deliberately correct-but-overeager mastery behavior passes. Every Python assert carries a message.
 - Mutation probes reject reversed retained order, eager trace construction, wrong coefficient direction, output-count substitution for source pulls, and reading beyond the kth rise.
-- Varied inputs cover negative/zero values, repeats, exact prefix/frame state, no match, short inputs, zero demand, empty coefficients, zero/negative polynomial arguments, input preservation, restored measurement source after exceptions and unusual solver consumption.
+- Varied inputs cover negative/zero values, repeats, exact prefix/frame state, no match, short inputs, zero demand, empty coefficients, zero/negative polynomial arguments, input preservation, unchanged supplied source after exceptions and unusual solver consumption.
 - Guarded unbounded input stops overeager code immediately with actionable feedback. It verifies zero source reads for k=0 and the exact prefix boundary for original adjacent rises. No wall-clock grading.
 - Chrome/Pyodide smoke with the external CDN passes all five exercises, Run/Check, frame playback, question completion, mastery unlock, embedded sizing and host/example integration, with no page errors.
 - Inspected all sixteen smoke screenshots, both lesson figures in phone light/dark themes and the phone starter. Visual review replaced the apparently empty Build picture with explicit not-visited/none-retained placeholders; reran checks after that helper change.
@@ -26,3 +26,5 @@ Unmeasured estimate: about 25 minutes for the lesson (200 prose words/minute plu
 An unbounded mastery source is promised eventually to provide k rises when k is positive; otherwise termination is not guaranteed. Helpers exclude drawing from measured operations. Educational checks do not provide a secure anti-cheating boundary. The shared reference still includes other book sections and uses the existing reference-host path. Course-wide tutor concepts, reference-host cleanup and old-reading licence notices remain separate work.
 
 Publication needs reviewed asset export (05 added to PREVIEW_MODULES), then a sicpModule registry entry and viewer deployment. No live assets changed. Evidence: output/review/05-sequences/.
+
+Follow-up from Module 4 PR #11: measurement now passes a counting source into strategies, using the wrapper pattern taught in Module 1. Learners need no global rebinding. Fresh counts, actual delegation and exceptions remain checked.

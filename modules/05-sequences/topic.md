@@ -12,7 +12,7 @@ Book examples include the chain 1..4, scaling 1..5 by ten, map abs, odd-square f
 
 Five labs: same_parity (2.20) from a stub, exact demand trace, horner (2.34) from a stub, actual source-yield measurement, rising_preview with one-shot/unbounded input. Demo instances differ from lesson. Build/Implement starters run/draw one frame without marker comments. Tailored hints and messages on all assertions; only mastery correctness may pass untouched.
 
-Measured operation: a value yielded by the supplied source, including later-rejected values. Increment inside the generator, not on iterator creation. Restore original source even on errors. Mastery tracks original adjacent readings, stops at the kth rise, consumes nothing for k=0. For an unbounded source and positive k, eventual k rises are a precondition, not something laziness can guarantee. Guarded sources terminate overeager attempts immediately, without timing-based grading.
+Measured operation: a value yielded by the supplied source, including later-rejected values. Increment inside the generator, not on iterator creation. Pass a counting source function into each strategy; do not rebind globals. The original source stays unchanged, including on errors. Mastery tracks original adjacent readings, stops at the kth rise, consumes nothing for k=0. For an unbounded source and positive k, eventual k rises are a precondition, not something laziness can guarantee. Guarded sources terminate overeager attempts immediately, without timing-based grading.
 
 ## Sources for Python extension
 

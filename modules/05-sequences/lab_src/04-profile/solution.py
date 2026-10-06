@@ -1,29 +1,25 @@
 def profile(solver,items,k):
-    original=globals()["source"]
     pulls=0
     def counted(values):
         nonlocal pulls
-        for item in original(values):
+        for item in source(values):
             pulls+=1
             yield item
-    globals()["source"]=counted
-    try:
-        answer=solver(items,k)
-        return answer,pulls
-    finally:
-        globals()["source"]=original
+    answer=solver(items,k,counted)
+    return answer,pulls
+
 from itertools import islice
 from scimigo import canvas,rectangle,text,frame
 
 def source(items):
     yield from items
 
-def eager(items,k):
-    values=[x+10 for x in source(items) if x%4==0]
+def eager(items,k,read_source):
+    values=[x+10 for x in read_source(items) if x%4==0]
     return values[:k]
 
-def lazy(items,k):
-    return list(islice((x+10 for x in source(items) if x%4==0),k))
+def lazy(items,k,read_source):
+    return list(islice((x+10 for x in read_source(items) if x%4==0),k))
 
 def show_pulls(rows):
     canvas(600,370)
