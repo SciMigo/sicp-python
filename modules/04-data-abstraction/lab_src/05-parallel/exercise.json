@@ -1,0 +1,100 @@
+{
+ "title": "Mastery challenge: two resistors in parallel",
+ "questions": [
+  {
+   "step": "Name the plan",
+   "prompt": "What must the interval you return guarantee?",
+   "choices": [
+    {
+     "text": "It holds every value the pair can take",
+     "why": "That is what an interval answer means, and the task adds that it should hold little else."
+    },
+    {
+     "text": "Its centre is the nominal resistance",
+     "why": "The centre of the true range is not the value computed from the two nominal resistances."
+    },
+    {
+     "text": "It is as narrow as the narrower input",
+     "why": "Nothing ties the width of the result to the width of one input."
+    }
+   ],
+   "answer": 0
+  },
+  {
+   "step": "State the invariant",
+   "prompt": "What does each interval produced along the way contain?",
+   "choices": [
+    {
+     "text": "Only that step's nominal value",
+     "why": "A single value would throw the tolerance away."
+    },
+    {
+     "text": "Every value that sub-expression can take",
+     "why": "Each supplied operation promises this for its inputs, so it holds step by step up to the final answer."
+    },
+    {
+     "text": "The values of the step before it",
+     "why": "Each step computes a different quantity, in different units."
+    }
+   ],
+   "answer": 1
+  },
+  {
+   "step": "Predict the cost",
+   "prompt": "How many times should each resistor's interval enter the arithmetic?",
+   "choices": [
+    {
+     "text": "Once",
+     "why": "Every further appearance is treated as a separate quantity free to take any value in the interval, which widens the result."
+    },
+    {
+     "text": "Twice",
+     "why": "The second appearance is treated as a second, independent resistor."
+    },
+    {
+     "text": "It makes no difference",
+     "why": "The starter and a correct answer use the same operations and differ only in this."
+    }
+   ],
+   "answer": 0
+  },
+  {
+   "step": "Why not the starter?",
+   "prompt": "For 6.8 ± 10% and 4.7 ± 5% the starter returns about 2.20 to 3.49 ohms. The pair's real range is about 2.58 to 2.97. Where does the extra width come from?",
+   "choices": [
+    {
+     "text": "Dividing one interval by another",
+     "why": "Division by an interval that excludes zero is sound; a correct answer here divides too."
+    },
+    {
+     "text": "Tolerances given in percent",
+     "why": "The percentages are converted to plain bounds before any arithmetic happens."
+    },
+    {
+     "text": "R1 taken as 6.12 and 7.48 at once",
+     "why": "The lower bound 2.20 is the smallest product, 6.12 × 4.465, over the largest sum, 7.48 + 4.935. No single resistor is at both ends."
+    }
+   ],
+   "answer": 2
+  }
+ ],
+ "checklist": [
+  {
+   "step": "Contain every possible resistance, however intervals are stored",
+   "checks": [
+    "contains_every_value"
+   ]
+  },
+  {
+   "step": "Stay within 1% of the true range, and draw it",
+   "checks": [
+    "tight_and_drawn"
+   ]
+  }
+ ],
+ "hints": [
+  "Ask what the circuit can really do. Can one resistor be at its lowest and its highest value at the same moment?",
+  "Count how many times each resistor appears in the formula the starter evaluates, and what interval arithmetic assumes about each appearance.",
+  "Look for an algebraically equal way to write the combined resistance in which R1 and R2 each appear once."
+ ]
+}

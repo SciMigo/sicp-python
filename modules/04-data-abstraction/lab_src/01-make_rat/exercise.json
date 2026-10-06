@@ -1,23 +1,22 @@
 {
-  "title": "Build: normalize a rational number",
-  "checklist": [
-    {
-      "step": "Preserve the ratio, reduce, normalize signs and reject zero denominators",
-      "checks": [
-        "rational_laws"
-      ]
-    },
-    {
-      "step": "Draw the input and the actual selected output",
-      "checks": [
-        "rational_frame"
-      ]
-    }
-  ],
-  "hints": [
-    "A representation may change its parts while preserving their ratio.",
-    "Reduction and sign placement are separate promises; include zero and both signs in your reasoning.",
-    "Divide both parts by their gcd, then move any denominator sign onto the numerator."
-  ],
-  "questions": []
+ "title": "Build: a rational number in lowest terms",
+ "checklist": [
+  {
+   "step": "Keep the ratio, reduce it, and put the sign on the numerator",
+   "checks": [
+    "rational_laws"
+   ]
+  },
+  {
+   "step": "Show every Euclid step, then the stored fraction",
+   "checks": [
+    "euclid_frames"
+   ]
+  }
+ ],
+ "hints": [
+  "A constructor may store different numbers from the ones it was given, as long as they stand for the same ratio.",
+  "Reducing and choosing where the sign goes are two separate promises. Try 8/-12 and 0/-7 by hand.",
+  "Divide both parts by the gcd. If the denominator you were given is negative, divide by minus the gcd instead: that reduces and flips both signs in one step."
+ ]
 }

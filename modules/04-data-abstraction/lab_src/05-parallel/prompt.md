@@ -1,0 +1,5 @@
+Two resistors wired in parallel behave like one resistor of R1 × R2 / (R1 + R2) ohms. A real resistor is only known to within a tolerance: one marked 6.8 ohms ± 10% is somewhere between 6.12 and 7.48. So each resistor is an interval, built and read with the supplied `make_interval`, `lower_bound` and `upper_bound`, and the supplied `add_interval`, `mul_interval` and `div_interval` do arithmetic on them. Resistances are positive.
+
+Implement `parallel(r1, r2)`. It returns an interval that contains every resistance the pair can really have, and is no wider than it needs to be: the check allows 1% beyond the true range. Use only the supplied interval operations; the checks store intervals another way. Call `show_parallel(r1, r2, result)` once.
+
+The starter's answer does contain every possible value, and it is far too wide. Run it and compare the purple bar with the two blue ones.

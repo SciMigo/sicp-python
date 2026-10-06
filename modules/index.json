@@ -25,7 +25,7 @@
     "label": "4 · Data Abstraction",
     "eyebrow": "MODULE 04 · DATA ABSTRACTION",
     "heading": "Rational numbers, geometry and procedural pairs behind tested interfaces",
-    "subtitle": "Follow SICP’s rational-number, point and segment, procedural-pair and interval examples in Python. Specify constructor-selector laws, keep clients independent of storage and count where normalization work happens."
+    "subtitle": "Follow SICP’s rational-number, point and segment, procedural-pair and interval examples in Python. Specify constructor-selector laws, keep clients independent of storage, count where normalization work happens, and see why interval formulas that are algebraically equal give different bounds."
   },
   {
     "id": "06-trees",

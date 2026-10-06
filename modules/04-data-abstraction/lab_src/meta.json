@@ -1,28 +1,28 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "sicp-python-04-data-abstraction",
-  "title": "Meaning above storage",
-  "description": "Normalize fractions, trace representation-independent geometry, build procedural pairs, count gcd calls and produce a constrained manifest report.",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 15000
-  },
-  "recap": {
-    "learned": [
-      "State and test constructor-selector laws.",
-      "Change a representation without changing clients that use its interface.",
-      "Keep independently created procedural pairs separate.",
-      "Measure where an interface performs normalization work."
-    ],
-    "invariant": "Constructed values satisfy the public laws; clients depend on those meanings rather than storage positions.",
-    "complexity": "For one fraction selected k times in each part, eager normalization makes one gcd call and uncached lazy normalization makes 2k calls. Manifest reporting permits at most n weight reads for n records. These count interface operations, exclude drawing and do not assume fixed-cost large-integer arithmetic.",
-    "common_mistake": "Reaching through a public selector into the current tuple or dictionary layout.",
-    "in_real_programs": [
-      "An interface can preserve behavior while changing representation; old stored values still need a migration or compatibility policy."
-    ],
-    "retrieval": {
-      "question": "Module 2: why can separate calls to a pair creator retain different captured values?",
-      "answer": "Each creator invocation provides its own defining environment; its returned function retains access to those bindings."
-    }
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-04-data-abstraction",
+ "title": "Meaning above storage",
+ "description": "Reduce a signed fraction step by step, serve two rectangle representations with one client, build a pair from functions, count where gcd work happens, then bound two resistors in parallel.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "State and test the laws a constructor and its selectors must satisfy.",
+   "Write a client that survives a change of representation, one layer at a time.",
+   "Build a pair out of functions alone.",
+   "Measure where an interface does its work, and see repeated uncertainty widen an interval."
+  ],
+  "invariant": "Constructed values satisfy the public laws; clients depend on those meanings rather than storage positions.",
+  "complexity": "For one fraction whose two parts are each read k times, eager reduction makes 1 gcd call and uncached lazy reduction makes 2k. These count calls to gcd, not the work inside it; drawing is excluded.",
+  "common_mistake": "Reaching past a selector into the tuple or dictionary behind it, or using one uncertain quantity twice in an interval formula.",
+  "in_real_programs": [
+   "Python's fractions.Fraction reduces in its constructor and keeps the sign on the numerator: it divides both parts by math.gcd, negated when the denominator is negative (CPython Lib/fractions.py)."
+  ],
+  "retrieval": {
+   "question": "Module 2: why can separate calls to a pair creator retain different captured values?",
+   "answer": "Each creator invocation provides its own defining environment; its returned function retains access to those bindings."
   }
+ }
 }
