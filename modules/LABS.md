@@ -24,7 +24,49 @@ exercises[]
                   Python for implement/extend ones
 ```
 
-Nine modules, three exercises each, 27 total.
+Nine modules, 31 exercises: three per module, plus a fourth **Challenge**
+exercise in 05 (a lazy pipeline over an infinite sequence) and 06 (every path,
+not just the first), and a five-exercise capstone in 09.
+
+## The Module 9 capstone
+
+Module 9 promises a working interpreter in about 100 lines of Python, so its lab
+builds one. Four checkpoints grow one program, with a trace exercise before
+the learner writes `eval`/`apply`:
+
+1. **Read**: `tokenize`, `parse`, `read` (text to nested lists; `SyntaxError` on bad input)
+2. **Environments**: `Frame.define` / `lookup` over dicts, and the primitives
+3. *Trace a finished Eval/Apply through one call*
+4. **Eval/Apply**: numbers, names, `define`, `lambda`, `if`, calls, closures, recursion
+5. **Extend**: `unless` and `let` as derived expressions (SICP Ex 4.6)
+
+Each checkpoint's starter code includes the finished code of the ones before it,
+so a learner stuck on one checkpoint can still do the next. The last one ends
+by running `(let ((x 5)) (square (+ x 1)))` on the learner's own interpreter.
+
+The checks target the classic mistakes: `if` evaluating both branches,
+dynamic instead of lexical scope (the call frame's parent must be the
+procedure's environment, not the caller's), `let` evaluating its values inside
+the new scope, and `define` in a child frame changing the parent.
+
+## Technique checks
+
+Some tests check *how* an answer computes, because an exercise that exists to
+practise a technique can otherwise be passed without it. Each is an ordinary,
+visible test, named for what it checks:
+
+| Exercise | Check | How |
+|---|---|---|
+| 03 ex3 | `f_rec` follows the definition | it must call itself |
+| 03 ex3 | `f_iter` is an iterative process | `f_rec` is replaced by one that raises, and `f_iter(3000)` must not exhaust the stack |
+| 05 ex3 | `my_map` / `my_filter` are built from `accumulate` | `accumulate` is wrapped to count calls |
+| 05 ex4 | `naturals`, `map_lazy`, `filter_lazy` are generators; `take` pulls exactly `n` | type check, and a source that records what was pulled |
+| 06 ex3, ex4 | the tree abstraction barrier holds | the tree ADT is swapped for a dict representation and the answer must still work |
+
+A test that rebinds a name (the wrapper, the swapped ADT) restores it in a
+`finally`. The browser gives every test a fresh namespace, but
+`check_labs.py` and the publish-time check share one across a lab's tests, and a
+test must not change what the next one sees.
 
 ## Checking the labs
 
@@ -35,25 +77,36 @@ own tests. Stdlib only, no dependencies, no network:
 python3 modules/check_labs.py
 ```
 
-Solutions come in two shapes, and the distinction matters when reading the
+Solutions come in three shapes, and the distinction matters when reading the
 output of this or any other checker:
 
 - Implement/extend exercises are answered in **Python**. They must run and pass.
 - Predict/trace exercises are answered in **prose** — "it prints 2, because the
-  instance attribute shadows the class attribute". That is correct content, so
-  `check_labs.py` reports it as prose and skips it. A checker that assumes every
-  solution is code will report all 13 as syntax errors; they are not defects.
+  instance attribute shadows the class attribute". Correct content; reported as
+  prose and skipped.
+- **Broken code** is the one to catch: an answer that opens a block or returns
+  a value, so it was written to run, and does not parse. A learner who pastes
+  it gets a `SyntaxError`.
+
+Classifying by "does it compile" alone puts broken code in the prose bucket and
+calls the lab clean. That is exactly what happened: two solutions shipped
+unrunnable and the checker reported 0 failures for months.
+
+Current state: **20 solutions pass, 0 fail, 11 answered in prose.**
 
 Separately, `01/ex3` and `08/ex3` ship starter code that raises until it is
 filled in — `pass` stubs plus demo calls at the bottom. Also by design.
-Current state: **17 solutions pass, 0 fail, 13 answered in prose.**
 
 ## Provenance
 
 Every `lab.json` was extracted verbatim from the file published for that
-module, checksum-verified on 2026-09-22. Six still match exactly; **three
-reference solutions have since been fixed here and are not yet republished**
-— see below. The course is a mix of two generation runs:
+module, checksum-verified on 2026-09-22. Seven still match exactly. Two carry
+changes that have not been published yet:
+
+- `02-environment-diagrams` — the unrunnable solution above.
+- `04-data-abstraction` — its lab title, which used to carry a LaTeX artifact.
+
+The course is a mix of two generation runs:
 
 | Module | Published |
 |---|---|
@@ -62,46 +115,46 @@ reference solutions have since been fixed here and are not yet republished**
 
 Modules 01–03 come from a later regeneration; 04–09 are from the original run.
 
-## Reference solutions: fixed here, stale where published
+## Unrunnable reference solutions
 
-Three reference solutions used to fail their own tests. A learner who revealed
-the solution and re-ran the tests saw red. They are fixed in this repo and
-**still broken in the published labs** until those are regenerated:
+Five reference solutions could not run. A learner who revealed one and re-ran
+the tests saw red, or pasted it and got a `SyntaxError`.
+
+Three failed their own tests, and are **published**:
 
 | Module | Exercise | Was |
 |---|---|---|
 | 04-data-abstraction | `ex3_extend_sub_rat_survives_repr_swap` | 3/3 failed — `_normalize` / `install_tuple_repr` undefined |
-| 08-oop | `ex1_predict_fee_shadowing` | 2/2 failed — solution was comments only, defined no `ch` |
-| 08-oop | `ex3_implement_extend_equ_generic` | 6/6 failed — body was the placeholder `# Same code as starter up to install_equ_package...` |
+| 08-oop | `ex1_predict_fee_shadowing` | 2/2 failed — comments only, defined no `ch` |
+| 08-oop | `ex3_implement_extend_equ_generic` | 6/6 failed — body was a placeholder comment |
 
-One root cause: the `solution` held only the **fragment** the learner fills,
-while a checker — or anyone pasting it into the editor — runs it standalone.
-The fix makes each one a complete runnable program, the shape the six passing
-modules already use. `prompt_md`, `starter_code` and `tests` were not touched,
-so nothing changed about what the learner is asked or graded on.
-## `06-trees` has an unpublished rewrite
+Their cause: the `solution` held only the **fragment** the learner fills, while
+a checker — or anyone pasting it into the editor — runs it standalone. Each is
+now a complete runnable program, the shape the other modules use.
 
-`lab.remake-2026-08-31.json` is a later re-authoring of the trees lab that was
-never published. It is kept because it is the better lab on the merits: it
-covers SICP 2.24/2.25/2.26, exactly what `module.json` declares, where the
-published lab substitutes 2.28.
+Two more did not parse at all, and the checker had been calling them prose:
 
-**It is not a drop-in replacement.** Its `slide_anchor` values point at the
-rebuilt trees deck, which is also unpublished — the deck learners see is still
-the February one. Shipping the lab without the deck would anchor exercises to
-slides the learner never sees. Promoting it means publishing deck and lab
-together.
+| Module | Exercise | Was |
+|---|---|---|
+| 02-environment-diagrams | `ex3_extend_accumulator_closure` | working code with an explanatory sentence on the last line and no `#` |
+| 06-trees (then an unpublished rewrite; now `ex4_challenge_all_paths`) | `ex3_extend_all_paths` | a markdown answer — prose, then the code inside a fence |
+
+In every case `prompt_md`, `starter_code` and `tests` were left alone, so
+nothing changed about what the learner is asked or graded on.
 
 ## How these files are used today
 
-`lab.json` is **not yet wired into publication**. The pipeline still publishes
-the lab it generates into its own build output; nothing reads this file except
-a check for whether it exists. So these files are the reviewable record and the
-recovery source, and making them the thing that gets published is a separate
-change on the pipeline side.
+Historically the pipeline published the lab it generated into its own build
+output, and nothing read this file except a check for whether it exists — so an
+edit here reached nobody until someone copied it back by hand.
 
-The practical consequence: edits here do not reach learners until the labs are
-regenerated or republished.
+Since 2026-09-22 publication reads `lab.json` directly, validated, with the
+lab page re-rendered from it, so these files are the source of truth and an
+edit here ships on the next deploy. A lab that fails that validation is not
+published and the live copy stays.
+
+Either way, **a change in this repo does not reach learners until someone runs
+a deploy.** Merging is not publishing.
 
 ## `module.json` → `lab.exercises` is a hint, not a spec
 
@@ -116,9 +169,9 @@ that shipped:
 | 03 | 1.11, 1.12, 1.13 | 1.11, 1.12 |
 | 04 | 2.1, 2.2, 2.3 | 2.1 |
 | 05 | 2.17, 2.18, 2.19 | none |
-| 06 | 2.24, 2.25, 2.26 | 2.28 (the unpublished rewrite covers all three) |
+| 06 | 2.24, 2.25, 2.26 | 2.24, 2.26, 2.28 |
 | 07 | 3.1, 3.2, 3.3 | 3.3 |
 | 08 | 2.73, 2.74, 2.75 | none |
-| 09 | 4.1, 4.2, 4.3 | none |
+| 09 | 4.1, 4.2, 4.3 | 4.1 (the evaluator itself), 4.6 |
 
 Treat `lab.json` as the truth about what the course teaches.
