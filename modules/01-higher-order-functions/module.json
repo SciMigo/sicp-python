@@ -22,5 +22,5 @@
   "format": "lesson-visual-lab",
   "publicationStatus": "draft",
   "estimateNote": "Author estimate, not measured on learners: lesson 20–25 minutes, lab 45–70 minutes. The book's own text is a reference and is not counted.",
-  "sourceAttribution": "Follows section 1.3 of Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman with Julie Sussman (MIT Press, 2nd ed. 1996; CC BY-SA 4.0), with its examples and exercises 1.32, 1.42 and 1.43 rewritten in Python. Prose and lab are original. Independent course; not endorsed by MIT or UC Berkeley."
+  "sourceAttribution": "Follows section 1.3 of Structure and Interpretation of Computer Programs by Harold Abelson and Gerald Jay Sussman with Julie Sussman (MIT Press, 2nd ed. 1996; CC BY-SA 4.0), with its examples and exercises 1.32, 1.42 and 1.43 rewritten in Python. Prose and lab are original. Independent course; not endorsed by MIT or UC Berkeley. The lesson is shared under CC BY-SA 4.0."
 }

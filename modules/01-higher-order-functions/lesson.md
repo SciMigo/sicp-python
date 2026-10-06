@@ -278,6 +278,8 @@ In the lab your own code generalises the sum one step further, traces which func
 2. `summation` terminates on your input. Does that tell you its total is right?
 3. Why can the number of calls made by `fixed_point` not be read off its code the way `summation`'s can?
 
-## Reference
+## Reference and licence
 
-This lesson follows section 1.3 of *Structure and Interpretation of Computer Programs* (Abelson, Sussman and Sussman), with its examples rewritten in Python. The [book's own text for this section](../../reading/01-higher-order-functions.html) is kept as a reference; it also covers the half-interval method and `let`, which this lesson leaves out.
+This lesson follows section 1.3 of the book, with its examples rewritten in Python. The [book's own text for this section](../../reading/01-higher-order-functions.html) is kept as a reference; it also covers the half-interval method and `let`, which this lesson leaves out.
+
+The examples and exercise statements are adapted from *Structure and Interpretation of Computer Programs*, second edition, by Harold Abelson and Gerald Jay Sussman with Julie Sussman. This lesson is shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); its prose, Python translations and figures are this course's changes. Independent course; not endorsed by MIT or UC Berkeley.
