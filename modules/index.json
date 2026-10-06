@@ -28,6 +28,13 @@
     "subtitle": "Follow SICP’s rational-number, point and segment, procedural-pair and interval examples in Python. Specify constructor-selector laws, keep clients independent of storage, count where normalization work happens, and see why interval formulas that are algebraically equal give different bounds."
   },
   {
+    "id": "05-sequences",
+    "label": "5 · Sequences",
+    "eyebrow": "MODULE 05 · SEQUENCES",
+    "heading": "Lists, conventional sequence stages and Python generators",
+    "subtitle": "Represent ordered sequences, map and filter while preserving order, distinguish fold direction, and trace how generators respond to demand. Measure actual source reads and stop a preview at its requested boundary."
+  },
+  {
     "id": "06-trees",
     "label": "6 · Trees",
     "eyebrow": "MODULE 06 · TREES",

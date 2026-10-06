@@ -1,0 +1,43 @@
+{
+  "title": "Trace: watch demand travel upstream",
+  "checklist": [
+    {
+      "step": "Pull and test only through the last requested match",
+      "checks": [
+        "demand_trace"
+      ]
+    },
+    {
+      "step": "Show the real pulled prefix and outputs at every event",
+      "checks": [
+        "demand_frames"
+      ]
+    }
+  ],
+  "hints": [
+    "Demand for one output may require examining rejected source values first.",
+    "Separate constructing a pipeline from requesting its next output.",
+    "Request at most k results, recording each delivered result, and stop before requesting another one."
+  ],
+  "questions": [
+    {
+      "step": "Predict source demand",
+      "prompt": "How many source values does the demo read to deliver two outputs?",
+      "choices": [
+        {
+          "text": "2",
+          "why": "Rejected inputs still need examination."
+        },
+        {
+          "text": "4",
+          "why": "It reads 1, 3, 4 and 6, then stops before 9."
+        },
+        {
+          "text": "5",
+          "why": "Reading the final 9 would exceed the requested prefix."
+        }
+      ],
+      "answer": 1
+    }
+  ]
+}

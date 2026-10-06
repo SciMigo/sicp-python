@@ -1,0 +1,23 @@
+{
+  "title": "Measure: compare complete work with prefix demand",
+  "checklist": [
+    {
+      "step": "Count yielded source values, including rejected ones, without changing the source",
+      "checks": [
+        "actual_pulls"
+      ]
+    },
+    {
+      "step": "Draw the measured eager and lazy pull counts at three sizes",
+      "checks": [
+        "pull_bars"
+      ]
+    }
+  ],
+  "hints": [
+    "Equal returned prefixes do not imply equal source consumption.",
+    "The relevant event is a yielded input, including one later rejected by the predicate.",
+    "Pass a counting generator function to the strategy; increment as it yields each item from the supplied source."
+  ],
+  "questions": []
+}

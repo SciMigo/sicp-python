@@ -1,134 +1,312 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "sequences-lab",
-  "title": "Sequences Lab: Pipelines with map, filter, and folds",
-  "description": "Practice building programs as sequence pipelines (select → transform → combine), predict behavior before running, trace lazy iterator flow, and implement pipelines using fold/accumulate (SICP-inspired).",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 5000
-  },
-  "exercises": [
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-05-sequences",
+ "title": "Order, stages and demand",
+ "description": "Select same-parity arguments, trace a lazy pipeline, evaluate ordered coefficients, count source pulls and preview original adjacent rises.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "Preserve relative order and repeated occurrences during selection.",
+   "Trace requests through source, predicate, mapping and output events.",
+   "Combine ordered coefficients from the highest term downward.",
+   "Count actual yielded inputs rather than output length."
+  ],
+  "invariant": "The recorded prefix or suffix contains exactly the values already processed under its stated ordering rule.",
+  "complexity": "For a finite sequence of n coefficients, the polynomial algorithm performs n multiply-add steps. A lazy pipeline producing k results after examining p inputs calls its predicate p times and transforms k accepted inputs. Counts exclude drawing; arithmetic, callback and source costs are separate.",
+  "common_mistake": "Reading one value too many after filling a prefix, or comparing a reading with an earlier retained result instead of its original predecessor.",
+  "in_real_programs": [
+   "Python map and filter return iterators; a generator suspends at yield and resumes on demand. An exhausted iterator does not replay itself."
+  ],
+  "retrieval": {
+   "question": "Module 4: what should remain stable if the representation of a sequence changes?",
+   "answer": "Its public meaning and operation contracts; clients should not depend on storage details."
+  }
+ },
+ "exercises": [
+  {
+   "exercise_id": "same_parity",
+   "title": "Build: preserve a selected subsequence",
+   "prompt_md": "SICP exercise 2.20 keeps arguments with the first argument's parity. Implement `same_parity(first, *rest)` for up to 20 integer arguments. Return a new list containing every input with the same even/odd parity as first, in original order, including duplicates. Keep a `visited` list and call `show_parity(visited, result)` after each input occurrence. The upper row shows the visited prefix; the lower row shows its retained subsequence. Predict the demo before Run.\n",
+   "questions": [],
+   "checklist": [
     {
-      "exercise_id": "ex1_predict_pipeline_sum_odd_squares",
-      "title": "Predict a Pipeline Result (odd squares)",
-      "slide_anchor": 7,
-      "prompt_md": "**Predict the output** before running:\n\n```python\ndef odd_square_sum(n):\n    return sum(map(lambda x: x * x,\n                   filter(lambda x: x % 2 == 1, range(1, n + 1))))\n\nprint(odd_square_sum(10))\nprint(odd_square_sum(1))\n```\n\nWhat will be printed?\n\nA) `165` then `1`\nB) `220` then `1`\nC) `165` then `0`\nD) Error (because `map`/`filter` are iterators)",
-      "starter_code": "def odd_square_sum(n):\n    return sum(map(lambda x: x * x,\n                   filter(lambda x: x % 2 == 1, range(1, n + 1))))\n\n# Prediction (write BEFORE running):\n# I predict the two printed lines are:\n# 1) ???\n# 2) ???\n\n# Uncomment to check:\n# print(odd_square_sum(10))\n# print(odd_square_sum(1))\n",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "assert odd_square_sum(10) == 165"
-        },
-        {
-          "name": "t2",
-          "code": "assert odd_square_sum(1) == 1"
-        },
-        {
-          "name": "t3",
-          "code": "assert odd_square_sum(0) == 0"
-        }
-      ],
-      "hints": [
-        "Stages: range(1..n) → filter odd → square each → sum.",
-        "For n=10, the odd numbers are 1,3,5,7,9.",
-        "`sum(...)` can consume an iterator (so no error)."
-      ],
-      "solution": "def odd_square_sum(n):\n    return sum(map(lambda x: x * x,\n                   filter(lambda x: x % 2 == 1, range(1, n + 1))))\n\n# odd_square_sum(10) = 1^2+3^2+5^2+7^2+9^2 = 165\n# odd_square_sum(1) = 1\n"
+     "step": "Retain matching parity in order, including zero and duplicates",
+     "checks": [
+      "parity_values"
+     ]
     },
     {
-      "exercise_id": "ex2_trace_lazy_map_filter",
-      "title": "Trace Laziness: Who Gets Pulled From the Source?",
-      "slide_anchor": 8,
-      "prompt_md": "This exercise models a *lazy pipeline* by recording events instead of printing.\n\n1) **Trace** which `source` elements are demanded to produce `a = next(it)`.\n2) Then trace what happens when we consume the rest with `list(it)`.\n\n```python\ndef run():\n    out = []\n    def source():\n        for x in [1, 2, 3, 4]:\n            out.append(f\"source {x}\")\n            yield x\n\n    it = map(lambda x: x * x,\n             filter(lambda x: x % 2 == 0, source()))\n\n    a = next(it)\n    out.append(f\"a {a}\")\n\n    b = list(it)\n    out.append(f\"b {b}\")\n\n    return out\n```\n\n**Task**: Before running, write the exact list that `run()` returns.\n\nThen run it to confirm.",
-      "starter_code": "def run():\n    out = []\n\n    def source():\n        for x in [1, 2, 3, 4]:\n            out.append(f\"source {x}\")\n            yield x\n\n    it = map(lambda x: x * x,\n             filter(lambda x: x % 2 == 0, source()))\n\n    # Trace questions (answer as comments):\n    # Q1: Which 'source x' entries must happen before a = next(it) succeeds?\n    # Q2: After that, when b = list(it) runs, which remaining 'source x' entries happen?\n    # Q3: Why does 'source 3' appear even though 3 is filtered out?\n\n    a = next(it)\n    out.append(f\"a {a}\")\n\n    b = list(it)\n    out.append(f\"b {b}\")\n\n    return out\n\n# Prediction (write BEFORE running):\n# I predict run() returns:\n# [ ... ??? ... ]\n\n# Uncomment to check:\n# print(run())\n",
-      "tests": [
-        {
-          "name": "t1",
-          "code": "assert run() == ['source 1', 'source 2', 'a 4', 'source 3', 'source 4', 'b [16]']"
-        }
-      ],
-      "hints": [
-        "`filter` must *inspect* each incoming element to decide keep/drop.",
-        "`next(it)` pulls just enough from the source to produce one mapped value.",
-        "Even filtered-out items still get pulled from the source (they're just not passed onward)."
-      ],
-      "solution": "def run():\n    out = []\n\n    def source():\n        for x in [1, 2, 3, 4]:\n            out.append(f\"source {x}\")\n            yield x\n\n    it = map(lambda x: x * x,\n             filter(lambda x: x % 2 == 0, source()))\n\n    # next(it) needs the first even source value.\n    # It will pull 1 (drop), then 2 (keep) and square it.\n    a = next(it)\n    out.append(f\"a {a}\")\n\n    # list(it) consumes the rest of the pipeline.\n    # It pulls 3 (drop), then 4 (keep) and squares it.\n    b = list(it)\n    out.append(f\"b {b}\")\n\n    return out\n"
-    },
-    {
-      "exercise_id": "ex3_extend_accumulate_map_filter_pipeline_sicp_2_33",
-      "title": "Accumulate Builds Pipelines (SICP Ex 2.33 + Exit Ticket)",
-      "slide_anchor": 9,
-      "prompt_md": "In SICP, many sequence operations are built from a single pattern: **accumulation** (fold).\n\nImplement `accumulate` as a **fold-right**:\n\n\\[ accumulate(op, z, [a1,a2,...,an]) = op(a1, op(a2, ... op(an, z))) \\]\n\nThen use it to build `my_map` and `my_filter` (no explicit loops).\n\nFinally, **extend** it into an exit-ticket pipeline:\n\n> `sum_cubes_div_by_3(n)` returns \\( \\sum k^3 \\) over integers \\(1 \\le k \\le n\\) where \\(3 \\mid k\\).\n\nWrite your prediction for `sum_cubes_div_by_3(10)` before running tests.",
-      "starter_code": "def accumulate(op, z, seq):\n    \"\"\"Fold-right accumulation.\n\n    accumulate(op, z, [a1, a2, ..., an])\n      = op(a1, op(a2, ... op(an, z)))\n\n    >>> accumulate(lambda x, y: x - y, 0, [1, 2, 3])\n    2\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef my_map(f, seq):\n    \"\"\"Return [f(x) for x in seq], but built from accumulate.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef my_filter(pred, seq):\n    \"\"\"Return [x for x in seq if pred(x)], but built from accumulate.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef sum_cubes_div_by_3(n):\n    \"\"\"Exit ticket pipeline.\n\n    Return sum(k^3 for k in 1..n if k % 3 == 0).\n\n    Prediction prompt:\n    - I predict sum_cubes_div_by_3(10) == ???\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n",
-      "tests": [
-        {
-          "name": "t1_fold_right_order_matters",
-          "code": "assert accumulate(lambda x, y: x / y, 1, [8, 4, 2]) == 4"
-        },
-        {
-          "name": "t2_map_via_accumulate",
-          "code": "assert my_map(lambda x: x * x, [1, 2, 3, 4]) == [1, 4, 9, 16]"
-        },
-        {
-          "name": "t3_filter_via_accumulate",
-          "code": "assert my_filter(lambda x: x > 3, [1, 5, 2, 7, 3]) == [5, 7]"
-        },
-        {
-          "name": "t4_exit_ticket",
-          "code": "assert sum_cubes_div_by_3(10) == 972"
-        },
-        {
-          "name": "t5_exit_ticket_small",
-          "code": "assert sum_cubes_div_by_3(2) == 0"
-        },
-        {
-          "name": "t6_map_and_filter_are_built_from_accumulate",
-          "code": "_real_accumulate = accumulate\n_calls = []\ndef accumulate(op, z, seq):\n    _calls.append(1)\n    return _real_accumulate(op, z, seq)\ntry:\n    assert my_map(lambda x: x + 1, [1, 2]) == [2, 3]\n    assert _calls, 'my_map should be built from accumulate, not a loop or comprehension'\n    _calls.clear()\n    assert my_filter(lambda x: x > 1, [1, 2]) == [2]\n    assert _calls, 'my_filter should be built from accumulate, not a loop or comprehension'\nfinally:\n    accumulate = _real_accumulate"
-        }
-      ],
-      "hints": [
-        "For fold-right: if seq is empty, return z; otherwise return op(first, accumulate(op, z, rest)).",
-        "To build a list without mutation: use list concatenation like [item] + rest_list.",
-        "For my_filter: your combining function can decide whether to prepend x or skip it.",
-        "For sum_cubes_div_by_3: think stages: enumerate → filter → map (cube) → combine (sum)."
-      ],
-      "solution": "def accumulate(op, z, seq):\n    if seq == []:\n        return z\n    return op(seq[0], accumulate(op, z, seq[1:]))\n\n\ndef my_map(f, seq):\n    return accumulate(lambda x, xs: [f(x)] + xs, [], list(seq))\n\n\ndef my_filter(pred, seq):\n    return accumulate(lambda x, xs: ([x] + xs) if pred(x) else xs, [], list(seq))\n\n\ndef sum_cubes_div_by_3(n):\n    cubes = my_map(lambda k: k * k * k,\n                   my_filter(lambda k: k % 3 == 0, range(1, n + 1)))\n    return accumulate(lambda x, y: x + y, 0, cubes)\n"
-    },
-    {
-      "exercise_id": "ex4_challenge_lazy_pipeline_over_infinite_source",
-      "title": "Challenge: Write Your Own Lazy Pipeline over an Infinite Sequence",
-      "slide_anchor": 8,
-      "prompt_md": "Exercise 2 showed that `map` and `filter` pull one item at a time. Now **write** that machinery yourself with `yield`, and use it on a sequence that never ends.\n\n1. `naturals()` yields `1, 2, 3, ...` forever.\n2. `map_lazy(f, iterable)` and `filter_lazy(pred, iterable)` are generator versions of `map` and `filter` — use `yield`, and never turn the input into a list.\n3. `take(n, iterable)` returns a list of the first `n` items and pulls **no more** than `n`.\n4. `first_odd_squares(k)` chains them: naturals → keep odd → square → take `k`.\n\n```python\nfirst_odd_squares(5)  # [1, 9, 25, 49, 81]\n```\n\n`naturals()` is infinite, so an eager step anywhere in the chain never returns. The pipeline finishes only because each stage asks for exactly what the next one needs — the same demand you traced in exercise 2.\n\n**Predict before running:** how many numbers does `first_odd_squares(2)` pull out of `naturals()`?",
-      "starter_code": "def naturals():\n    \"\"\"Yield 1, 2, 3, ... forever.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef map_lazy(f, iterable):\n    \"\"\"Yield f(x) for each x, one at a time, only when asked.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef filter_lazy(pred, iterable):\n    \"\"\"Yield the x for which pred(x) is true, one at a time, only when asked.\"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef take(n, iterable):\n    \"\"\"Return a list of the first n items, pulling no more than n.\n\n    >>> take(3, naturals())\n    [1, 2, 3]\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\ndef first_odd_squares(k):\n    \"\"\"The squares of the first k odd naturals, as one lazy pipeline.\n\n    >>> first_odd_squares(5)\n    [1, 9, 25, 49, 81]\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n\n# Predict first: how many items does take(2, ...) pull out of naturals()\n# in first_odd_squares(2)? Then uncomment to check:\n# print(first_odd_squares(5))\n",
-      "tests": [
-        {
-          "name": "t1_naturals_is_an_endless_generator",
-          "code": "import types\ng = naturals()\nassert isinstance(g, types.GeneratorType), 'naturals() should be a generator: use yield'\nassert [next(g) for _ in range(5)] == [1, 2, 3, 4, 5]\nassert [next(g) for _ in range(1000)][-1] == 1005, 'naturals() should keep going'"
-        },
-        {
-          "name": "t2_map_and_filter_are_generators",
-          "code": "import types\nm = map_lazy(lambda x: x * 10, naturals())\nassert isinstance(m, types.GeneratorType), 'map_lazy should be written with yield (the built-in map is lazy too, but the point is to build it)'\nassert (next(m), next(m)) == (10, 20)\nf = filter_lazy(lambda x: x % 3 == 0, naturals())\nassert isinstance(f, types.GeneratorType), 'filter_lazy should be written with yield'\nassert (next(f), next(f)) == (3, 6)"
-        },
-        {
-          "name": "t3_take_pulls_exactly_n",
-          "code": "assert take(3, naturals()) == [1, 2, 3]\nassert take(0, naturals()) == []\nassert take(5, [1, 2]) == [1, 2], 'a source shorter than n just ends early'\npulled = []\ndef source():\n    for x in [1, 2, 3, 4, 5]:\n        pulled.append(x)\n        yield x\nassert take(2, source()) == [1, 2]\nassert pulled == [1, 2], f'take(2, ...) pulled {pulled}: stop as soon as the 2nd item arrives'"
-        },
-        {
-          "name": "t4_pipeline_over_infinite_source",
-          "code": "assert first_odd_squares(5) == [1, 9, 25, 49, 81]\nassert first_odd_squares(1) == [1]"
-        },
-        {
-          "name": "t5_demand_flows_back_to_the_source",
-          "code": "pulled = []\ndef counted_naturals():\n    for n in naturals():\n        pulled.append(n)\n        yield n\nodd_squares = map_lazy(lambda x: x * x,\n                       filter_lazy(lambda x: x % 2 == 1, counted_naturals()))\nassert take(2, odd_squares) == [1, 9]\nassert pulled == [1, 2, 3], f'two odd squares should pull 1, 2 and 3 from the source, not {pulled}'"
-        }
-      ],
-      "hints": [
-        "`naturals` is a `while True:` loop that yields a counter and then increases it.",
-        "A generator version of `map` is a `for` loop over the input with `yield f(x)` in the body — no list anywhere.",
-        "In `take`, check whether you already have `n` items right after appending, not before pulling the next one — otherwise you pull one extra item.",
-        "`first_odd_squares(2)` pulls three numbers: 1 is kept, 2 is dropped, 3 is kept, and then `take` stops asking."
-      ],
-      "solution": "def naturals():\n    n = 1\n    while True:\n        yield n\n        n += 1\n\n\ndef map_lazy(f, iterable):\n    for x in iterable:\n        yield f(x)\n\n\ndef filter_lazy(pred, iterable):\n    for x in iterable:\n        if pred(x):\n            yield x\n\n\ndef take(n, iterable):\n    # Stop as soon as the n-th item arrives: asking for one more would pull\n    # from the source again, and from naturals() that never has to end.\n    out = []\n    if n <= 0:\n        return out\n    for x in iterable:\n        out.append(x)\n        if len(out) == n:\n            break\n    return out\n\n\ndef first_odd_squares(k):\n    return take(k, map_lazy(lambda x: x * x,\n                            filter_lazy(lambda x: x % 2 == 1, naturals())))\n\n\n# first_odd_squares(2) pulls 1 (kept), 2 (dropped), 3 (kept), then stops:\n# three items from an infinite source.\nprint(first_odd_squares(5))  # [1, 9, 25, 49, 81]\n"
+     "step": "Show each visited prefix and its retained subsequence",
+     "checks": [
+      "parity_frames"
+     ]
     }
-  ]
+   ],
+   "starter_code": "def same_parity(first,*rest):\n    result=[]\n    show_parity([],result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_parity(visited,result):\n    canvas(600,360)\n    figure(\"array_state\",x=0,y=0,width=600,height=140,\n           values=list(visited) if visited else [\"not visited\"],cell_width=110,indices=False)\n    figure(\"array_state\",x=0,y=160,width=600,height=140,\n           values=list(result) if result else [\"none retained\"],cell_width=110,indices=False)\n    text(12,330,\"visited above / retained below\",size=18)\n    frame()\n\nprint(same_parity(8,3,12,0,7,8))\n",
+   "tests": [
+    {
+     "name": "parity_values",
+     "code": "import random\nsaved=show_parity;show_parity=lambda *args:None\ntry:\n    rng=random.Random(520)\n    cases=[(8,3,12,0,7,8),(-3,2,-1,0,5), (0,), (2,2,2), (1,)]\n    cases += [tuple(rng.randrange(-20,21) for _ in range(rng.randrange(1,16))) for _ in range(30)]\n    for values in cases:\n        expected=[x for x in values if x%2==values[0]%2]\n        assert same_parity(*values)==expected,\"Preserve matching values, their order and their repeated occurrences.\"\nfinally:show_parity=saved\n"
+    },
+    {
+     "name": "parity_frames",
+     "code": "from scimigo import _frame_count,_frame\nvalues=[5,2,9,9,0];before=_frame_count();result=same_parity(*values)\nassert result==[5,9,9],\"The first argument sets odd parity for this call.\"\nassert _frame_count()-before==len(values),\"Record one frame after each input occurrence.\"\nfor i in range(len(values)):\n    prefix=values[:i+1];kept=[x for x in prefix if x%2==1]\n    figs=[o for o in _frame(before+i) if o['kind']=='figure']\n    assert len(figs)==2,\"Draw the visited input and retained output as separate rows.\"\n    assert figs[0]['params']['values']==prefix and figs[1]['params']['values']==kept,\"Each frame must describe exactly the prefix already visited.\"\n"
+    }
+   ],
+   "hints": [
+    "Filtering changes which values remain, not their relative order or their multiplicity.",
+    "The first value establishes the parity rule and is itself part of the input.",
+    "Visit each argument once, append matching values, and draw only the prefix that has actually been visited."
+   ],
+   "solution": "def same_parity(first,*rest):\n    result=[]\n    visited=[]\n    for item in (first,)+rest:\n        visited.append(item)\n        if item%2==first%2:result.append(item)\n        show_parity(visited,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_parity(visited,result):\n    canvas(600,360)\n    figure(\"array_state\",x=0,y=0,width=600,height=140,\n           values=list(visited) if visited else [\"not visited\"],cell_width=110,indices=False)\n    figure(\"array_state\",x=0,y=160,width=600,height=140,\n           values=list(result) if result else [\"none retained\"],cell_width=110,indices=False)\n    text(12,330,\"visited above / retained below\",size=18)\n    frame()\n\nprint(same_parity(8,3,12,0,7,8))\n"
+  },
+  {
+   "exercise_id": "run_trace",
+   "title": "Trace: watch demand travel upstream",
+   "prompt_md": "Complete `run_trace(items, k)` for a finite integer list of at most 20 items and nonnegative k at most 20. Reset the supplied trace and emit `('start', k)` first. Form the pipeline using supplied `source`, `accept` and `transform`; these record pull, test and map events. Return at most k accepted transformed outputs, emitting an output event immediately after each one. Stop at exhaustion or immediately after the kth output. k equal to zero must not pull any source values. Do not replace the supplied stages or consume the source eagerly. Predict the source demand first.\n",
+   "questions": [
+    {
+     "step": "Predict source demand",
+     "prompt": "How many source values does the demo read to deliver two outputs?",
+     "choices": [
+      {
+       "text": "2",
+       "why": "Rejected inputs still need examination."
+      },
+      {
+       "text": "4",
+       "why": "It reads 1, 3, 4 and 6, then stops before 9."
+      },
+      {
+       "text": "5",
+       "why": "Reading the final 9 would exceed the requested prefix."
+      }
+     ],
+     "answer": 1
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Pull and test only through the last requested match",
+     "checks": [
+      "demand_trace"
+     ]
+    },
+    {
+     "step": "Show the real pulled prefix and outputs at every event",
+     "checks": [
+      "demand_frames"
+     ]
+    }
+   ],
+   "starter_code": "def run_trace(items,k):\n    reset_trace()\n    emit(\"start\",k)\n    return []\nfrom scimigo import canvas,figure,frame,text\n\nevents=[]\npulled=[]\noutputs=[]\n\ndef reset_trace():\n    events.clear();pulled.clear();outputs.clear()\n\ndef draw(kind,value):\n    canvas(600,350)\n    if pulled:figure(\"array_state\",x=0,y=0,width=600,height=140,values=list(pulled),indices=False)\n    if outputs:figure(\"array_state\",x=0,y=150,width=600,height=140,values=list(outputs),indices=False)\n    text(12,325,kind+\": \"+str(value),size=18)\n    frame()\n\ndef emit(kind,value):\n    events.append((kind,value))\n    if kind==\"pull\":pulled.append(value)\n    if kind==\"output\":outputs.append(value)\n    draw(kind,value)\n\ndef source(items):\n    for item in items:\n        emit(\"pull\",item)\n        yield item\n\ndef accept(item):\n    emit(\"test\",item)\n    return item%3==0\n\ndef transform(item):\n    emit(\"map\",item)\n    return item+100\n\nprint(run_trace([1,3,4,6,9],2))\n",
+   "tests": [
+    {
+     "name": "demand_trace",
+     "code": "saved=draw;draw=lambda *args:None\ntry:\n    for items,k in [([1,3,4,6,9],2),([0,0,2],2),([-2,-3,4,6],1),([],3),([1,2],5),([3,6],0),([3,6],5)]:\n        expected=[];wanted=[('start',k)]\n        if k:\n            for item in items:\n                wanted += [('pull',item),('test',item)]\n                if item%3==0:\n                    value=item+100;expected.append(value);wanted += [('map',item),('output',value)]\n                    if len(expected)==k:break\n        assert run_trace(items,k)==expected,\"Produce only the requested accepted prefix, or all available matches if fewer exist.\"\n        assert events==wanted,\"Do not transform rejected items or advance after the final requested result.\"\nfinally:draw=saved\n"
+    },
+    {
+     "name": "demand_frames",
+     "code": "from scimigo import _frame_count,_frame\nbefore=_frame_count();answer=run_trace([2,3,5,6,9],2)\nassert answer==[103,106],\"The first two accepted source values are 3 and 6.\"\nassert _frame_count()-before==len(events),\"Record exactly one picture per logged event.\"\nseen=[];made=[]\nfor i,(kind,value) in enumerate(events):\n    if kind=='pull':seen.append(value)\n    if kind=='output':made.append(value)\n    objects=_frame(before+i);figs=[o for o in objects if o['kind']=='figure']\n    expected=([list(seen)] if seen else [])+([list(made)] if made else [])\n    assert [o['params']['values'] for o in figs]==expected,\"Draw only source values actually pulled and outputs actually delivered so far.\"\n    assert any(o['kind']=='text' and o['value']==kind+': '+str(value) for o in objects),\"Name the event responsible for this frame.\"\n"
+    }
+   ],
+   "hints": [
+    "Demand for one output may require examining rejected source values first.",
+    "Separate constructing a pipeline from requesting its next output.",
+    "Request at most k results, recording each delivered result, and stop before requesting another one."
+   ],
+   "solution": "def run_trace(items,k):\n    reset_trace()\n    emit(\"start\",k)\n    pipeline=map(transform,filter(accept,source(items)))\n    answer=[]\n    for _ in range(k):\n        try:value=next(pipeline)\n        except StopIteration:break\n        answer.append(value)\n        emit(\"output\",value)\n    return answer\nfrom scimigo import canvas,figure,frame,text\n\nevents=[]\npulled=[]\noutputs=[]\n\ndef reset_trace():\n    events.clear();pulled.clear();outputs.clear()\n\ndef draw(kind,value):\n    canvas(600,350)\n    if pulled:figure(\"array_state\",x=0,y=0,width=600,height=140,values=list(pulled),indices=False)\n    if outputs:figure(\"array_state\",x=0,y=150,width=600,height=140,values=list(outputs),indices=False)\n    text(12,325,kind+\": \"+str(value),size=18)\n    frame()\n\ndef emit(kind,value):\n    events.append((kind,value))\n    if kind==\"pull\":pulled.append(value)\n    if kind==\"output\":outputs.append(value)\n    draw(kind,value)\n\ndef source(items):\n    for item in items:\n        emit(\"pull\",item)\n        yield item\n\ndef accept(item):\n    emit(\"test\",item)\n    return item%3==0\n\ndef transform(item):\n    emit(\"map\",item)\n    return item+100\n\nprint(run_trace([1,3,4,6,9],2))\n"
+  },
+  {
+   "exercise_id": "horner",
+   "title": "Implement: evaluate from ordered coefficients",
+   "prompt_md": "This is SICP exercise 2.34. Implement `horner(x, coefficients)` for integer x and up to 20 integer coefficients, ordered from constant term upward. An empty sequence represents zero. Process coefficients from highest index to lowest: combine the current coefficient with x times the completed higher-term result. Call `show_horner(index, coefficient, result)` after each combination, once per coefficient; do not mutate the input. The three cells show the actual index, coefficient and completed suffix value. Predict the demo polynomial before Run.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Evaluate varied coefficient sequences without mutation",
+     "checks": [
+      "polynomial_values"
+     ]
+    },
+    {
+     "step": "Record each completed suffix from highest coefficient to lowest",
+     "checks": [
+      "polynomial_frames"
+     ]
+    }
+   ],
+   "starter_code": "def horner(x,coefficients):\n    result=0\n    show_horner(-1,0,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_horner(index,coefficient,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[index,coefficient,result],indices=False)\n    text(12,260,\"index / coefficient / completed suffix value\",size=17)\n    frame()\n\nprint(horner(3,[2,-1,3,0,1]))\n",
+   "tests": [
+    {
+     "name": "polynomial_values",
+     "code": "import random\nsaved=show_horner;show_horner=lambda *args:None\ntry:\n    rng=random.Random(534)\n    cases=[(3,[2,-1,3,0,1]),(0,[8,2,9]),(-2,[1,0,3]),(5,[]),(7,[0]),(2,[9])]\n    cases += [(rng.randrange(-3,4),[rng.randrange(-5,6) for _ in range(rng.randrange(12))]) for _ in range(30)]\n    for x,coefficients in cases:\n        before=list(coefficients);expected=sum(c*x**i for i,c in enumerate(coefficients))\n        assert horner(x,coefficients)==expected,\"Coefficients run from constant term upward, including missing powers represented by zero.\"\n        assert coefficients==before,\"Do not reverse or overwrite the caller's list.\"\nfinally:show_horner=saved\n"
+    },
+    {
+     "name": "polynomial_frames",
+     "code": "from scimigo import _frame_count,_frame\ncoefficients=[4,0,-2,1];x=2;before=_frame_count();answer=horner(x,coefficients)\nassert answer==4,\"Compute all powers in the demo polynomial, including the zero coefficient.\"\nassert _frame_count()-before==len(coefficients),\"Record one suffix-combination step per coefficient.\"\nresult=0\nfor offset,index in enumerate(range(len(coefficients)-1,-1,-1)):\n    result=coefficients[index]+x*result\n    fig=next(o for o in _frame(before+offset) if o['kind']=='figure')\n    assert fig['params']['values']==[index,coefficients[index],result],\"Each frame must show this coefficient combined with the already completed higher terms.\"\n"
+    }
+   ],
+   "hints": [
+    "The already completed higher terms can be reused instead of evaluating each power independently.",
+    "Check which end of the coefficient sequence represents the highest power.",
+    "Carry one suffix result from right to left, extending it with the current coefficient before drawing."
+   ],
+   "solution": "def horner(x,coefficients):\n    result=0\n    for index in range(len(coefficients)-1,-1,-1):\n        coefficient=coefficients[index]\n        result=coefficient+x*result\n        show_horner(index,coefficient,result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_horner(index,coefficient,result):\n    canvas(600,300)\n    figure(\"array_state\",x=0,y=0,width=600,height=220,\n           values=[index,coefficient,result],indices=False)\n    text(12,260,\"index / coefficient / completed suffix value\",size=17)\n    frame()\n\nprint(horner(3,[2,-1,3,0,1]))\n"
+  },
+  {
+   "exercise_id": "profile",
+   "title": "Measure: compare complete work with prefix demand",
+   "prompt_md": "The supplied eager and lazy strategies return the same first k transformed multiples of four. Each takes a source function as its last argument. Implement `profile(strategy, items, k)` returning `(answer, actual_source_pulls)`. Give the strategy a function that behaves like the supplied `source` and counts items as it yields them. Count yielded items, not iterator creation or returned output length; keep counts fresh between calls and leave the supplied source unchanged. The checks also use strategies you have not seen. Drawing is excluded. The demo requests three results from source sizes 16, 40 and 80. Predict whether lazy pulls change with those sizes.\n",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Count yielded source values, including rejected ones, without changing the source",
+     "checks": [
+      "actual_pulls"
+     ]
+    },
+    {
+     "step": "Draw the measured eager and lazy pull counts at three sizes",
+     "checks": [
+      "pull_bars"
+     ]
+    }
+   ],
+   "starter_code": "def profile(solver,items,k):\n    return solver(items,k,source),0\n\nfrom itertools import islice\nfrom scimigo import canvas,rectangle,text,frame\n\ndef source(items):\n    yield from items\n\ndef eager(items,k,read_source):\n    values=[x+10 for x in read_source(items) if x%4==0]\n    return values[:k]\n\ndef lazy(items,k,read_source):\n    return list(islice((x+10 for x in read_source(items) if x%4==0),k))\n\ndef show_pulls(rows):\n    canvas(600,370)\n    largest=max([1]+[count for n,a,b in rows for count in (a,b)])\n    for i,(n,a,b) in enumerate(rows):\n        y=i*115\n        text(12,y+20,\"input size=\"+str(n),size=18)\n        rectangle(145,y+25,400*a/largest,20,color=\"#276bb0\")\n        text(145,y+64,\"eager pulls=\"+str(a),size=17)\n        rectangle(145,y+72,400*b/largest,20,color=\"#763aed\")\n        text(145,y+110,\"lazy pulls=\"+str(b),size=17)\n    frame()\n\nrows=[]\nfor n in (16,40,80):\n    items=list(range(1,n+1))\n    rows.append((n,profile(eager,items,3)[1],profile(lazy,items,3)[1]))\nshow_pulls(rows)\n",
+   "tests": [
+    {
+     "name": "actual_pulls",
+     "code": "original=source\nfor items,k in [(list(range(1,18)),2),([3,4,4,7,8],2),([],0),([1,2],5),([4,8],0)]:\n    matches=[x+10 for x in items if x%4==0][:k]\n    needed=0;accepted=0\n    if k:\n        for x in items:\n            needed+=1\n            if x%4==0:\n                accepted+=1\n                if accepted==k:break\n    assert profile(eager,items,k)==(matches,len(items)),\"The supplied eager solver reads the complete finite input before taking a prefix.\"\n    assert profile(lazy,items,k)==(matches,needed),\"Count actual source yields, not output length.\"\n    assert source is original,\"Leave the supplied source unchanged.\"\ndef unusual(items,k,read_source):return list(islice(read_source(items),2))\nassert profile(unusual,[7,8,9],0)==([7,8],2),\"Observe the solver's real consumption rather than inferring it from k.\"\ndef broken(items,k,read_source):\n    next(read_source(items))\n    raise ValueError('expected')\nraised=False\ntry:profile(broken,[1],1)\nexcept ValueError:raised=True\nassert raised and source is original,\"Propagate the strategy error without changing source.\"\n"
+    },
+    {
+     "name": "pull_bars",
+     "code": "from scimigo import _frame_count,_frame\nrows=[(n,profile(eager,list(range(1,n+1)),3)[1],profile(lazy,list(range(1,n+1)),3)[1]) for n in (16,40,80)]\nassert rows==[(16,16,12),(40,40,12),(80,80,12)],\"Measure how far each solver reads to find its requested prefix.\"\nbefore=_frame_count();show_pulls(rows)\nassert _frame_count()-before==1,\"Draw one comparison picture.\"\nobjects=_frame(before);bars=[o for o in objects if o['kind']=='rectangle'];words=[o['value'] for o in objects if o['kind']=='text']\nassert len(bars)==6,\"Draw one eager and one lazy bar per size.\"\nfor n,a,b in rows:\n    assert 'input size='+str(n) in words and 'eager pulls='+str(a) in words and 'lazy pulls='+str(b) in words,\"Use the actual measured counts as labels.\"\n"
+    }
+   ],
+   "hints": [
+    "Equal returned prefixes do not imply equal source consumption.",
+    "The relevant event is a yielded input, including one later rejected by the predicate.",
+    "Pass a counting generator function to the strategy; increment as it yields each item from the supplied source."
+   ],
+   "solution": "def profile(solver,items,k):\n    pulls=0\n    def counted(values):\n        nonlocal pulls\n        for item in source(values):\n            pulls+=1\n            yield item\n    answer=solver(items,k,counted)\n    return answer,pulls\n\nfrom itertools import islice\nfrom scimigo import canvas,rectangle,text,frame\n\ndef source(items):\n    yield from items\n\ndef eager(items,k,read_source):\n    values=[x+10 for x in read_source(items) if x%4==0]\n    return values[:k]\n\ndef lazy(items,k,read_source):\n    return list(islice((x+10 for x in read_source(items) if x%4==0),k))\n\ndef show_pulls(rows):\n    canvas(600,370)\n    largest=max([1]+[count for n,a,b in rows for count in (a,b)])\n    for i,(n,a,b) in enumerate(rows):\n        y=i*115\n        text(12,y+20,\"input size=\"+str(n),size=18)\n        rectangle(145,y+25,400*a/largest,20,color=\"#276bb0\")\n        text(145,y+64,\"eager pulls=\"+str(a),size=17)\n        rectangle(145,y+72,400*b/largest,20,color=\"#763aed\")\n        text(145,y+110,\"lazy pulls=\"+str(b),size=17)\n    frame()\n\nrows=[]\nfor n in (16,40,80):\n    items=list(range(1,n+1))\n    rows.append((n,profile(eager,items,3)[1],profile(lazy,items,3)[1]))\nshow_pulls(rows)\n"
+  },
+  {
+   "exercise_id": "rising_preview",
+   "title": "Mastery challenge: preview rises from a live feed",
+   "prompt_md": "A display previews the first k rising adjacent pairs from an integer reading feed. Implement `rising_preview(readings, k)` returning tuples `(previous, current)` wherever current is greater than its immediate predecessor in the original source. Keep occurrence order; equal values and falls are not results. k is between zero and 20. A finite source may contain fewer than k rises; an unbounded source is promised to contain enough when k is positive. Stop immediately on the kth rise, without requesting another reading. For k equal to zero, consume nothing. Call `show_preview(result)` once to draw the last returned pair and the result count. The starter is correct on finite inputs but consumes their entire source and cannot meet a live feed's contract.\n",
+   "questions": [
+    {
+     "step": "Explain the plan",
+     "prompt": "What must a returned pair describe?",
+     "choices": [
+      {
+       "text": "Two largest readings",
+       "why": "The task concerns adjacent rises, not sorting."
+      },
+      {
+       "text": "Any two accepted readings",
+       "why": "Filtering readings first could create pairs that were never adjacent."
+      },
+      {
+       "text": "Consecutive original readings",
+       "why": "Both readings must be neighbors in the source."
+      }
+     ],
+     "answer": 2
+    },
+    {
+     "step": "State the invariant",
+     "prompt": "Which reading is needed when the next one arrives?",
+     "choices": [
+      {
+       "text": "The immediately preceding reading",
+       "why": "Adjacency refers to the most recent input, even after a fall or equality."
+      },
+      {
+       "text": "Only the first reading",
+       "why": "The first reading is not generally adjacent to later inputs."
+      },
+      {
+       "text": "Only the greatest reading",
+       "why": "A previous maximum can belong far earlier in the source."
+      }
+     ],
+     "answer": 0
+    },
+    {
+     "step": "Predict consumption",
+     "prompt": "What determines how many source values are needed?",
+     "choices": [
+      {
+       "text": "Exactly twice k",
+       "why": "Rejected pairs can occur between returned ones."
+      },
+      {
+       "text": "Where the kth rise occurs",
+       "why": "Demand ends at that rise, or at finite exhaustion if fewer exist."
+      },
+      {
+       "text": "The largest value seen",
+       "why": "The magnitude of values does not determine their positions."
+      }
+     ],
+     "answer": 1
+    },
+    {
+     "step": "Explain a counterexample",
+     "prompt": "On readings 4, 1, 3, comparing every value with the first reading misses which result?",
+     "choices": [
+      {
+       "text": "The pair (4, 3)",
+       "why": "Those values are not adjacent."
+      },
+      {
+       "text": "The pair (4, 1)",
+       "why": "That pair falls."
+      },
+      {
+       "text": "The pair (1, 3)",
+       "why": "The last value rises from its immediate predecessor, despite being below the first value."
+      }
+     ],
+     "answer": 2
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Return the first rising adjacent pairs, preserving source order",
+     "checks": [
+      "preview_behavior"
+     ]
+    },
+    {
+     "step": "Stop exactly at the requested rise, including on a guarded unbounded source",
+     "checks": [
+      "preview_demand"
+     ]
+    }
+   ],
+   "starter_code": "def rising_preview(readings,k):\n    values=list(readings)\n    pairs=[(a,b) for a,b in zip(values,values[1:]) if b>a]\n    result=pairs[:k]\n    show_preview(result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_preview(result):\n    canvas(600,300)\n    if result:\n        previous,current=result[-1]\n        figure(\"array_state\",x=0,y=0,width=600,height=220,\n               values=[previous,current],indices=False)\n    text(12,255,\"rising pairs returned=\"+str(len(result)),size=18)\n    text(12,285,\"last returned adjacent pair shown\",size=17)\n    frame()\n\nprint(rising_preview(iter([5,2,4,4,1,3,8]),3))\n",
+   "tests": [
+    {
+     "name": "preview_behavior",
+     "code": "import random\nsaved=show_preview;show_preview=lambda *args:None\ntry:\n    rng=random.Random(550)\n    cases=[([5,2,4,4,1,3,8],3),([],4),([7],3),([4,1,3],1),([-2,-1,-1,0],4),([2,1,0],3),([2,3,4],0)]\n    cases += [([rng.randrange(-8,9) for _ in range(rng.randrange(16))],rng.randrange(6)) for _ in range(30)]\n    for readings,k in cases:\n        before=list(readings);expected=[(a,b) for a,b in zip(readings,readings[1:]) if b>a][:k]\n        assert rising_preview(iter(readings),k)==expected,\"Pairs must be consecutive in the original source; each rise uses the immediately preceding reading.\"\n        assert readings==before,\"Do not mutate the caller's collection.\"\nfinally:show_preview=saved\n"
+    },
+    {
+     "name": "preview_demand",
+     "code": "from scimigo import _frame_count,_frame\nclass PullExceeded(BaseException):pass\nclass Guarded:\n    def __init__(self,values,limit):self.values=iter(values);self.limit=limit;self.pulls=0\n    def __iter__(self):return self\n    def __next__(self):\n        if self.pulls>=self.limit:raise PullExceeded()\n        value=next(self.values);self.pulls+=1;return value\nfrom itertools import count\nfor values,k,limit,expected in [([4,1,3,2,5,9],2,5,[(1,3),(2,5)]),([1,2,3],0,0,[]),(count(7),5,6,[(7,8),(8,9),(9,10),(10,11),(11,12)])]:\n    readings=Guarded(values,limit);before=_frame_count()\n    try:answer=rising_preview(readings,k)\n    except PullExceeded:raise AssertionError(\"Do not request another source value after the kth rise; k=0 must not request the first value.\")\n    assert answer==expected and readings.pulls==limit,\"Return the requested original adjacent pairs using exactly the needed source prefix.\"\n    assert _frame_count()-before==1,\"Record one completed preview.\"\n    objects=_frame(before);figs=[o for o in objects if o['kind']=='figure']\n    assert [o['params']['values'] for o in figs]==([list(answer[-1])] if answer else []),\"Show the actual last returned adjacent pair, without inventing a pair for empty output.\"\n    assert any(o['kind']=='text' and o['value']=='rising pairs returned='+str(len(answer)) for o in objects),\"Draw the actual number of returned pairs.\"\n"
+    }
+   ],
+   "hints": [
+    "Which information is needed to decide whether the next reading forms a result?",
+    "A rejected pair still changes which reading is immediately before the next one.",
+    "Retain the last source value and count completed results; stop before another request once the preview is full."
+   ],
+   "solution": "def rising_preview(readings,k):\n    result=[]\n    if k:\n        iterator=iter(readings)\n        try:previous=next(iterator)\n        except StopIteration:previous=None\n        if previous is not None:\n            for current in iterator:\n                if current>previous:\n                    result.append((previous,current))\n                    if len(result)==k:break\n                previous=current\n    show_preview(result)\n    return result\nfrom scimigo import canvas,figure,frame,text\n\ndef show_preview(result):\n    canvas(600,300)\n    if result:\n        previous,current=result[-1]\n        figure(\"array_state\",x=0,y=0,width=600,height=220,\n               values=[previous,current],indices=False)\n    text(12,255,\"rising pairs returned=\"+str(len(result)),size=18)\n    text(12,285,\"last returned adjacent pair shown\",size=17)\n    frame()\n\nprint(rising_preview(iter([5,2,4,4,1,3,8]),3))\n"
+  }
+ ]
 }

@@ -1,0 +1,28 @@
+{
+  "schema_version": "lab_v1",
+  "lab_spec_id": "sicp-python-05-sequences",
+  "title": "Order, stages and demand",
+  "description": "Select same-parity arguments, trace a lazy pipeline, evaluate ordered coefficients, count source pulls and preview original adjacent rises.",
+  "runtime": {
+    "engine": "pyodide",
+    "timeout_ms": 15000
+  },
+  "recap": {
+    "learned": [
+      "Preserve relative order and repeated occurrences during selection.",
+      "Trace requests through source, predicate, mapping and output events.",
+      "Combine ordered coefficients from the highest term downward.",
+      "Count actual yielded inputs rather than output length."
+    ],
+    "invariant": "The recorded prefix or suffix contains exactly the values already processed under its stated ordering rule.",
+    "complexity": "For a finite sequence of n coefficients, the polynomial algorithm performs n multiply-add steps. A lazy pipeline producing k results after examining p inputs calls its predicate p times and transforms k accepted inputs. Counts exclude drawing; arithmetic, callback and source costs are separate.",
+    "common_mistake": "Reading one value too many after filling a prefix, or comparing a reading with an earlier retained result instead of its original predecessor.",
+    "in_real_programs": [
+      "Python map and filter return iterators; a generator suspends at yield and resumes on demand. An exhausted iterator does not replay itself."
+    ],
+    "retrieval": {
+      "question": "Module 4: what should remain stable if the representation of a sequence changes?",
+      "answer": "Its public meaning and operation contracts; clients should not depend on storage details."
+    }
+  }
+}
