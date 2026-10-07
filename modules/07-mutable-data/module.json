@@ -1,27 +1,29 @@
 {
   "id": "07-mutable-data",
   "title": "Mutable Data",
-  "subtitle": "State, identity, and why mutation breaks substitution",
-  "chapter": "2.6",
-  "description": "Introduce mutation into the picture. Understand nonlocal, aliasing dangers, the mutable default trap, and the fundamental trade-off: mutation enables state modeling but makes reasoning harder.",
-  "estimatedMinutes": 35,
-  "prerequisites": ["05-sequences"],
-
-  "generation": {
-    "minSlides": 8,
-    "maxSlides": 10,
-    "targetSeconds": 420,
-    "preset": "sicp_interactive",
-    "referenceFiles": ["3.1-assignment-local-state.md", "3.3-mutable-data.md"],
-    "diagramTemplates": ["environment_diagram", "object_identity"],
-    "interactionCheckpoints": 2,
-    "enableFragments": true,
-    "enableImages": true,
-    "imageStyle": "clean technical diagram, minimalist, white background",
-    "pyodideEnabled": true
-  },
-
+  "subtitle": "Local state, shared identity and mutable links",
+  "chapter": "SICP §§3.1.1, 3.1.3, 3.3.1",
+  "description": "Build stateful closures, trace aliases and link updates, count pairs by identity instead of by path, and give several passwords access to one shared balance.",
+  "estimatedMinutes": 95,
+  "prerequisites": [
+    "02-environment-diagrams",
+    "05-sequences"
+  ],
+  "lesson": "lesson.md",
+  "backgroundReading": "reading/07-mutable-data.html",
+  "format": "lesson-visual-lab",
+  "publicationStatus": "draft",
   "lab": {
-    "exercises": ["3.1", "3.2", "3.3"]
-  }
+    "title": "State, identity and shared access",
+    "exercises": [
+      "accumulate",
+      "append_links",
+      "account",
+      "count_pairs",
+      "shared_access"
+    ],
+    "mastery": "shared_access"
+  },
+  "estimateNote": "Author estimate, not learner-measured: about 2200 prose words at 200 words/minute plus code/figure study, about 25 minutes; exercises about 15, 15, 15, 10, 15 minutes. Total about 95 minutes; optional book text excluded.",
+  "sourceAttribution": "SICP by Harold Abelson and Gerald Jay Sussman with Julie Sussman; examples and exercises 3.1, 3.2, 3.3, 3.7, 3.12, 3.16, 3.17 translated/adapted in Python. New teaching prose and diagrams under CC BY-SA 4.0. Independent course."
 }

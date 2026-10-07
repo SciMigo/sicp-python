@@ -1,89 +1,345 @@
 {
-  "schema_version": "lab_v1",
-  "lab_spec_id": "mutable-data-lab",
-  "title": "Mutable Data Lab",
-  "description": "Practice reasoning about time-varying state: mutation vs rebinding, closures with nonlocal state, aliasing, identity vs equality, and the mutable-default-argument trap.",
-  "runtime": {
-    "engine": "pyodide",
-    "timeout_ms": 5000
-  },
-  "exercises": [
+ "schema_version": "lab_v1",
+ "lab_spec_id": "sicp-python-07-mutable-data",
+ "title": "State, identity and shared access",
+ "description": "Keep totals and counts in closures, change one link and watch every alias follow, guard an account with a password, count pairs by identity, then share one balance between several passwords.",
+ "runtime": {
+  "engine": "pyodide",
+  "timeout_ms": 15000
+ },
+ "recap": {
+  "learned": [
+   "Build closures that each keep their own state, and tell commands from ordinary calls.",
+   "Change one link in place and predict what every alias sees.",
+   "Count objects by identity, remembering each before following its parts.",
+   "Share one piece of state between several access routes without copying it."
+  ],
+  "invariant": "Each account retains one balance reached by all its authorized operations and aliases; rejected operations preserve it.",
+  "complexity": "In a stack of n pairs whose parts both point to the pair below, counting by path meets 2**n-1 pairs while counting by identity meets n. A request through d connected services is passed on d times.",
+  "common_mistake": "Counting equal contents as one identity, or creating a new balance for a new credential.",
+  "in_real_programs": [
+   "Python nonlocal updates an enclosing binding.",
+   "Shallow container copies can retain shared mutable elements."
+  ],
+  "retrieval": {
+   "question": "Module 2: what survives when a closure creator returns?",
+   "answer": "The environment containing bindings reachable through the returned function."
+  }
+ },
+ "exercises": [
+  {
+   "exercise_id": "accumulate",
+   "title": "Build: a running total and a call counter",
+   "prompt_md": "These are SICP's exercises 3.1 and 3.2: two small functions that each keep something between calls.\n\n`make_accumulator(initial)` returns a function that adds its argument to a running total of its own and returns the new total. After each addition call `show_state('accumulated total', [total])`.\n\n`make_monitored(f)` returns a function of one argument that counts how often it is used. For an ordinary argument it adds one to its count, calls `f` once, and returns what `f` returned; after a call that returns normally it draws `show_state('attempted calls', [count])`. If `f` raises, the exception passes through and the attempt still counts. Two arguments are commands and never reach `f`: `'how-many-calls?'` returns the count and draws nothing; `'reset-count'` sets the count to zero, draws `show_state('monitor reset', [0])` and returns 0.\n\nTwo accumulators must not share a total, and two monitors must not share a count. Before you press Run, predict the count the demo prints.",
+   "questions": [],
+   "checklist": [
     {
-      "exercise_id": "ex1_predict_mutable_default_aliasing",
-      "title": "Predict: The Mutable Default Trap",
-      "slide_anchor": 8,
-      "prompt_md": "**Predict the result** before running.\n\nThis function has a mutable default argument:\n\n```python\ndef append_bad(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\ndef demo():\n    a = append_bad(1)\n    b = append_bad(2)\n    fresh = append_bad(3, [])\n    return a, b, (a is b), fresh\n```\n\n1) What does `demo()` return?\n2) Why is `(a is b)` either `True` or `False`?\n\nAfter you write your prediction, run the code to check.",
-      "starter_code": "def append_bad(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\ndef demo():\n    a = append_bad(1)\n    b = append_bad(2)\n    fresh = append_bad(3, [])\n    return a, b, (a is b), fresh\n\n# Prediction (write before running):\n# I predict demo() returns: ???\n\n# Uncomment to check:\n# print(demo())\n",
-      "tests": [
-        {
-          "name": "t1_value",
-          "code": "assert demo() == ([1, 2], [1, 2], True, [3])"
-        },
-        {
-          "name": "t2_identity",
-          "code": "a, b, same, fresh = demo(); assert same is True and a is b and fresh is not a"
-        }
-      ],
-      "hints": [
-        "Default argument expressions are evaluated once, at function definition time.",
-        "`bucket.append(...)` mutates the *existing list object* in place.",
-        "`is` checks whether two names refer to the same object (identity), not whether they have equal contents."
-      ],
-      "solution": "def append_bad(item, bucket=[]):\n    bucket.append(item)\n    return bucket\n\ndef demo():\n    a = append_bad(1)\n    b = append_bad(2)\n    fresh = append_bad(3, [])\n    return a, b, (a is b), fresh\n"
+     "step": "Retain separate totals; delegate calls and implement query/reset",
+     "checks": [
+      "histories"
+     ]
     },
     {
-      "exercise_id": "ex2_trace_withdraw_closure",
-      "title": "Trace: Where Does the Balance Live?",
-      "slide_anchor": 4,
-      "prompt_md": "This closure uses `nonlocal` to update a private `balance` over time.\n\n```python\ndef make_withdraw(balance):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n    return withdraw\n```\n\n**Trace** `run()` by writing (in comments) what `balance` is after each call, and what each call returns.\n\nFocus questions:\n- Which frame stores `balance`?\n- Does a failed withdrawal change `balance`?\n\nThen run to confirm.",
-      "starter_code": "def make_withdraw(balance):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n    return withdraw\n\ndef run():\n    wd = make_withdraw(100)\n    # Trace in comments (before running):\n    # Call 1: wd(25) returns ___, balance becomes ___\n    # Call 2: wd(25) returns ___, balance becomes ___\n    # Call 3: wd(60) returns ___, balance becomes ___\n    # Call 4: wd(15) returns ___, balance becomes ___\n    return [wd(25), wd(25), wd(60), wd(15)]\n\n# Uncomment to check:\n# print(run())\n",
-      "tests": [
-        {
-          "name": "t1_outputs",
-          "code": "assert run() == [75, 50, 'Insufficient funds', 35]"
-        },
-        {
-          "name": "t2_independent_closures",
-          "code": "wd1 = make_withdraw(10); wd2 = make_withdraw(10); assert wd1(3) == 7 and wd2(3) == 7 and wd1(3) == 4 and wd2(3) == 4"
-        }
-      ],
-      "hints": [
-        "`withdraw` is a closure: it carries a reference to the frame created by `make_withdraw`.",
-        "`nonlocal balance` means rebinding the name `balance` in the enclosing frame (not creating a new local variable).",
-        "If the function returns \"Insufficient funds\", it should not subtract anything."
-      ],
-      "solution": "def make_withdraw(balance):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n    return withdraw\n\ndef run():\n    wd = make_withdraw(100)\n    return [wd(25), wd(25), wd(60), wd(15)]\n"
-    },
-    {
-      "exercise_id": "ex3_extend_password_account_sicp_3_3",
-      "title": "Extend: Password-Protected Account (SICP Ex 3.3)",
-      "slide_anchor": 5,
-      "prompt_md": "Modify message-passing bank accounts to require a password.\n\nImplement `make_account(balance, password)` so that:\n- `acc(correct_pw, \"withdraw\")` returns a **function** that withdraws.\n- `acc(correct_pw, \"deposit\")` returns a **function** that deposits.\n- Any request with a wrong password returns the string **\"Incorrect password\"** (not a function).\n\n**Predict (before running)** what each line should evaluate to:\n\n```python\nacc = make_account(100, \"secret\")\nacc(\"secret\", \"deposit\")(50)      # ?\nacc(\"secret\", \"withdraw\")(30)    # ?\nacc(\"wrong\", \"withdraw\")         # ?\n```\n\nThen implement and run the tests.",
-      "starter_code": "def make_account(balance, password):\n    \"\"\"Return a password-protected dispatch function.\n\n    acc(pw, msg) returns either a function (withdraw/deposit) or the string\n    \"Incorrect password\".\n    \"\"\"\n    # YOUR CODE HERE\n    pass\n\n# Prediction (write before running):\n# acc = make_account(100, \"secret\")\n# acc(\"secret\", \"deposit\")(50) => ???\n# acc(\"secret\", \"withdraw\")(30) => ???\n# acc(\"wrong\", \"withdraw\") => ???\n",
-      "tests": [
-        {
-          "name": "t1_deposit_withdraw",
-          "code": "acc = make_account(100, 'secret'); assert acc('secret', 'deposit')(50) == 150; assert acc('secret', 'withdraw')(30) == 120"
-        },
-        {
-          "name": "t2_wrong_password_returns_string",
-          "code": "acc = make_account(100, 'secret'); assert acc('wrong', 'withdraw') == 'Incorrect password'"
-        },
-        {
-          "name": "t3_state_is_private_and_persists",
-          "code": "acc = make_account(10, 'pw'); assert acc('pw', 'withdraw')(3) == 7; assert acc('pw', 'withdraw')(3) == 4"
-        },
-        {
-          "name": "t4_unknown_message_raises",
-          "code": "acc = make_account(1, 'pw'); ok = False\ntry:\n    acc('pw', 'balance')\nexcept ValueError:\n    ok = True\nassert ok"
-        }
-      ],
-      "hints": [
-        "Use `nonlocal balance` inside `withdraw` and `deposit` to update the enclosed state.",
-        "`dispatch` should check the password *before* choosing which operation to return.",
-        "Return a function for valid requests; return a string for invalid password."
-      ],
-      "solution": "def make_account(balance, password):\n    def withdraw(amount):\n        nonlocal balance\n        if amount <= balance:\n            balance -= amount\n            return balance\n        return \"Insufficient funds\"\n\n    def deposit(amount):\n        nonlocal balance\n        balance += amount\n        return balance\n\n    def dispatch(pw, message):\n        if pw != password:\n            return \"Incorrect password\"\n        if message == \"withdraw\":\n            return withdraw\n        if message == \"deposit\":\n            return deposit\n        raise ValueError(f\"Unknown request: {message}\")\n\n    return dispatch\n"
+     "step": "Replay each retained total and measured call count",
+     "checks": [
+      "state_replay"
+     ]
     }
-  ]
+   ],
+   "starter_code": "def make_accumulator(initial):\n    def add(value):\n        show_state('accumulator not implemented',[initial])\n        return initial\n    return add\n\ndef make_monitored(f):\n    return lambda value: 0\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=110)\n    frame()\n\na=make_accumulator(7)\nb=make_accumulator(-2)\ntracked=make_monitored(a)\nfor value in (4,-3,9):\n    print(tracked(value))\nprint(tracked('how-many-calls?'))\ntracked('reset-count')\nprint(tracked(2))\nprint(b(5))\n",
+   "tests": [
+    {
+     "name": "histories",
+     "code": "show_state=lambda *args:None\nimport random\nrng=random.Random(713)\nfor initial in (-9,0,13):\n    a=make_accumulator(initial);b=make_accumulator(initial);want=initial\n    for value in [rng.randint(-10,10) for _ in range(15)]:\n        want+=value;got=a(value)\n        assert got==want, f'After adding {value}, expected retained total {want}; got {got!r}'\n    got=b(0)\n    assert got==initial, f'Independent accumulator expected {initial}; got {got!r}'\nseen=[]\ndef worker(x):seen.append(x);return ('answer',x)\nm=make_monitored(worker);other=make_monitored(worker)\nfor i in (3,-2,7):\n    got=m(i)\n    assert got==('answer',i), f'Expected delegated result {(\"answer\",i)!r}; got {got!r}'\ngot=m('how-many-calls?')\nassert got==3 and seen==[3,-2,7], f'Expected 3 calls and [3,-2,7]; got count {got!r}, arguments {seen!r}'\nassert other('how-many-calls?')==0, f'Expected independent count 0; got {other(\"how-many-calls?\")!r}'\ngot=m('reset-count');count=m('how-many-calls?')\nassert (got,count)==(0,0), f'Expected reset return and count (0,0); got {(got,count)!r}'\ndef fails(x):raise ValueError('worker failed')\nm=make_monitored(fails)\ntry:m(8)\nexcept ValueError:pass\nelse:raise AssertionError('Expected worker ValueError; got normal return')\ngot=m('how-many-calls?')\nassert got==1, f'Expected failed attempt to count once; got {got!r}'\n"
+    },
+    {
+     "name": "state_replay",
+     "code": "from scimigo import _frame_count,_frame\n\ndef recorded(before):\n    rows=[]\n    for i in range(before,_frame_count()):\n        pictures=[o for o in _frame(i) if o['kind']=='figure']\n        assert len(pictures)==1, f'Expected one state figure in frame {i}; got {len(pictures)}'\n        rows.append(pictures[0]['params']['values'])\n    return rows\n\nbefore=_frame_count();a=make_accumulator(10);m=make_monitored(a)\nm(5);m(-4);m('reset-count');m(2)\ngot=recorded(before);want=[[15],[1],[11],[2],[0],[13],[1]]\nassert got==want, f'Expected total/count frames {want}; got {got}'\nbefore=_frame_count();count=m('how-many-calls?')\nassert _frame_count()==before, f'Asking how-many-calls? should draw nothing; it recorded {_frame_count()-before} frame(s)'\nassert count==1, f'One call since the reset; how-many-calls? returned {count!r}'\n"
+    }
+   ],
+   "hints": [
+    "Which binding must survive its constructor call?",
+    "A reset concerns the monitor, not the accumulated total.",
+    "Delegate ordinary arguments exactly once; distinguish reserved requests before delegation."
+   ],
+   "solution": "def make_accumulator(initial):\n    total=initial\n    def add(value):\n        nonlocal total\n        total+=value\n        show_state('accumulated total',[total])\n        return total\n    return add\n\ndef make_monitored(f):\n    calls=0\n    def dispatch(value):\n        nonlocal calls\n        if value=='how-many-calls?':\n            return calls\n        if value=='reset-count':\n            calls=0\n            show_state('monitor reset',[calls])\n            return 0\n        calls+=1\n        result=f(value)\n        show_state('attempted calls',[calls])\n        return result\n    return dispatch\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=110)\n    frame()\n\na=make_accumulator(7)\nb=make_accumulator(-2)\ntracked=make_monitored(a)\nfor value in (4,-3,9):\n    print(tracked(value))\nprint(tracked('how-many-calls?'))\ntracked('reset-count')\nprint(tracked(2))\nprint(b(5))\n",
+   "concepts": [
+    "mutable-data/accumulate"
+   ]
+  },
+  {
+   "exercise_id": "append_links",
+   "title": "Trace: change one link, and every alias sees it",
+   "prompt_md": "This is the destructive append of SICP's exercise 3.12. A chain is made of pairs `[value, rest]` and ends with `rest` equal to `None`. Implement `append_in_place(first, second)`: walk to the last pair of the first chain and make its `rest` the second chain. Build no new pairs and change no values. Return `first`, or `second` if the first chain is empty.\n\nAnswer the question before you run anything.\n\nAs you walk, call `show_links(first, second, current)` for each pair you visit, passing the pair itself, starting with the first pair. After changing the link, call `show_links(first, second, 'linked')`. If the first chain is empty, call `show_links(first, second, 'empty')` once and change nothing.\n\nThe two chains are separate and have no cycles. Pictured chains have at most eight pairs.",
+   "questions": [
+    {
+     "step": "Predict aliasing",
+     "prompt": "After attaching y, what does an alias to the original first head reach?",
+     "answer": 1,
+     "choices": [
+      {
+       "text": "Only the old first chain",
+       "why": "The final rest field is shared by all aliases."
+      },
+      {
+       "text": "The extended chain",
+       "why": "The original pair identities are retained and the final link changes."
+      },
+      {
+       "text": "A separate copied chain",
+       "why": "The operation does not allocate replacement pairs."
+      }
+     ]
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Attach existing pairs without copying or altering values",
+     "checks": [
+      "identity"
+     ]
+    },
+    {
+     "step": "Show each visited pair and the actual changed tail",
+     "checks": [
+      "link_replay"
+     ]
+    }
+   ],
+   "starter_code": "def append_in_place(first,second):\n    show_links(first,second,'not linked yet')\n    return first\n\nfrom scimigo import canvas,figure,text,frame\n\ndef chain(values):\n    result=None\n    for value in reversed(values):result=[value,result]\n    return result\n\ndef pairs_from(head):\n    found=[]\n    while head is not None and not any(head is p for p in found):\n        found.append(head);head=head[1]\n    return found\n\ndef show_links(first,second,current):\n    \"\"\"Draw the chain reached from first and, while it is still separate, the one from second.\n    current is the pair being visited (highlighted), or the word 'linked' or 'empty'.\"\"\"\n    top=pairs_from(first)\n    joined=second is not None and any(second is p for p in top)\n    bottom=[] if joined else pairs_from(second)\n    names={id(p):'p'+str(i) for i,p in enumerate(top+bottom)}\n    def draw(pairs,y,label,head):\n        nodes=[{'id':names[id(p)],'value':str(p[0])} for p in pairs]\n        marks={names[id(p)]:'current' for p in pairs if p is current}\n        pointers=[{'node':names[id(head)],'label':label}]\n        if label=='first' and joined:pointers.append({'node':names[id(second)],'label':'second'})\n        figure('linked_list',x=0,y=y,width=600,height=130,type='singly',nodes=nodes,\n               highlights=marks,pointers=pointers,show_null=True)\n    canvas(600,330)\n    if top:draw(top,0,'first',first)\n    if bottom:draw(bottom,150,'second',second)\n    note=current if isinstance(current,str) else 'visiting '+str(current[0])\n    text(15,315,note,size=18)\n    frame()\n\nx=chain(['c','d','e']);y=chain(['f','g']);alias=x\nprint(append_in_place(x,y) is alias)\n",
+   "tests": [
+    {
+     "name": "identity",
+     "code": "show_links=lambda *args:None\ndef walk(head,limit):\n    seen=[]\n    while head is not None and len(seen)<=limit:\n        seen.append(head);head=head[1]\n    return seen\nfor xs,ys in [([],[]),([],['q']),(['q'],[]),(['q'],['q','r']),(['a','b','c'],['d']),(['m','m'],['m'])]:\n    a=chain(xs);b=chain(ys)\n    want=walk(a,len(xs))+walk(b,len(ys))\n    got=append_in_place(a,b)\n    seen=walk(got,len(want))\n    assert len(seen)==len(want), f'append_in_place({xs}, {ys}) should give a chain of {len(want)} pairs ending in None; yours has {\"more than \" if len(seen)>len(want) else \"\"}{min(len(seen),len(want)+1)}'\n    assert all(x is y for x,y in zip(seen,want)), f'append_in_place({xs}, {ys}) must reuse the original pairs in order; it built or reordered pairs'\n    values=[p[0] for p in seen]\n    assert values==xs+ys, f'append_in_place({xs}, {ys}) should read {xs+ys}; it reads {values}'\n    if xs:\n        assert got is a, f'append_in_place({xs}, {ys}) should return the first chain itself'\n"
+    },
+    {
+     "name": "link_replay",
+     "code": "from scimigo import _frame_count,_frame\na=chain(['h','i']);b=chain(['j']);before=_frame_count();append_in_place(a,b)\ndef summary(index):\n    rows=[]\n    for o in _frame(index):\n        if o['kind']=='figure':\n            p=o['params']\n            rows.append(([n['value'] for n in p['nodes']],sorted(p['highlights']),sorted((q['label'],q['node']) for q in p['pointers'])))\n    return rows\ngot=[summary(i) for i in range(before,_frame_count())]\nwant=[[(['h','i'],['p0'],[('first','p0')]),(['j'],[],[('second','p2')])],\n      [(['h','i'],['p1'],[('first','p0')]),(['j'],[],[('second','p2')])],\n      [(['h','i','j'],[],[('first','p0'),('second','p2')])]]\nassert len(got)==3, f\"A two-pair first chain needs three frames (visit h, visit i, then 'linked'); recorded {len(got)}\"\nfor i,(g,x) in enumerate(zip(got,want)):\n    assert g==x, f'Frame {i+1} should show chains, highlighted pair and labels {x}; it shows {g}. Pass show_links the pair you are visiting, and draw the last frame after changing the link.'\nbefore=_frame_count();append_in_place(None,chain(['k']))\nassert _frame_count()-before==1, f\"An empty first chain draws one frame, with 'empty'; recorded {_frame_count()-before}\"\n"
+    }
+   ],
+   "hints": [
+    "What does another name for the first chain's head see after the append, and why?",
+    "Only one field in the whole structure has to change. Which pair holds it?",
+    "Follow rest from pair to pair until you reach the pair whose rest is None. Assign the second chain to that field."
+   ],
+   "solution": "def append_in_place(first,second):\n    if first is None:\n        show_links(first,second,'empty')\n        return second\n    current=first\n    show_links(first,second,current)\n    while current[1] is not None:\n        current=current[1]\n        show_links(first,second,current)\n    current[1]=second\n    show_links(first,second,'linked')\n    return first\n\nfrom scimigo import canvas,figure,text,frame\n\ndef chain(values):\n    result=None\n    for value in reversed(values):result=[value,result]\n    return result\n\ndef pairs_from(head):\n    found=[]\n    while head is not None and not any(head is p for p in found):\n        found.append(head);head=head[1]\n    return found\n\ndef show_links(first,second,current):\n    \"\"\"Draw the chain reached from first and, while it is still separate, the one from second.\n    current is the pair being visited (highlighted), or the word 'linked' or 'empty'.\"\"\"\n    top=pairs_from(first)\n    joined=second is not None and any(second is p for p in top)\n    bottom=[] if joined else pairs_from(second)\n    names={id(p):'p'+str(i) for i,p in enumerate(top+bottom)}\n    def draw(pairs,y,label,head):\n        nodes=[{'id':names[id(p)],'value':str(p[0])} for p in pairs]\n        marks={names[id(p)]:'current' for p in pairs if p is current}\n        pointers=[{'node':names[id(head)],'label':label}]\n        if label=='first' and joined:pointers.append({'node':names[id(second)],'label':'second'})\n        figure('linked_list',x=0,y=y,width=600,height=130,type='singly',nodes=nodes,\n               highlights=marks,pointers=pointers,show_null=True)\n    canvas(600,330)\n    if top:draw(top,0,'first',first)\n    if bottom:draw(bottom,150,'second',second)\n    note=current if isinstance(current,str) else 'visiting '+str(current[0])\n    text(15,315,note,size=18)\n    frame()\n\nx=chain(['c','d','e']);y=chain(['f','g']);alias=x\nprint(append_in_place(x,y) is alias)\n",
+   "concepts": [
+    "mutable-data/append_links"
+   ]
+  },
+  {
+   "exercise_id": "account",
+   "title": "Implement: an account behind a password",
+   "prompt_md": "This is SICP's exercise 3.3. You built an account with `deposit` and `withdraw` in Module 2; the new part here is a password in front of it and a dispatch on the request.\n\nImplement `make_account(initial, password)`. Calling `account(given_password, request)` returns a function of one amount. With the right password, `'withdraw'` subtracts the amount if the balance covers it and otherwise returns `'Insufficient funds'`; `'deposit'` adds it. Both return the new balance. With the right password and any other request, raise `ValueError`. With a wrong password, return a function that returns `'Incorrect password'` and changes nothing.\n\nEvery function the account hands out works on the same balance, including one saved earlier and called later. Two accounts never share a balance. Compare passwords with `==`.\n\nEach amount function draws one frame with `show_state(label, [balance])`, where the label is `'withdraw'`, `'deposit'`, `'rejected withdrawal'` or `'wrong password'`. Asking the account for a function draws nothing.",
+   "questions": [],
+   "checklist": [
+    {
+     "step": "Authorize, retain state and preserve it on rejected requests",
+     "checks": [
+      "account_history"
+     ]
+    },
+    {
+     "step": "Draw the real balance after accepted and rejected operations",
+     "checks": [
+      "account_replay"
+     ]
+    }
+   ],
+   "starter_code": "def make_account(initial,password):\n    def dispatch(given,request):\n        def operation(amount):\n            show_state('account not implemented',[initial])\n            return initial\n        return operation\n    return dispatch\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=110)\n    frame()\n\naccount=make_account(60,'violet')\nfor pw,request,amount in [('violet','withdraw',15),('wrong','deposit',20),('violet','deposit',7),('violet','withdraw',90),('violet','withdraw',12)]:\n    print(account(pw,request)(amount))\n",
+   "tests": [
+    {
+     "name": "account_history",
+     "code": "show_state=lambda *args:None\nimport random\nrng=random.Random(731)\nfor initial in (0,20,90):\n    a=make_account(initial,'key');other=make_account(initial,'key');balance=initial\n    saved=a('key','deposit')\n    for _ in range(35):\n        pw=rng.choice(['key','bad']);op=rng.choice(['deposit','withdraw']);amount=rng.randrange(25)\n        if pw!='key':want='Incorrect password'\n        elif op=='withdraw' and amount>balance:want='Insufficient funds'\n        else:balance+=amount if op=='deposit' else -amount;want=balance\n        got=a(pw,op)(amount)\n        assert got==want, f'{pw}/{op}/{amount}: expected {want!r}; got {got!r}'\n    got=saved(4);balance+=4\n    assert got==balance, f'Saved operation expected shared balance {balance}; got {got!r}'\n    got=other('key','withdraw')(0)\n    assert got==initial, f'Independent account expected {initial}; got {got!r}'\n    try:a('key','missing')\n    except ValueError:pass\n    else:raise AssertionError('Expected ValueError for authorized unknown request; got normal return')\n    got=a('key','withdraw')(0)\n    assert got==balance, f'Unknown request must preserve {balance}; got {got!r}'\n\npassword=''.join(['fresh','-','credential'])\nequal_password=''.join(['fresh-','credential'])\na=make_account(9,password)\ngot=a(equal_password,'deposit')(1)\nassert got==10, f'Equal credentials should authorize by value and yield 10; got {got!r}'\n"
+    },
+    {
+     "name": "account_replay",
+     "code": "from scimigo import _frame_count,_frame\n\ndef recorded(before):\n    rows=[]\n    for i in range(before,_frame_count()):\n        pictures=[o for o in _frame(i) if o['kind']=='figure']\n        assert len(pictures)==1, f'Expected one state figure in frame {i}; got {len(pictures)}'\n        rows.append(pictures[0]['params']['values'])\n    return rows\n\na=make_account(32,'p');before=_frame_count()\nfor pw,op,n in [('p','deposit',6),('bad','withdraw',9),('p','withdraw',10),('p','withdraw',40),('p','deposit',1)]:a(pw,op)(n)\ngot=recorded(before);want=[[38],[38],[28],[28],[29]]\nassert got==want, f'Expected actual balances {want}; got {got}'\n"
+    }
+   ],
+   "hints": [
+    "Does dispatch return a value or an operation?",
+    "The two authorized operations need access to one binding.",
+    "Check authorization before selecting the operation, and check available funds before subtraction."
+   ],
+   "solution": "def make_account(initial,password):\n    balance=initial\n    def withdraw(amount):\n        nonlocal balance\n        if amount>balance:\n            show_state('rejected withdrawal',[balance])\n            return 'Insufficient funds'\n        balance-=amount\n        show_state('withdraw',[balance])\n        return balance\n    def deposit(amount):\n        nonlocal balance\n        balance+=amount\n        show_state('deposit',[balance])\n        return balance\n    def wrong(amount):\n        show_state('wrong password',[balance])\n        return 'Incorrect password'\n    def dispatch(given,request):\n        if given!=password:return wrong\n        if request=='withdraw':return withdraw\n        if request=='deposit':return deposit\n        raise ValueError('Unknown request')\n    return dispatch\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=110)\n    frame()\n\naccount=make_account(60,'violet')\nfor pw,request,amount in [('violet','withdraw',15),('wrong','deposit',20),('violet','deposit',7),('violet','withdraw',90),('violet','withdraw',12)]:\n    print(account(pw,request)(amount))\n",
+   "concepts": [
+    "mutable-data/account"
+   ]
+  },
+  {
+   "exercise_id": "count_pairs",
+   "title": "Measure: count pairs, not paths",
+   "prompt_md": "SICP's exercise 3.16 shows a pair counter that gives 3, 4 or 7 for structures that all contain three pairs, because it counts a pair again every time another path reaches it. Exercise 3.17 asks for one that is right. Write it.\n\nImplement `count_pairs(root, fields)`: the number of distinct pairs reachable from `root`. A pair is a two-element list; anything else is not a pair and is not counted. Read a pair's two parts only by calling `fields(pair)`, and call it at most once for each pair. Each time you count a new pair, call `show_state('pairs counted', [count_so_far])`.\n\nTwo pairs with equal contents are still two pairs, so you need to remember which objects you have met, not which values. A structure may contain a cycle, so remember a pair before you follow its parts.\n\nThe demo compares the supplied path-counting version with yours on stacks of 3, 5 and 7 pairs. Answer the question before you run it.",
+   "questions": [
+    {
+     "step": "Predict the growth",
+     "prompt": "In a stack of n pairs, both parts of each pair point to the pair below. How many times does the path-counting version meet a pair?",
+     "choices": [
+      {
+       "text": "n",
+       "why": "That is the number of pairs. It is what your version should report, not what path counting does."
+      },
+      {
+       "text": "2 × n",
+       "why": "The doubling happens at every level, not once: each pair is reached twice as often as the one above it."
+      },
+      {
+       "text": "2ⁿ − 1",
+       "why": "One meeting with the top pair, two with the next, four with the next: 1 + 2 + 4 + … with n terms."
+      }
+     ],
+     "answer": 2
+    }
+   ],
+   "checklist": [
+    {
+     "step": "Count each pair once, by identity, even around a cycle",
+     "checks": [
+      "distinct_pairs"
+     ]
+    },
+    {
+     "step": "Show the count growing by one for each new pair",
+     "checks": [
+      "count_replay"
+     ]
+    }
+   ],
+   "starter_code": "def count_pairs(root,fields):\n    show_state('pairs counted',[0])\n    return 0\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=110)\n    frame()\n\ndef pair_fields(pair):\n    return pair[0],pair[1]\n\ndef shared_stack(n):\n    \"\"\"n pairs; both fields of each pair point to the pair below it.\"\"\"\n    p=None\n    for _ in range(n):p=[p,p]\n    return p\n\ndef naive_encounters(root):\n    \"\"\"The count SICP exercise 3.16 complains about: every path to a pair counts again.\"\"\"\n    if not isinstance(root,list):return 0\n    return 1+naive_encounters(root[0])+naive_encounters(root[1])\n\nrows=[]\nfor n in (3,5,7):\n    p=shared_stack(n)\n    rows.append((n,naive_encounters(p),count_pairs(p,pair_fields)))\nprint(rows)\nshow_state('7 stacked pairs: paths counted / pairs counted',[rows[-1][1],rows[-1][2]])\n",
+   "tests": [
+    {
+     "name": "distinct_pairs",
+     "code": "show_state=lambda *args:None\nclass TooManyReads(BaseException):pass\ndef run(root,want,what):\n    reads=[]\n    def fields(pair):\n        reads.append(pair)\n        if len(reads)>4*want+8:raise TooManyReads()\n        return pair[0],pair[1]\n    try:\n        got=count_pairs(root,fields)\n    except TooManyReads:\n        raise AssertionError(f'{what}: fields was called more than {4*want+8} times for {want} pairs. Remember each pair before following its parts, or a cycle never ends.')\n    except RecursionError:\n        raise AssertionError(f'{what}: the traversal recursed without end. Remember each pair before following its parts.')\n    assert got==want, f'{what}: there are {want} distinct pairs; count_pairs returned {got!r}'\n    assert len(reads)==want and len({id(p) for p in reads})==want, f'{what}: call fields once for each of the {want} pairs; it was called {len(reads)} times on {len({id(p) for p in reads})} different pairs'\nfor n in (0,1,4,6,9):\n    run(shared_stack(n),n,f'a stack of {n} shared pairs')\nrun([1,[2,[3,None]]],3,'a plain chain of three')\na=[1,2];b=[1,2]\nrun([a,b],3,'two different pairs with equal contents under one parent')\nrun([a,a],2,'one pair reached twice from its parent')\nloop=[None,None];loop[0]=loop\nrun(loop,1,'one pair whose first part is itself')\nx=['x',None];y=['y',x];x[1]=y\nrun(x,2,'two pairs pointing at each other')\nrun(7,0,'a root that is not a pair')\ndeep=None\nfor i in range(150):deep=[i,deep]\nrun(deep,150,'a chain of 150 pairs')\n"
+    },
+    {
+     "name": "count_replay",
+     "code": "from scimigo import _frame_count,_frame\ndef recorded(before):\n    rows=[]\n    for i in range(before,_frame_count()):\n        pictures=[o for o in _frame(i) if o['kind']=='figure']\n        assert len(pictures)==1, f'Each frame should hold one count; frame {i-before+1} holds {len(pictures)} figures'\n        rows.append(pictures[0]['params']['values'])\n    return rows\np=shared_stack(4);before=_frame_count();got_count=count_pairs(p,pair_fields)\nassert got_count==4, f'A stack of 4 shared pairs has 4 pairs; count_pairs returned {got_count!r}'\ngot=recorded(before);want=[[1],[2],[3],[4]]\nassert got==want, f'Counting 4 pairs should draw {want}, one frame per new pair; it drew {got}'\n"
+    }
+   ],
+   "hints": [
+    "Two different questions: how many pairs exist, and how many ways there are to reach them.",
+    "Lists cannot go in a set, but id(pair) can, and it is the same number only for the same object.",
+    "Keep a set of ids and a list of things still to look at. Take one; if it is a pair you have not met, record its id first, then add its two parts to the list."
+   ],
+   "solution": "def count_pairs(root,fields):\n    seen=set()\n    todo=[root]\n    while todo:\n        p=todo.pop()\n        if not isinstance(p,list) or id(p) in seen:continue\n        seen.add(id(p))\n        show_state('pairs counted',[len(seen)])\n        left,right=fields(p)\n        todo.append(right);todo.append(left)\n    return len(seen)\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=110)\n    frame()\n\ndef pair_fields(pair):\n    return pair[0],pair[1]\n\ndef shared_stack(n):\n    \"\"\"n pairs; both fields of each pair point to the pair below it.\"\"\"\n    p=None\n    for _ in range(n):p=[p,p]\n    return p\n\ndef naive_encounters(root):\n    \"\"\"The count SICP exercise 3.16 complains about: every path to a pair counts again.\"\"\"\n    if not isinstance(root,list):return 0\n    return 1+naive_encounters(root[0])+naive_encounters(root[1])\n\nrows=[]\nfor n in (3,5,7):\n    p=shared_stack(n)\n    rows.append((n,naive_encounters(p),count_pairs(p,pair_fields)))\nprint(rows)\nshow_state('7 stacked pairs: paths counted / pairs counted',[rows[-1][1],rows[-1][2]])\n"
+  },
+  {
+   "exercise_id": "shared_access",
+   "title": "Mastery challenge: one balance, several passwords",
+   "prompt_md": "A bank service holds one balance behind one password. Its owner wants to give a colleague access under a different password, and that colleague may later do the same for a third person. There is still only one balance: a deposit made by anyone is seen by everyone, and every password that worked before keeps working.\n\nA service is called as `service(password, request)`. The request `'check'` returns `True` or `False` for that password and changes nothing. The requests `'withdraw'` and `'deposit'` return a function of one amount, as in the previous exercise; with a wrong password that function returns `'Incorrect password'`.\n\nImplement `connect(service, old_password, new_password)`. If `old_password` is not valid for `service`, raise `ValueError`. Otherwise return a new service, used in exactly the same way, that answers to `new_password` and to no other. Setting it up must not deposit or withdraw anything, not even zero.\n\nThe supplied `run_access` replays a list of joins and operations through your `connect` and draws the number of routes and the latest result after each one. The supplied account is the only place a balance is kept; you cannot read it directly.",
+   "questions": [
+    {
+     "step": "Choose a plan",
+     "prompt": "Several credentials must expose one balance. What should creating access do?",
+     "answer": 1,
+     "choices": [
+      {
+       "text": "Create another balance",
+       "why": "A second balance creates divergent histories."
+      },
+      {
+       "text": "Retain access to the existing service",
+       "why": "Operations delegate to the same service."
+      },
+      {
+       "text": "Copy its current numeric value",
+       "why": "A copied value cannot observe future changes."
+      }
+     ]
+    },
+    {
+     "step": "State an invariant",
+     "prompt": "After any successful operation through a new route, what must the owner observe?",
+     "answer": 0,
+     "choices": [
+      {
+       "text": "The same updated balance",
+       "why": "Every route shares one history."
+      },
+      {
+       "text": "Its original balance",
+       "why": "That would indicate a separate state copy."
+      },
+      {
+       "text": "Only deposits",
+       "why": "Withdrawals must also affect the owner."
+      }
+     ]
+    },
+    {
+     "step": "Describe cost",
+     "prompt": "For a route connected through d other routes, how much forwarding does one operation require?",
+     "answer": 1,
+     "choices": [
+      {
+       "text": "Always one call",
+       "why": "Nested routes add forwarding layers."
+      },
+      {
+       "text": "Proportional to d",
+       "why": "Each layer translates a credential and delegates once."
+      },
+      {
+       "text": "Proportional to balance",
+       "why": "Numeric balance does not determine forwarding depth."
+      }
+     ]
+    },
+    {
+     "step": "Reject an alternative",
+     "prompt": "A new route copies balance 40. Owner deposits 5. What goes wrong?",
+     "answer": 2,
+     "choices": [
+      {
+       "text": "Both now show 45",
+       "why": "A copied number has no link to later updates."
+      },
+      {
+       "text": "Nothing if passwords differ",
+       "why": "Credentials do not repair separate state."
+      },
+      {
+       "text": "The copy still shows 40",
+       "why": "The histories diverge immediately."
+      }
+     ]
+    }
+   ],
+   "checklist": [
+    {
+     "step": "One balance for every password, and no operation while joining",
+     "checks": [
+      "shared_history"
+     ]
+    },
+    {
+     "step": "The replay shows each join and operation with its real result",
+     "checks": [
+      "access_replay"
+     ]
+    }
+   ],
+   "starter_code": "def connect(service,old_password,new_password):\n    return service\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=220)\n    text(15,245,'route count / latest result',size=18)\n    frame()\n\ndef supplied_account(initial,password):\n    balance=initial\n    def dispatch(given,request):\n        if request=='check':return given==password\n        if given!=password:return lambda amount:'Incorrect password'\n        def operation(amount):\n            nonlocal balance\n            if request=='withdraw':\n                if amount>balance:return 'Insufficient funds'\n                balance-=amount\n            elif request=='deposit':balance+=amount\n            else:raise ValueError('Unknown request')\n            return balance\n        return operation\n    return dispatch\n\ndef run_access(account,program):\n    routes={'owner':account}\n    outputs=[]\n    for event in program:\n        if event[0]=='join':\n            _,name,parent,old,new=event\n            try:\n                route=connect(routes[parent],old,new)\n            except ValueError:\n                result='Incorrect password'\n            else:\n                routes[name]=route\n                result='Joined'\n        else:\n            _,name,password,request,amount=event\n            result=routes[name](password,request)(amount)\n        outputs.append(result)\n        show_state('access result',[len(routes),result])\n    return outputs\n\naccount=supplied_account(75,'first')\nprogram=[('join','guest','owner','first','second'),\n         ('use','guest','second','withdraw',18),\n         ('use','owner','first','deposit',5),\n         ('join','third','guest','second','third-key'),\n         ('use','third','third-key','withdraw',7),\n         ('use','guest','wrong','deposit',100),\n         ('use','owner','first','withdraw',0)]\nprint(run_access(account,program))\n",
+   "tests": [
+    {
+     "name": "shared_history",
+     "code": "show_state=lambda *args:None\nfor initial in (0,23,80):\n    account=supplied_account(initial,'a')\n    program=[('join','g','owner','a','b'),('use','g','b','deposit',9),('use','owner','a','withdraw',3),('join','h','g','b','c'),('use','h','c','withdraw',2),('join','bad','g','no','d'),('use','g','wrong','deposit',99),('use','owner','a','withdraw',0)]\n    want=['Joined',initial+9,initial+6,'Joined',initial+4,'Incorrect password','Incorrect password',initial+4]\n    got=run_access(account,program)\n    assert got==want, f'Expected one shared history {want}; got {got!r}'\na=supplied_account(30,'a');g=connect(a,'a','b');h=connect(g,'b','c');saved=h('c','withdraw')\na('a','deposit')(8);got=saved(4)\nassert got==34, f'Saved operation through nested access should see 34; got {got!r}'\nassert g('a','check') is False and g('b','check') is True, f'New route should accept only b; got old={g(\"a\",\"check\")!r}, new={g(\"b\",\"check\")!r}'\nrequests=[]\ndef spy(pw,request):\n    requests.append((pw,request))\n    if request=='check':return pw=='ok'\n    raise AssertionError(f'Join should only query check; got {request!r}')\nconnect(spy,'ok','next')\nassert requests==[('ok','check')], f'Expected one authorization query; got {requests}'\ntry:connect(spy,'bad','next')\nexcept ValueError:pass\nelse:raise AssertionError('Expected invalid join to raise ValueError; got normal return')\n"
+    },
+    {
+     "name": "access_replay",
+     "code": "from scimigo import _frame_count,_frame\n\ndef recorded(before):\n    rows=[]\n    for i in range(before,_frame_count()):\n        pictures=[o for o in _frame(i) if o['kind']=='figure']\n        assert len(pictures)==1, f'Expected one state figure in frame {i}; got {len(pictures)}'\n        rows.append(pictures[0]['params']['values'])\n    return rows\n\nbefore=_frame_count();got_result=run_access(supplied_account(18,'a'),[('join','g','owner','a','b'),('use','g','b','deposit',4),('join','bad','g','x','y'),('use','owner','a','withdraw',7)])\ngot=recorded(before);want=[[2,'Joined'],[2,22],[2,'Incorrect password'],[2,15]]\nassert got==want, f'Expected route-count/result frames {want}; got {got}'\n"
+    }
+   ],
+   "hints": [
+    "Where does the balance live, and how many of them should exist after a colleague joins?",
+    "A new service is asked things with the new password. What can it ask, and of whom, to get a real answer?",
+    "The new service needs no balance of its own. It can pass each request on to the service it was made from, using a password that service accepts."
+   ],
+   "solution": "def connect(account,old_password,new_password):\n    if not account(old_password,'check'):\n        raise ValueError('Incorrect password')\n    def access(given,request):\n        if request=='check':return given==new_password\n        if given!=new_password:return lambda amount:'Incorrect password'\n        return account(old_password,request)\n    return access\n\nfrom scimigo import canvas,figure,text,frame\n\ndef show_state(label,values):\n    canvas(600,260)\n    text(15,35,label,size=19)\n    figure('array_state',x=0,y=65,width=600,height=160,\n           values=list(values) or ['empty'],indices=False,cell_width=220)\n    text(15,245,'route count / latest result',size=18)\n    frame()\n\ndef supplied_account(initial,password):\n    balance=initial\n    def dispatch(given,request):\n        if request=='check':return given==password\n        if given!=password:return lambda amount:'Incorrect password'\n        def operation(amount):\n            nonlocal balance\n            if request=='withdraw':\n                if amount>balance:return 'Insufficient funds'\n                balance-=amount\n            elif request=='deposit':balance+=amount\n            else:raise ValueError('Unknown request')\n            return balance\n        return operation\n    return dispatch\n\ndef run_access(account,program):\n    routes={'owner':account}\n    outputs=[]\n    for event in program:\n        if event[0]=='join':\n            _,name,parent,old,new=event\n            try:\n                route=connect(routes[parent],old,new)\n            except ValueError:\n                result='Incorrect password'\n            else:\n                routes[name]=route\n                result='Joined'\n        else:\n            _,name,password,request,amount=event\n            result=routes[name](password,request)(amount)\n        outputs.append(result)\n        show_state('access result',[len(routes),result])\n    return outputs\n\naccount=supplied_account(75,'first')\nprogram=[('join','guest','owner','first','second'),\n         ('use','guest','second','withdraw',18),\n         ('use','owner','first','deposit',5),\n         ('join','third','guest','second','third-key'),\n         ('use','third','third-key','withdraw',7),\n         ('use','guest','wrong','deposit',100),\n         ('use','owner','first','withdraw',0)]\nprint(run_access(account,program))\n",
+   "concepts": [
+    "mutable-data/shared_access"
+   ]
+  }
+ ]
 }

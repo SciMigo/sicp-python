@@ -1,28 +1,18 @@
-# Mutable Data
+# Mutable Data: authoring and review notes
 
-## SICP Reference
-- Chapter 3.1: Assignment and Local State
-- Chapter 3.3: Modeling with Mutable Data
+Branch from reviewed main; one module per PR. The public lesson uses the book's withdrawal, decrementer and z1/z2 sharing examples. Labs use different histories and pair values. Scope: 3.1.1–3.1.3 and mutable pairs in 3.3.1; leave queue/table/circuit/constraint machinery out.
 
-## Core Concepts
-- Assignment changes the value bound to a name
-- `nonlocal` — modifying bindings in enclosing scopes
-- Identity vs equality: `is` vs `==`
-- Mutable default arguments pitfall
-- Lists are mutable: `append`, `extend`, `pop`, `sort`
-- Aliasing: two names pointing to the same object
-- The cost of mutation: reasoning becomes harder
+Five labs: accumulator plus monitor (3.1/3.2), destructive append (3.12), protected account (3.3), actual counted field function passed to traversal (3.16/3.17), connected service access (3.7). Measure receives fields explicitly; no globals replacement. Every solution replays state changes. All starters are runnable stubs, not pre-broken solutions. Mastery adds an explicit non-mutating check request; reserved monitor commands cannot be worker arguments. Sequential integer teaching models, no security/concurrency claim.
 
-## Key Examples (Python)
-1. **Bank account**: `make_account(balance)` with `withdraw` and `deposit` — state via closure + `nonlocal`
-2. **Aliasing**: `a = [1, 2, 3]; b = a; b.append(4)` — both see the change
-3. **Identity vs equality**: `[1, 2] == [1, 2]` is True, `[1, 2] is [1, 2]` is False
-4. **Mutable default trap**: `def f(x, lst=[])` — shared across calls
+Primary sources: repo reference/3.1-assignment-local-state.md and reference/3.3-mutable-data.md, separate original reading. Python docs checked 2026-10-06: https://docs.python.org/3/reference/simple_stmts.html#the-nonlocal-statement and https://docs.python.org/3/faq/programming.html#why-are-default-values-shared-between-objects . Language behavior used is supported by Pyodide's older Python too.
 
-## Reference Files
-- `3.1-assignment-local-state.md`
-- `3.3-mutable-data.md`
+Oral anchors: constructor calls create independent bindings; aliases retain same closure. Copy outer then mutate inner exposes retained identity. Mark before expanding avoids cyclic recursion; equal contents can belong to distinct objects. No lesson code implements accumulator, monitor, password dispatch or joint access. Measurement table is computed recurrence, not experimental evidence.
 
-## Speaker Persona
-- Professor Dana: Careful about the trade-offs of mutation, draws environment diagrams
-- Alex (student): Gets bitten by aliasing, learns to distinguish identity from equality
+## Lab after the 2026-10-07 review
+
+Exercises: accumulate (3.1, 3.2), append_links (3.12), account (3.3), count_pairs (3.16, 3.17),
+shared_access (3.7). The learner writes the identity-based pair counter; `naive_encounters` is
+supplied for comparison. In the mastery the learner writes `connect`; `run_access` and the
+account are supplied. Pair-counter check design: two distinct pairs with equal contents must
+count as two; a self-linked pair and a two-pair cycle must terminate (a read budget raises a
+BaseException); `fields` must be called once per pair, so direct indexing fails.

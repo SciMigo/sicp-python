@@ -1,0 +1,46 @@
+{
+ "title": "Trace: change one link, and every alias sees it",
+ "hints": [
+  "What does another name for the first chain's head see after the append, and why?",
+  "Only one field in the whole structure has to change. Which pair holds it?",
+  "Follow rest from pair to pair until you reach the pair whose rest is None. Assign the second chain to that field."
+ ],
+ "questions": [
+  {
+   "step": "Predict aliasing",
+   "prompt": "After attaching y, what does an alias to the original first head reach?",
+   "answer": 1,
+   "choices": [
+    {
+     "text": "Only the old first chain",
+     "why": "The final rest field is shared by all aliases."
+    },
+    {
+     "text": "The extended chain",
+     "why": "The original pair identities are retained and the final link changes."
+    },
+    {
+     "text": "A separate copied chain",
+     "why": "The operation does not allocate replacement pairs."
+    }
+   ]
+  }
+ ],
+ "checklist": [
+  {
+   "step": "Attach existing pairs without copying or altering values",
+   "checks": [
+    "identity"
+   ]
+  },
+  {
+   "step": "Show each visited pair and the actual changed tail",
+   "checks": [
+    "link_replay"
+   ]
+  }
+ ],
+ "concepts": [
+  "mutable-data/append_links"
+ ]
+}

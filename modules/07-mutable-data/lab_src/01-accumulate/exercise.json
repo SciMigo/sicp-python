@@ -1,0 +1,26 @@
+{
+ "title": "Build: a running total and a call counter",
+ "hints": [
+  "Which binding must survive its constructor call?",
+  "A reset concerns the monitor, not the accumulated total.",
+  "Delegate ordinary arguments exactly once; distinguish reserved requests before delegation."
+ ],
+ "questions": [],
+ "checklist": [
+  {
+   "step": "Retain separate totals; delegate calls and implement query/reset",
+   "checks": [
+    "histories"
+   ]
+  },
+  {
+   "step": "Replay each retained total and measured call count",
+   "checks": [
+    "state_replay"
+   ]
+  }
+ ],
+ "concepts": [
+  "mutable-data/accumulate"
+ ]
+}
