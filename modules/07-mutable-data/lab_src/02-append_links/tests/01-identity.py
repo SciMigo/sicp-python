@@ -1,13 +1,17 @@
 show_links=lambda *args:None
-for xs,ys in [([],[]),([],['q']),(['q'],[]),(['q'],['q','r']),(['a','b','c'],['d'])]:
-    a=chain(xs);b=chain(ys);old=[];p=a
-    while p is not None:old.append(p);p=p[1]
-    oldb=[];p=b
-    while p is not None:oldb.append(p);p=p[1]
-    got=append_in_place(a,b);want=old+oldb;seen=[];p=got
-    for _ in range(len(want)+1):
-        if p is None:break
-        seen.append(p);p=p[1]
-    assert len(seen)==len(want) and all(x is y for x,y in zip(seen,want)) and p is None, f'Expected original {len(want)} pair identities in order with null tail; got {len(seen)} encounters, terminal {p!r}'
+def walk(head,limit):
+    seen=[]
+    while head is not None and len(seen)<=limit:
+        seen.append(head);head=head[1]
+    return seen
+for xs,ys in [([],[]),([],['q']),(['q'],[]),(['q'],['q','r']),(['a','b','c'],['d']),(['m','m'],['m'])]:
+    a=chain(xs);b=chain(ys)
+    want=walk(a,len(xs))+walk(b,len(ys))
+    got=append_in_place(a,b)
+    seen=walk(got,len(want))
+    assert len(seen)==len(want), f'append_in_place({xs}, {ys}) should give a chain of {len(want)} pairs ending in None; yours has {"more than " if len(seen)>len(want) else ""}{min(len(seen),len(want)+1)}'
+    assert all(x is y for x,y in zip(seen,want)), f'append_in_place({xs}, {ys}) must reuse the original pairs in order; it built or reordered pairs'
     values=[p[0] for p in seen]
-    assert values==xs+ys, f'Expected values {xs+ys}; got {values}'
+    assert values==xs+ys, f'append_in_place({xs}, {ys}) should read {xs+ys}; it reads {values}'
+    if xs:
+        assert got is a, f'append_in_place({xs}, {ys}) should return the first chain itself'

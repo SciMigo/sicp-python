@@ -16,3 +16,34 @@ Estimate: lesson around 25 minutes (200 prose words/minute plus code and figure 
 Contract choices: monitor counts attempted calls even on exceptions; reserved query/reset strings are commands. Joint access adds a non-mutating boolean check request, explicitly identified as an adaptation. Sequential teaching account model; negative amounts, concurrent operations and production authentication are outside scope. Destructive append takes disjoint proper finite chains.
 
 Publication work remains separate: publisher module list, reviewed asset publication and viewer registry entry. Course-wide tutor concepts/knowledge wiring is not claimed complete. Original book reading remains separate. No slides or narration added.
+
+## 2026-10-07: fixes after review (Claude)
+
+The conversion's content and checks were sound. Three things changed in substance.
+
+- **Pictures of the structures.** Nothing drew a box-and-pointer structure: both lesson figures
+  were text tables and the append exercise drew its links as text rows. The lesson now shows the
+  two account frames, a chain after a destructive append, and the seven encounters of the naive
+  pair counter as a tree. The append exercise draws real chains, with the visited pair
+  highlighted and the `first` and `second` labels, before and after the link changes.
+- **The pair counter is the learner's.** The Measure exercise asked only for a counting wrapper,
+  for the fourth module running, while the supplied code held the answer to exercise 3.17. The
+  learner now writes `count_pairs` by identity; the checks include two equal-content pairs, two
+  cycles and a read budget. A recursive answer is accepted (the deep case is 150 pairs).
+- **The mastery states behaviour, not design.** Its prompt said to forward operations to the
+  parent service. It now says who must be able to do what; `run_access`, the event replay, is
+  supplied, so the learner writes `connect`.
+
+Smaller changes: the lesson recalls Module 2 for `make_withdraw` and `nonlocal` instead of
+re-teaching them, shows `is` and `id()` before the traversal that needs them, fixes a
+cross-reference to an example that does not exist, and claims SICP 3.1.1 and 3.1.3 (3.1.2 is
+not covered). Prompts are split into paragraphs. A check now confirms that asking a monitor for
+its count draws nothing. Exercise numbers are in the prompts, not the titles.
+
+Verified: `lessons.py check 07` ok (10 blocks, 3 figures); `check_lab.py 07` ok (5 exercises,
+10 solution checks); lab sources up to date; all 10 checks red on untouched starters; 14 wrong,
+lazy and alternative submissions behave as expected; browser smoke with `--all` on Pyodide
+0.27.4 from the CDN passes; lesson stays within 390 px. Looked at all three lesson figures and
+the append exercise's first frame.
+
+Estimate unchanged at 95 minutes, unmeasured.
