@@ -7,26 +7,6 @@ def connect(account,old_password,new_password):
         return account(old_password,request)
     return access
 
-def run_access(account,program):
-    routes={'owner':account}
-    outputs=[]
-    for event in program:
-        if event[0]=='join':
-            _,name,parent,old,new=event
-            try:
-                route=connect(routes[parent],old,new)
-            except ValueError:
-                result='Incorrect password'
-            else:
-                routes[name]=route
-                result='Joined'
-        else:
-            _,name,password,request,amount=event
-            result=routes[name](password,request)(amount)
-        outputs.append(result)
-        show_state('access result',[len(routes),result])
-    return outputs
-
 from scimigo import canvas,figure,text,frame
 
 def show_state(label,values):
@@ -52,6 +32,26 @@ def supplied_account(initial,password):
             return balance
         return operation
     return dispatch
+
+def run_access(account,program):
+    routes={'owner':account}
+    outputs=[]
+    for event in program:
+        if event[0]=='join':
+            _,name,parent,old,new=event
+            try:
+                route=connect(routes[parent],old,new)
+            except ValueError:
+                result='Incorrect password'
+            else:
+                routes[name]=route
+                result='Joined'
+        else:
+            _,name,password,request,amount=event
+            result=routes[name](password,request)(amount)
+        outputs.append(result)
+        show_state('access result',[len(routes),result])
+    return outputs
 
 account=supplied_account(75,'first')
 program=[('join','guest','owner','first','second'),

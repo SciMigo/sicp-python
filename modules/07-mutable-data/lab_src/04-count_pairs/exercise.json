@@ -1,0 +1,43 @@
+{
+ "title": "Measure: count pairs, not paths",
+ "questions": [
+  {
+   "step": "Predict the growth",
+   "prompt": "In a stack of n pairs, both parts of each pair point to the pair below. How many times does the path-counting version meet a pair?",
+   "choices": [
+    {
+     "text": "n",
+     "why": "That is the number of pairs. It is what your version should report, not what path counting does."
+    },
+    {
+     "text": "2 × n",
+     "why": "The doubling happens at every level, not once: each pair is reached twice as often as the one above it."
+    },
+    {
+     "text": "2ⁿ − 1",
+     "why": "One meeting with the top pair, two with the next, four with the next: 1 + 2 + 4 + … with n terms."
+    }
+   ],
+   "answer": 2
+  }
+ ],
+ "checklist": [
+  {
+   "step": "Count each pair once, by identity, even around a cycle",
+   "checks": [
+    "distinct_pairs"
+   ]
+  },
+  {
+   "step": "Show the count growing by one for each new pair",
+   "checks": [
+    "count_replay"
+   ]
+  }
+ ],
+ "hints": [
+  "Two different questions: how many pairs exist, and how many ways there are to reach them.",
+  "Lists cannot go in a set, but id(pair) can, and it is the same number only for the same object.",
+  "Keep a set of ids and a list of things still to look at. Take one; if it is a pair you have not met, record its id first, then add its two parts to the list."
+ ]
+}

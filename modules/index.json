@@ -46,6 +46,6 @@
     "label": "7 · Mutable Data",
     "eyebrow": "MODULE 07 · MUTABLE DATA",
     "heading": "Local state, shared identity and mutable links",
-    "subtitle": "Build stateful closures, trace aliases and link updates, count actual pair expansions, and connect multiple access routes to one shared history."
+    "subtitle": "Build stateful closures, trace aliases and link updates, count pairs by identity instead of by path, and give several passwords access to one shared balance."
   }
 ]

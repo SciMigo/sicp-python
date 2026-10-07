@@ -1,26 +1,26 @@
 {
-  "title": "Implement: password-controlled operations (3.3)",
-  "hints": [
-    "Does dispatch return a value or an operation?",
-    "The two authorized operations need access to one binding.",
-    "Check authorization before selecting the operation, and check available funds before subtraction."
-  ],
-  "questions": [],
-  "checklist": [
-    {
-      "step": "Authorize, retain state and preserve it on rejected requests",
-      "checks": [
-        "account_history"
-      ]
-    },
-    {
-      "step": "Draw the real balance after accepted and rejected operations",
-      "checks": [
-        "account_replay"
-      ]
-    }
-  ],
-  "concepts": [
-    "mutable-data/account"
-  ]
+ "title": "Implement: an account behind a password",
+ "hints": [
+  "Does dispatch return a value or an operation?",
+  "The two authorized operations need access to one binding.",
+  "Check authorization before selecting the operation, and check available funds before subtraction."
+ ],
+ "questions": [],
+ "checklist": [
+  {
+   "step": "Authorize, retain state and preserve it on rejected requests",
+   "checks": [
+    "account_history"
+   ]
+  },
+  {
+   "step": "Draw the real balance after accepted and rejected operations",
+   "checks": [
+    "account_replay"
+   ]
+  }
+ ],
+ "concepts": [
+  "mutable-data/account"
+ ]
 }

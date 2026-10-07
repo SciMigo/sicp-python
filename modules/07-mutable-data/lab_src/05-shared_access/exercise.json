@@ -1,103 +1,103 @@
 {
-  "title": "Mastery challenge: several access routes, one service (3.7)",
-  "hints": [
-    "Which object must remain the owner of the numeric balance?",
-    "The new service translates credentials; the parent still performs operations.",
-    "Validate with the query protocol, retain a parent reference and install a route only after validation succeeds."
-  ],
-  "questions": [
+ "title": "Mastery challenge: one balance, several passwords",
+ "hints": [
+  "Where does the balance live, and how many of them should exist after a colleague joins?",
+  "A new service is asked things with the new password. What can it ask, and of whom, to get a real answer?",
+  "The new service needs no balance of its own. It can pass each request on to the service it was made from, using a password that service accepts."
+ ],
+ "questions": [
+  {
+   "step": "Choose a plan",
+   "prompt": "Several credentials must expose one balance. What should creating access do?",
+   "answer": 1,
+   "choices": [
     {
-      "step": "Choose a plan",
-      "prompt": "Several credentials must expose one balance. What should creating access do?",
-      "answer": 1,
-      "choices": [
-        {
-          "text": "Create another balance",
-          "why": "A second balance creates divergent histories."
-        },
-        {
-          "text": "Retain access to the existing service",
-          "why": "Operations delegate to the same service."
-        },
-        {
-          "text": "Copy its current numeric value",
-          "why": "A copied value cannot observe future changes."
-        }
-      ]
+     "text": "Create another balance",
+     "why": "A second balance creates divergent histories."
     },
     {
-      "step": "State an invariant",
-      "prompt": "After any successful operation through a new route, what must the owner observe?",
-      "answer": 0,
-      "choices": [
-        {
-          "text": "The same updated balance",
-          "why": "Every route shares one history."
-        },
-        {
-          "text": "Its original balance",
-          "why": "That would indicate a separate state copy."
-        },
-        {
-          "text": "Only deposits",
-          "why": "Withdrawals must also affect the owner."
-        }
-      ]
+     "text": "Retain access to the existing service",
+     "why": "Operations delegate to the same service."
     },
     {
-      "step": "Describe cost",
-      "prompt": "For a route connected through d other routes, how much forwarding does one operation require?",
-      "answer": 1,
-      "choices": [
-        {
-          "text": "Always one call",
-          "why": "Nested routes add forwarding layers."
-        },
-        {
-          "text": "Proportional to d",
-          "why": "Each layer translates a credential and delegates once."
-        },
-        {
-          "text": "Proportional to balance",
-          "why": "Numeric balance does not determine forwarding depth."
-        }
-      ]
-    },
-    {
-      "step": "Reject an alternative",
-      "prompt": "A new route copies balance 40. Owner deposits 5. What goes wrong?",
-      "answer": 2,
-      "choices": [
-        {
-          "text": "Both now show 45",
-          "why": "A copied number has no link to later updates."
-        },
-        {
-          "text": "Nothing if passwords differ",
-          "why": "Credentials do not repair separate state."
-        },
-        {
-          "text": "The copy still shows 40",
-          "why": "The histories diverge immediately."
-        }
-      ]
+     "text": "Copy its current numeric value",
+     "why": "A copied value cannot observe future changes."
     }
-  ],
-  "checklist": [
+   ]
+  },
+  {
+   "step": "State an invariant",
+   "prompt": "After any successful operation through a new route, what must the owner observe?",
+   "answer": 0,
+   "choices": [
     {
-      "step": "Keep one history and validate access without an amount operation",
-      "checks": [
-        "shared_history"
-      ]
+     "text": "The same updated balance",
+     "why": "Every route shares one history."
     },
     {
-      "step": "Show changing access count and real operation results",
-      "checks": [
-        "access_replay"
-      ]
+     "text": "Its original balance",
+     "why": "That would indicate a separate state copy."
+    },
+    {
+     "text": "Only deposits",
+     "why": "Withdrawals must also affect the owner."
     }
-  ],
-  "concepts": [
-    "mutable-data/shared_access"
-  ]
+   ]
+  },
+  {
+   "step": "Describe cost",
+   "prompt": "For a route connected through d other routes, how much forwarding does one operation require?",
+   "answer": 1,
+   "choices": [
+    {
+     "text": "Always one call",
+     "why": "Nested routes add forwarding layers."
+    },
+    {
+     "text": "Proportional to d",
+     "why": "Each layer translates a credential and delegates once."
+    },
+    {
+     "text": "Proportional to balance",
+     "why": "Numeric balance does not determine forwarding depth."
+    }
+   ]
+  },
+  {
+   "step": "Reject an alternative",
+   "prompt": "A new route copies balance 40. Owner deposits 5. What goes wrong?",
+   "answer": 2,
+   "choices": [
+    {
+     "text": "Both now show 45",
+     "why": "A copied number has no link to later updates."
+    },
+    {
+     "text": "Nothing if passwords differ",
+     "why": "Credentials do not repair separate state."
+    },
+    {
+     "text": "The copy still shows 40",
+     "why": "The histories diverge immediately."
+    }
+   ]
+  }
+ ],
+ "checklist": [
+  {
+   "step": "One balance for every password, and no operation while joining",
+   "checks": [
+    "shared_history"
+   ]
+  },
+  {
+   "step": "The replay shows each join and operation with its real result",
+   "checks": [
+    "access_replay"
+   ]
+  }
+ ],
+ "concepts": [
+  "mutable-data/shared_access"
+ ]
 }

@@ -46,9 +46,7 @@ assert withdraw(60) == 'Insufficient funds', 'reject overdraft'
 assert withdraw(10) == 40, 'rejection must preserve the balance'
 ```
 
-There are two moments here. Calling the constructor creates the balance binding and returns a function. Calling that function later reads and sometimes replaces the value in the retained binding. The constructor has finished, but its environment remains reachable through the closure. This is the same lifetime idea as a returned multiplier in Module 2; the new ingredient is assignment to the captured name.
-
-Without `nonlocal`, Python treats an assignment to `balance` inside `withdraw` as an assignment to a local name. The earlier read then has no local value to read. Merely reading a captured name needs no declaration; rebinding it does. Mutating an object reached through a captured name is a separate operation and does not itself rebind that name.
+Module 2 drew this function's frames: the constructor's call creates the `balance` binding, the returned function keeps that frame as its parent, and `nonlocal` makes the assignment land there. Nothing in that picture changes here. What this module adds is the consequence: a function whose answer depends on what it was asked before. One distinction to carry forward: rebinding a captured name needs `nonlocal`; changing an object that a captured name refers to does not, and is a different operation.
 
 !!! invariant "One balance, one history"
     After each completed call, the retained balance equals the initial balance minus all accepted withdrawals through this closure. Rejected withdrawals leave that balance unchanged.
@@ -72,7 +70,7 @@ assert alias is w1 and w2 is not w1, 'alias shares; constructor creates'
 ```
 
 ```figure
-{"type": "comparison", "params": {"title": "Two separate balance histories", "columns": [{"label": "w1 + alias", "points": ["100 \u2192 60 \u2192 50 \u2192 35", "One retained binding"]}, {"label": "w2", "points": ["100 \u2192 70", "Another retained binding"]}]}, "caption": "Entries are successive balances. w1 and alias refer to one closure; w2 is a separately constructed closure."}
+{"type":"environment_diagram","params":{"frame_width":250,"frame_padding":16,"frames":[{"id":"global","label":"Global","bindings":[{"name":"w1","value":"function, parent E1"},{"name":"alias","value":"the same function"},{"name":"w2","value":"function, parent E2"}]},{"id":"e1","label":"E1: make_withdraw(100)","bindings":[{"name":"balance","value":"35"}]},{"id":"e2","label":"E2: make_withdraw(100)","bindings":[{"name":"balance","value":"70"}]}]},"caption":"After the four calls. Two calls of make_withdraw made two frames, each with its own balance. w1 and alias are two names for one function, so they reach the same frame; w2 reaches the other. Both frames have Global as their parent; those arrows are left out."}
 ```
 
 An account is therefore more than its current numeric balance. Two accounts can contain equal balances while remaining different objects with different future histories. Conversely, two names can refer to one account. Equality of current contents does not settle identity.
@@ -159,6 +157,10 @@ assert car(cdr(z2)) == 'a', 'separate equal structures stay separate'
 
 This translates the book's shared-versus-unshared example. Before mutation, a recursive comparison of contents would not explain the difference. After mutation, the difference is observable. A structural picture needs arrows to objects, not just the values currently printed along a path.
 
+```figure
+{"type":"linked_list","params":{"type":"singly","nodes":[{"id":"n1","value":"a"},{"id":"n2","value":"b"},{"id":"n3","value":"c"},{"id":"n4","value":"d"}],"highlights":{"n2":"current"},"pointers":[{"node":"n1","label":"x"},{"node":"n3","label":"y"}],"show_null":true},"caption":"Chains x = (a b) and y = (c d) after the rest field of x's last pair, highlighted, was set to y. No pair was created. Every name for x's first pair now reaches four values."}
+```
+
 Consider the last link of a chain. Replacing its second field can attach another chain without rebuilding the earlier pairs. Every alias to the first chain now sees the attachment. Copying pairs before attaching would produce the same displayed values for the returned chain but a different effect on aliases. A test that checks only the returned values misses that distinction.
 
 For a proper finite chain of $n$ pairs, finding its last pair needs $n-1$ link traversals when $n>0$. Replacing that final link needs one field update. The whole operation is linear in the first chain's length; the update alone is constant work. These counts assume constant-cost field access. They exclude drawing and do not apply to a cyclic chain, where no last pair exists.
@@ -170,7 +172,7 @@ Sharing also changes traversal costs. SICP exercises 3.16 and 3.17 ask why a nai
 Let the first object have two fields containing numbers. Make a second object whose two fields both reach the first; make a third whose two fields both reach the second. There are three distinct objects, but recursive expansion counts seven pair encounters: the top one, two encounters with the middle one, and four with the bottom one.
 
 ```figure
-{"type": "comparison", "params": {"title": "Three objects; seven encounters", "columns": [{"label": "Identities", "points": ["Top: 1", "Middle: 1", "Bottom: 1", "Total: 3"]}, {"label": "Encounters", "points": ["Top: 1", "Middle: 2", "Bottom: 4", "Total: 7"]}]}, "caption": "Both fields of each upper pair point to the same pair below. Repeated encounters do not allocate additional objects."}
+{"type":"tree","params":{"node_radius":40,"node_spacing_x":92,"node_spacing_y":100,"root":{"value":"top","children":[{"value":"middle (1st)","children":[{"value":"bottom (1st)"},{"value":"bottom (2nd)"}]},{"value":"middle (2nd)","children":[{"value":"bottom (3rd)"},{"value":"bottom (4th)"}]}]}},"caption":"What the naive counter walks: seven encounters. There are only three pairs. The two middle circles are one object reached by two routes, and the four bottom circles are one object reached by four."}
 ```
 
 For a stack of $n$ such objects, the naive encounter count is $2^n-1$. You can compute it without running an exponentially large traversal: start at one for the bottom object and double the old count plus one for each new object. The number of distinct objects is just $n$.
@@ -185,6 +187,15 @@ assert rows == [(1, 1), (2, 3), (3, 7), (4, 15), (5, 31)], rows
 ```
 
 Remembering which identities have already been expanded avoids this repeated work. Record an identity before following its outgoing fields; otherwise a link back to the current object can recurse forever. Compare identity, not equal contents. Two different pairs can have the same fields and must still both be counted.
+
+Python gives every object an identity you can ask for. `a is b` is true only when both names reach one object, and `id(a)` is a number that is the same only for the same object. Lists cannot be put in a set, but their ids can.
+
+```python
+first, second = [1, 2], [1, 2]
+assert first == second and first is not second, 'equal contents, two objects'
+met = {id(first)}
+assert id(first) in met and id(second) not in met, 'a set of ids tells them apart'
+```
 
 With a hash set of visited identities, constant-cost field access and expected constant-cost set operations, exploring $V$ distinct pairs follows exactly $2V$ fields and takes expected $O(V)$ time. The visited set uses $O(V)$ space; recursive traversal may also use $O(V)$ stack space and can exceed Python's recursion limit. An explicit work list removes reliance on that limit. Finite cycles are safe only when the traversal remembers identities before expansion.
 
@@ -225,7 +236,7 @@ A document editor offers a duplicate-view command. Editing a paragraph through e
 
 ## Practise
 
-Build the book's accumulator and monitored-function exercises, trace a destructive append through shared references, and implement a password-controlled account. Measure pair expansion through a function passed as an argument. The final exercise asks you to connect several access paths while preserving one history; the lesson does not provide its implementation.
+In the lab you build the book's accumulator and monitored function, watch a destructive append change one link while every alias follows, put a password in front of an account, and write the pair counter that counts objects, not paths. The last exercise describes a bank service that several people must share; its prompt says what each of them must be able to do and leaves the design to you.
 
 ## Recap
 
@@ -249,6 +260,6 @@ Build the book's accumulator and monitored-function exercises, trace a destructi
 
 ## Reference and licence
 
-This lesson follows SICP §§3.1.1–3.1.3 and the mutable-pair material in §3.3.1. The [book text for this module](../../reading/07-mutable-data.html) is a separate reference. Queues, tables, circuit simulation and constraint propagation are outside this lesson's scope. Python's [nonlocal statement](https://docs.python.org/3/reference/simple_stmts.html#the-nonlocal-statement) and [mutable default discussion](https://docs.python.org/3/faq/programming.html#why-are-default-values-shared-between-objects) specify the language details used here.
+This lesson follows SICP §§3.1.1 and 3.1.3 and the mutable-pair material in §3.3.1. The [book text for this module](../../reading/07-mutable-data.html) is a separate reference. The Monte Carlo example of §3.1.2, queues, tables, circuit simulation and constraint propagation are outside this lesson's scope. Python's [nonlocal statement](https://docs.python.org/3/reference/simple_stmts.html#the-nonlocal-statement) and [mutable default discussion](https://docs.python.org/3/faq/programming.html#why-are-default-values-shared-between-objects) specify the language details used here.
 
 Examples and exercises are adapted from *Structure and Interpretation of Computer Programs*, second edition, by Harold Abelson and Gerald Jay Sussman with Julie Sussman. Shared under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); new prose, Python translations and figures are this course's changes. Independent course; not endorsed by MIT or UC Berkeley.

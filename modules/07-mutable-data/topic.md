@@ -7,3 +7,12 @@ Five labs: accumulator plus monitor (3.1/3.2), destructive append (3.12), protec
 Primary sources: repo reference/3.1-assignment-local-state.md and reference/3.3-mutable-data.md, separate original reading. Python docs checked 2026-10-06: https://docs.python.org/3/reference/simple_stmts.html#the-nonlocal-statement and https://docs.python.org/3/faq/programming.html#why-are-default-values-shared-between-objects . Language behavior used is supported by Pyodide's older Python too.
 
 Oral anchors: constructor calls create independent bindings; aliases retain same closure. Copy outer then mutate inner exposes retained identity. Mark before expanding avoids cyclic recursion; equal contents can belong to distinct objects. No lesson code implements accumulator, monitor, password dispatch or joint access. Measurement table is computed recurrence, not experimental evidence.
+
+## Lab after the 2026-10-07 review
+
+Exercises: accumulate (3.1, 3.2), append_links (3.12), account (3.3), count_pairs (3.16, 3.17),
+shared_access (3.7). The learner writes the identity-based pair counter; `naive_encounters` is
+supplied for comparison. In the mastery the learner writes `connect`; `run_access` and the
+account are supplied. Pair-counter check design: two distinct pairs with equal contents must
+count as two; a self-linked pair and a two-pair cycle must terminate (a read budget raises a
+BaseException); `fields` must be called once per pair, so direct indexing fails.
